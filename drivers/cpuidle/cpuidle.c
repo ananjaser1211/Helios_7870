@@ -20,6 +20,7 @@
 #include <linux/hrtimer.h>
 #include <linux/module.h>
 #include <linux/suspend.h>
+#include <linux/exynos-ss.h>
 #include <trace/events/power.h>
 
 #include "cpuidle.h"
