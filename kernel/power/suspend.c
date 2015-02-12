@@ -66,7 +66,6 @@ static void freeze_enter(void)
 
 	get_online_cpus();
 	cpuidle_resume();
-
 	/* Push all the CPUs into the idle loop. */
 	wake_up_all_idle_cpus();
 	pr_debug("PM: suspend-to-idle\n");
