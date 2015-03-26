@@ -51,12 +51,14 @@ typedef struct{
 
 #define FPSIMD_MAGIC	0x46508001
 
+#if defined (__LP64__)
 struct fpsimd_context {
 	struct _aarch64_ctx head;
 	__u32 fpsr;
 	__u32 fpcr;
 	___uint128_t vregs[32];
 };
+#endif
 
 /* ESR_EL1 context */
 #define ESR_MAGIC	0x45535201
