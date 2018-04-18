@@ -134,6 +134,8 @@ struct cpu_dbs_common_info {
 	u64 prev_cpu_idle;
 	u64 prev_cpu_wall;
 	u64 prev_cpu_nice;
+	unsigned int deferred_periods;
+
 	/*
 	 * Used to keep track of load in the previous interval. However, when
 	 * explicitly set to zero, it is used as a flag to ensure that we copy
