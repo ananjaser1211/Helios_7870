@@ -336,6 +336,33 @@ static const struct usbmix_name_map scms_usb3318_map[] = {
 	{ 0 }
 };
 
+/* Bose companion 5, the dB conversion factor is 16 instead of 256 */
+static struct usbmix_dB_map bose_companion5_dB = {-5006, -6};
+static struct usbmix_name_map bose_companion5_map[] = {
+	{ 3, NULL, .dB = &bose_companion5_dB },
+	{ 0 }	/* terminator */
+};
+
+/* Dragonfly DAC 1.2, the dB conversion factor is 1 instead of 256 */
+static struct usbmix_dB_map dragonfly_1_2_dB = {0, 5000};
+static struct usbmix_name_map dragonfly_1_2_map[] = {
+	{ 7, NULL, .dB = &dragonfly_1_2_dB },
+	{ 0 }	/* terminator */
+};
+
+/*
+ * Dell usb dock with ALC4020 codec had a firmware problem where it got
+ * screwed up when zero volume is passed; just skip it as a workaround
+ *
+ * Also the extension unit gives an access error, so skip it as well.
+ */
+static const struct usbmix_name_map dell_alc4020_map[] = {
+	{ 4, NULL },	/* extension unit */
+	{ 16, NULL },
+	{ 19, NULL },
+	{ 0 }
+};
+
 /*
  * Control map entries
  */
