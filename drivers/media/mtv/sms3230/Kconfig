@@ -49,14 +49,14 @@ endif # SMS_HOSTLIB_SUBSYS
 # Hardware interfaces support
 
 config SMS_USB_DRV
-	bool "USB interface support"
+	tristate "USB interface support"
 	depends on USB
 	default n if USB
 	---help---
 	  Choose if you would like to have Siano's support for USB interface
 
 config SMS_SDIO_DRV
-	bool "SDIO interface support"
+	tristate "SDIO interface support"
 	depends on MMC
 	---help---
 	  Choose if you would like to have Siano's support for SDIO interface
