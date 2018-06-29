@@ -1,0 +1,64 @@
+/*
+ * SAMSUNG UNIVERSAL7870 board device tree source
+ *
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
+
+/{
+	pinctrl@139F0000 {
+		tdmb_irq_on: tdmb-irq-on {
+			samsung,pins = "gpa0-7";
+			samsung,pin-function = <0xf>; /* EXT_INT */
+			samsung,pin-pud = <0>;	/* PULL NONE */
+		};
+		tdmb_irq_off: tdmb-irq-off {
+			samsung,pins = "gpa0-7";
+			samsung,pin-function = <0>; /* INPUT */
+			samsung,pin-pud = <1>;	/* PULL DOWN */
+		};
+	};
+	pinctrl@139B0000 {
+		tdmb_pwr_on: tdmb-pwr-on {
+			samsung,pins = "gpf4-0";
+			samsung,pin-function = <1>; /* OUTPUT */
+			samsung,pin-pud = <0>;	/* PULL NONE */
+		};
+		tdmb_pwr_off: tdmb-pwr-off {
+			samsung,pins = "gpf4-0";
+			samsung,pin-con-pdn = <2>; /* INPUT */
+			samsung,pin-pud-pdn = <1>;	/* PULL DOWN */
+		};
+	};
+
+	spi_2: spi@13930000 {
+		status = "ok";
+
+		tdmb-spi@0 {
+			compatible = "tdmb_spi_comp";
+			reg = <0>;
+			spi-max-frequency = <9600000>;
+			controller-data {
+				cs-gpio = <&gpc4 3 0>;
+				samsung,spi-feedback-delay = <0>;
+			};
+		};
+	};
+
+	tdmb_data {
+		compatible = "samsung,tdmb";
+		pinctrl-names = "tdmb_on", "tdmb_off";
+		pinctrl-0 = <&tdmb_pwr_on &tdmb_irq_on>;
+		pinctrl-1 = <&tdmb_pwr_off &tdmb_irq_off>;
+		tdmb_pwr_en = <&gpf4 0 0>;
+		tdmb_irq = <&gpa0 7 0>;
+		/* tdmb_fm_ant_sel = <&gpa1 3 0>; */
+		tdmb_use_irq;
+		tdmb_xtal_freq = <24000>;
+	};
+
+};

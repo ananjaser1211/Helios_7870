@@ -1,0 +1,105 @@
+config EXYNOS_DECON_7870
+	bool "Samsung Exynos7870 Display system (DECON, MIPI)"
+	depends on FB
+
+choice
+	prompt "Select Display Operation Mode"
+	depends on EXYNOS_DECON_7870
+	default EXYNOS7870_DISPLAY_VIDEO_MODE
+	help
+	  Select the display operation mode (Command/Video).
+
+config EXYNOS7870_DISPLAY_COMMAND_MODE
+	bool "Command Mode"
+
+config EXYNOS7870_DISPLAY_VIDEO_MODE
+	bool "Video Mode"
+
+endchoice
+
+choice
+	prompt "Select TE IRQ Mode"
+	depends on EXYNOS_DECON_7870 && EXYNOS7870_DISPLAY_COMMAND_MODE
+	default EXYNOS7870_DISPLAY_TE_IRQ_GPIO
+	help
+	  Select the TE IRQ mode.
+
+config EXYNOS7870_DISPLAY_TE_IRQ_GPIO
+	bool "Dual GPIO"
+
+config EXYNOS7870_DISPLAY_TE_IRQ_GIC
+	bool "GIC Interrupt"
+
+endchoice
+
+config USE_VSYNC_SKIP
+   bool "Vsync Skip Enable"
+   depends on EXYNOS_DECON_7870
+   default n
+   help
+     Say Y here if you want to enable vsync skip feature for DFS solution.
+
+config EXYNOS_DECON_FB
+	bool "Samsung DECON Framebuffer driver"
+	depends on EXYNOS_DECON_7870
+	select MEDIA_EXYNOS
+	default y
+	help
+	  Say Y here if you want support for the DECON in Samsung S5P SoCs.
+	  This device produce image data to one of output interfaces.
+
+config EXYNOS_MIPI_DSI
+	bool "Samsung Exynos MIPI-DSI driver"
+	depends on EXYNOS_DECON_7870
+	default y
+	help
+	  Enable MIPI-DSI driver.
+
+config DECON_MIPI_DSI_PKTGO
+	bool "Samsung Exynos MIPI-DSI Packet Go"
+	depends on EXYNOS_DECON_7870 && EXYNOS_MIPI_DSI
+	default n
+	help
+	  Enable/disable MIPI-DSI Packet Go function
+
+config DECON_LPD_DISPLAY
+        bool "Decon Low Power Display MODE"
+        depends on EXYNOS_DECON_7870
+        depends on EXYNOS7870_DISPLAY_COMMAND_MODE
+        default n
+
+config DECON_LPD_DISPLAY_WITH_CAMERA
+        bool "Decon Low Power Display MODE with Camera"
+        depends on DECON_LPD_DISPLAY
+        depends on EXYNOS7870_DISPLAY_COMMAND_MODE
+
+config DECON_DEVFREQ
+	bool "Decon devfreq implementation"
+	depends on EXYNOS_DECON_7870
+
+config FB_WINDOW_UPDATE
+        bool "DECON window update mode"
+        depends on EXYNOS_DECON_7870
+        depends on EXYNOS7870_DISPLAY_COMMAND_MODE
+        default n
+
+config DECON_BLOCKING_MODE
+	bool "DECON blocking mode"
+        depends on EXYNOS_DECON_7870
+        default n
+
+config DECON_USE_BOOTLOADER_FB
+	bool "DECON Bootloader Framebuffer support"
+        depends on EXYNOS7870_DISPLAY_VIDEO_MODE
+        default n
+
+config DECON_EVENT_LOG
+	bool "Display sub-system event logger (DECON/DSIM)"
+        depends on DEBUG_INFO && EXYNOS_DECON_7870
+        default y
+
+config EXYNOS_MIPI_DSI_ENABLE_EARLY
+	bool "Samsung Exynos MIPI-DSI Driver ENABLE EARLY"
+	default n
+
+source "drivers/video/fbdev/exynos/decon_7870/panels/Kconfig"

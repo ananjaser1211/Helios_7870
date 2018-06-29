@@ -1,0 +1,38 @@
+/*
+ * SAMSUNG UNIVERSAL8890 board device tree source
+ *
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
+
+/dts-v1/;
+#include "exynos7870.dtsi"
+
+/ {
+	model = "Exynos 7870 emulation board";
+	compatible = "samsung,exynos7870", "samsung,exynos4210";
+
+	memory@40000000 {
+		device_type = "memory";
+		reg = <0x0 0x40000000 0x80000000>;
+	};
+
+	chosen {
+		bootargs = "earlycon=exynos,mmio32,0x13810000,115200n8 console=ttySAC0,115200 root=/dev/ram0 rw initrd=0x43000000,8M rootfstype=cramfs init=/linuxrc clk_ignore_unused ess_setup=0x46000000";
+	};
+
+	fixed-rate-clocks {
+		oscclk {
+			compatible = "samsung,exynos7870-oscclk";
+			clock-frequency = <3000000>;
+		};
+	};
+
+	serial_0: uart@13810000 {
+		status = "okay";
+	};
+};

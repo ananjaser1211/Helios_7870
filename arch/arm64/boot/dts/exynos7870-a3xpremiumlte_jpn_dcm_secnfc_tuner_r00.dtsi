@@ -1,0 +1,38 @@
+ /* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/{
+
+	hsi2c_6: hsi2c@138F0000 {
+		samsung,i2c-sda-delay = <100>;
+		samsung,i2c-max-bus-freq = <300000>;
+		status = "okay";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		sec-nfc@27 {
+			compatible = "sec-nfc";
+			reg = <0x27>;
+			interrupts = <6 0 0>;
+			interrupt-parent = <&gpa2>;
+			sec-nfc,ven-gpio = <&gpc2 2 0x2>;
+			sec-nfc,firm-gpio = <&gpd4 1 0>;
+			sec-nfc,irq-gpio = <&gpa2 6 0>;
+			sec-nfc,pvdd_en = <&gpc3 2 0>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&nfc_n5_firm &nfc_pd &nfc_int &nfc_pvdd_en>;
+		};
+	};
+
+
+};
+

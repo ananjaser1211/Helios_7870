@@ -1,0 +1,45 @@
+/*
+ * Samsung's Exynos8890 SoC core_reg device tree source
+ *
+ * Copyright (c) 2015 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * Samsung's Exynos8890 SoC core_reg options are listed as device
+ * tree nodes are listed in this file.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
+
+/ {
+	core_regs {
+		compatible = "samsung,exynos-core";
+		#address-cells = <0>;
+		#size-cells = <0>;
+		cortex-a53 {
+			CPUACTLR { guide = <0x00000000 0x090CA000>; };
+			CPUECTLR { guide = <0x00000000 0x00000040>; };
+			L2CTLR { guide = <0x00000000 0x03600020>; };
+			L2ACTLR { guide = <0x00000000 0x80000008>; };
+			L2ECTLR { guide = <0x00000000 0x00000007>; };
+		};
+		mongoose {
+			CPUACTLR { guide = <0x00000000 0x00000000>; };
+			CPUECTLR { guide = <0x00000000 0x00000000>; };
+			L2ECTLR { guide = <0x00000000 0x00000000>; };
+			L2CTLR { guide = <0x00000000 0x00000000>; };
+			L2ACTLR { guide = <0x00000000 0x01001B40>; };
+			FEACTLR { guide = <0x00000000 0x40020000>; };
+			FEACTLR2 { guide = <0x00000000 0x01000000>; };
+			FEACTLR3 { guide = <0x00000000 0x00008000>; };
+			FPACTLR { guide = <0x00000000 0x00000000>; };
+			FPACTLR2 { guide = <0x00000000 0x00000000>; };
+			LSACTLR { guide = <0x00000000 0x00000000>; };
+			LSACTLR2 { guide = <0x00000000 0x001008AF>; };
+			LSACTLR3 { guide = <0x00000000 0x00000000>; };
+			LSACTLR4 { guide = <0x00000000 0x00000000>; };
+			CKACTLR { guide = <0x00000000 0x00000000>; };
+		};
+	};
+};

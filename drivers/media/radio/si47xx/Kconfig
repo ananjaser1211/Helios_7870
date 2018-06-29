@@ -1,0 +1,12 @@
+config FM_SI47XX
+	tristate "si47XX FM radio"
+	default n
+	help
+	  Say Y to supprot Si47XX FM radio.
+
+config FM_SI47XX_RDS_INT_ON_ALWAYS
+	tristate "si47XX FM radio"
+	depends on FM_SI47XX
+	default n
+	help
+	  Say Y to support Si47XX FM RDS INTERRUT ON ALWAYS.

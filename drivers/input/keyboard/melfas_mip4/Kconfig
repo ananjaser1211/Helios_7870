@@ -1,0 +1,49 @@
+#
+# Kconfig for MELFAS MIP4 Touchkey Driver
+#
+
+if INPUT_KEYBOARD
+
+config KEYBOARD_MELFAS_MHS204
+        tristate "MELFAS MHS204 Touchkey"
+        depends on I2C
+        help
+          Say Y here if you have a MELFAS MHS204 Touchkey device in your system.
+
+          If unsure, say N.
+
+          To compile this driver as a module, choose M here: the module will be called mip4_tk.
+          
+config KEYBOARD_MELFAS_MHS204G
+        tristate "MELFAS MHS204G Touchkey"
+        depends on I2C
+        help
+          Say Y here if you have a MELFAS MHS204G Touchkey device in your system.
+
+          If unsure, say N.
+
+          To compile this driver as a module, choose M here: the module will be called mip4_tk.
+
+config KEYBOARD_MELFAS_MHS2041
+        tristate "MELFAS MHS2041 Touchkey"
+        depends on I2C
+        help
+          Say Y here if you have a MELFAS MHS2041 Touchkey device in your system.
+
+          If unsure, say N.
+
+          To compile this driver as a module, choose M here: the module will be called mip4_tk.
+
+        
+config KEYBOARD_MELFAS_MHS2041B
+        tristate "MELFAS MHS2041B Touchkey"
+        depends on I2C
+        help
+          Say Y here if you have a MELFAS MHS2041B Touchkey device in your system.
+
+          If unsure, say N.
+
+          To compile this driver as a module, choose M here: the module will be called mip4_tk.
+                  
+endif
+

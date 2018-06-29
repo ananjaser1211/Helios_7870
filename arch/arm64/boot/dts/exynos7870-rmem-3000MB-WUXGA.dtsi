@@ -1,0 +1,92 @@
+/*
+ * SAMSUNG EXYNOS device tree source for reserved-memory
+ *
+ * Copyright (c) 2015 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
+
+/ {
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <1>;
+		ranges;
+
+		gnss_if {
+			compatible = "exynos7870,gnss_if";
+			reg = <0 0xF7C00000 0x400000>;
+		};
+
+		modem_if {
+			compatible = "exynos7870,modem_if";
+			reg = <0 0xF0000000 0x7800000>;
+		};
+
+		dram_init {
+			compatible = "exynos7870,deliver_cp";
+			reg = <0 0xEFFFF000 0x1000>;
+		};
+
+		crypto {
+			compatible = "exynos8890-ion,crypto";
+			reusable;
+			reg = <0x0 0x80000000 0x800000>;
+			id = <1>;
+		};
+
+		video_fw {
+			compatible = "exynos8890-ion,vfw";
+			secure;
+			reusable;
+			noprot;
+			reg = <0x0 0x80800000 0x400000>;
+			id = <2>;
+			compat-id = <24>;
+		};
+
+		video_nfw {
+			compatible = "exynos8890-ion,vnfw";
+			reusable;
+			reg = <0x0 0x80C00000 0x400000>;
+			id = <7>;
+			compat-id = <20>;
+		};
+
+		video_stream {
+			compatible = "exynos8890-ion,vstream";
+			secure;
+			reusable;
+			reg = <0x0 0x81000000 0x1400000>;
+			id = <3>;
+			compat-id = <25 31>;
+		};
+
+		video_frame {
+			compatible = "exynos8890-ion,vframe";
+			secure;
+			reusable;
+			reg = <0x0 0x82400000 0x5400000>;
+			id = <5>;
+			compat-id = <26 29>;
+		};
+
+		video_scaler {
+			compatible = "exynos8890-ion,vscaler";
+			secure;
+			reusable;
+			reg = <0x0 0x87800000 0x1C00000>;
+			id = <6>;
+			compat-id = <28>;
+		};
+	};
+
+	shmem: shmem@F0000000 {
+		compatible = "samsung,exynos7870-shm_ipc";
+
+		shmem,ipc_offset = <0x7400000>;
+		shmem,ipc_size = <0x400000>;
+	};
+};

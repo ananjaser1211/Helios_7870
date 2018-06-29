@@ -1,0 +1,71 @@
+#
+# EXYNOS Soc drivers
+#
+menuconfig SOC_SAMSUNG
+	bool "SAMSUNG SOC drivers support"
+
+if SOC_SAMSUNG
+config EXYNOS_CHIPID
+	bool "Exynos Chip ID Driver Support"
+	depends on ARCH_EXYNOS
+	select SOC_BUS
+config EXYNOS_REBOOT
+	bool "Exynos Chip Reboot Driver Support"
+	depends on ARCH_EXYNOS
+
+config SAMSUNG_DMADEV
+	bool
+	select ARM_AMBA
+	select DMADEVICES
+	select PL330_DMA if (ARCH_EXYNOS7 || ARCH_EXYNOS8)
+	help
+	  Use DMA device engine for PL330 DMAC.
+
+config SAMSUNG_CORE_TEST
+	bool "Show system-control registers"
+	depends on ARCH_EXYNOS
+	help
+	  Show system-control registers.
+
+config ECT
+	bool "Enable Exynos Characteristic Table File"
+	default n
+	depends on ARCH_EXYNOS
+
+config ECT_DUMP
+	bool "Enable Exynos Characteristic Table File Dump sysfs"
+	default n
+	depends on ECT
+
+config EXYNOS_CONTENT_PATH_PROTECTION
+	bool "Exynos Content Path Protection"
+	default y
+	help
+	  Enable content path protection of EXYNOS.
+
+config SCHED_AVG_NR_RUNNING
+	bool "Enable to use average nr_running"
+	default n
+	help
+	  Enable to use average nr_running in scheduler
+
+config EXYNOS_HOTPLUG_GOVERNOR
+	bool "Enable Exynos dynamic hotplug governor"
+	select SCHED_AVG_NR_RUNNING
+
+config EXYNOS_MCINFO
+	bool "Exynos memory controller information"
+	default n
+
+config MCINFO_SYSFS
+	bool "Exynos memory controller information sysfs"
+	depends on EXYNOS_MCINFO
+	default	y if SYSFS
+
+endif #SOC_SAMSUNG
+
+config SEC_INCELL
+	bool "Incell data & function for Samsung"
+	default n
+	help
+	  say y to enable incell data & function for Samsung.

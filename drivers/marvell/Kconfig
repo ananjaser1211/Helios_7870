@@ -1,0 +1,59 @@
+menuconfig MARVELL_DRIVERS
+	bool "Marvell kernel module drivers"
+	---help---
+	  marvell kernel module drivers
+
+if MARVELL_DRIVERS
+
+config MRVL_WIRELESS
+	bool "marvell wireless driver"
+	---help---
+	This enables the marvell wireless driver for application processor
+
+choice
+	depends on MRVL_WIRELESS
+	bool "Choose the chip for marvell wireless"
+	default MRVL_WL_SD8777
+
+config MRVL_WL_SD8977
+	bool "SD8977"
+	---help---
+	Marvell NIC driver: SD8977 chip SD8977
+	
+config MRVL_WL_SD8XXX
+	bool "SD8977"
+	---help---
+	Marvell combo driver support: SD8977/ others/ chips
+
+endchoice
+
+config MRVL_WL_BUILD_TYPE
+	depends on MRVL_WL_SD8977 || (MRVL_WL_SD8XXX && m)
+	tristate "Build type of the driver for MARVELL wireless"
+	default m
+	---help---
+	Choose <m> if you want to build the driver as module;
+	<y> to build-in kernel; <n> if you do not want to build.
+
+config MRVL_SKMALLOC
+	tristate "Marvell Supper Kmalloc Driver"
+	default y
+	---help---
+	Create skmalloc-xxx like as kmalloc-xxx.
+	Driver or module can use these skmalloc caches which will
+	be different with kmalloc-xxx.
+	Use this method will be helpful for kmalloc issue debugging.
+
+config MRVL_SKMALLOC_WIRELESS_EN
+	tristate "marvell wireless driver use skmalloc"
+	depends on MRVL_SKMALLOC && MRVL_WIRELESS
+	default y
+	---help---
+	Whether marvell wireless driver uses Supper Kmalloc or not.
+	After enable this config, all the kmalloc used in marvell wireless
+	driver will use skmalloc-xxx instead of kmalloc-xxx.
+
+source "drivers/marvell/sd8977/Kconfig"
+
+endif
+

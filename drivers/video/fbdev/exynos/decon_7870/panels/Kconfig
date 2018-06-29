@@ -1,0 +1,116 @@
+config EXYNOS_DECON_LCD
+	depends on EXYNOS_DECON_7870
+	bool "Select LCD panel driver"
+
+config EXYNOS_DECON_LCD_SYSFS
+	depends on EXYNOS_DECON_LCD
+	bool "Support LCD SYSFS"
+	default y
+
+config PANEL_AID_DIMMING
+	depends on EXYNOS_DECON_LCD
+	bool "Support AID Dimming"
+	default n
+
+config EXYNOS_DECON_MDNIE_LITE
+	depends on EXYNOS_DECON_LCD
+	bool "Support MDNIE LITE"
+	default n
+
+config LCD_DOZE_MODE
+	depends on EXYNOS_DECON_LCD
+	bool "Support DOZE MODE"
+	default n
+
+config DISPLAY_USE_INFO
+	depends on EXYNOS_DECON_LCD
+	bool "Support display use info logging"
+	default n
+
+config PANEL_EA8064G_DYNAMIC
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "EA8064G Amoled FHD driver"
+
+config PANEL_S6E3FA3_J7XE
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "S6E3FA3 J7XE LCD driver"
+
+config PANEL_EA8061S_J7XE
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "EA8061S Amoled driver"
+
+config PANEL_LTL101AL06
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "LTL101AL06 TFT HD driver(1280 x 800)"
+
+config EXYNOS_LCD_PWM_BACKLIGHT
+	depends on PANEL_LTL101AL06
+	bool "EXYNOS_LCD_PWM_BACKLIGHT"
+
+config PANEL_S6D7AA0
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "S6D7AA0 TFT HD driver"
+
+config PANEL_HX8279D
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "HX8279D TFT WUXGA driver(1200 x 1920)"
+
+config PANEL_S6D7AA0_BV055HDM
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "S6D7AA0_ON7E TFT HD driver"
+
+config PANEL_S6E3AA2_AMS474KF09
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "S6E3AA2 Amoled driver"
+
+config PANEL_TD4300
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "TD4300 TFT WUXGA driver"
+
+config PANEL_BRIGHTNESS_MAX_480CD
+	depends on PANEL_TD4300
+	bool "Panel backlight brightness max is 480CD"
+
+config PANEL_S6E3AA2_A3Y17
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "S6E3AA2_A3Y17 Amoled HD driver(WITH AOD)"
+
+config PANEL_S6E8AA5X01
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "S6E8AA5X01 AMOLED HD LCD driver"
+
+config PANEL_S6E8AA5X01_J5Y17_KOR
+	depends on PANEL_S6E8AA5X01
+	bool "S6E8AA5X01 AMOLED HD LCD driver"
+
+config PANEL_TD4100_J7POP
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "TD4100 TFT HD driver"
+
+config PANEL_S6E3FA3_J7Y17
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "S6E3FA3 J7Y17 LCD driver"
+
+config PANEL_EA8061S_J7VE
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "EA8061S Amoled driver"
+
+config PANEL_S6D7AA0_GTACTIVE2
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "S6D7AA0 TFT LCD driver"
+
+config PANEL_S6D78A0_GPPIRIS
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "S6D78A0 TFT LCD driver"
+
+config PANEL_S6D7AT0B_J7TOP
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "S6D7AT0B TFT LCD driver"
+
+config PANEL_S6E8AA5X01_A6LTE
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "S6E8AA5X01 driver"
+
+config PANEL_S6E8AA5X01_J6Y18
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	bool "S6E8AA5X01 driver"
