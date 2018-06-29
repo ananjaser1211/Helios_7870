@@ -1,0 +1,17 @@
+vendor.samsung.hardware.miscpower::ISecMiscPower                        u:object_r:hal_miscpower_hwservice:s0
+vendor.samsung.hardware.vibrator::ISecVibrator                         u:object_r:hal_vibrator_hwservice:s0
+vendor.samsung.hardware.biometrics.fingerprint::ISecBiometricsFingerprint  u:object_r:hal_fingerprint_hwservice:s0
+vendor.samsung.hardware.gnss::ISecGnss  u:object_r:hal_gnss_hwservice:s0
+vendor.samsung.hardware.radio::IRadio  u:object_r:hal_telephony_hwservice:s0
+vendor.samsung.hardware.camera.provider::ISecCameraProvider		u:object_r:hal_camera_hwservice:s0
+vendor.samsung.hardware.nfc::ISecNfc           u:object_r:hal_nfc_hwservice:s0
+vendor.nxp.nxpnfc::INxpNfc  u:object_r:hal_nfc_hwservice:s0
+vendor.samsung.security.skeymaster::ISKeymasterDevice                 u:object_r:hal_keymaster_hwservice:s0
+android.hardware.wifi.sec_hostapd::ISemHostapd                        u:object_r:hal_wifi_sec_hostapd_hwservice:s0
+vendor.samsung.hardware.wifi.sec_hostapd::ISemHostapd                 u:object_r:hal_wifi_sec_hostapd_hwservice:s0
+vendor.samsung.frameworks.ucm.wifi::IUCMKeystore                 u:object_r:ucm_hwservice:s0
+vendor.samsung.hardware.radio.secoemhook::ISecOemHook           u:object_r:hal_telephony_hwservice:s0
+vendor.samsung.hardware.radio.channel::ISecChannel              u:object_r:hal_telephony_hwservice:s0
+vendor.samsung_slsi.hardware.ExynosHWCServiceTW::IExynosHWCServiceTW  u:object_r:hal_exynos_hwservice:s0
+com.qualcomm.qti.ant::IAntHci              u:object_r:hal_bluetooth_hwservice:s0
+vendor.samsung.hardware.digitaltv.fullseg::IFullseg      u:object_r:digitaltv_fullseg_hwservice:s0
