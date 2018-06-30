@@ -179,7 +179,7 @@
 		PIN_SLP(gpd1-6, INPUT, DOWN);	/* NC */
 
 		PIN_SLP(gpd2-0, INPUT, NONE);	/* REG0_DET */
-		PIN_SLP(gpd2-1, PREV, NONE);	/* VDD_NFC_EN */
+		PIN_SLP(gpd2-1, OUT1, UP);	/* VDD_NFC_EN */
 		PIN_SLP(gpd2-2, PREV, DOWN);	/* MST_PWR_EN */
 		PIN_SLP(gpd2-3, PREV, NONE);	/* RGB_PROXY_EN */
 		PIN_SLP(gpd2-4, INPUT, NONE);	/* HW_REV0 */

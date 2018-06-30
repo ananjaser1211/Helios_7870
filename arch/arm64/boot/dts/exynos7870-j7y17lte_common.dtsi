@@ -9,8 +9,8 @@
  * published by the Free Software Foundation.
 */
 
-#include "exynos7870-rmem-3000MB.dtsi"
 #include "exynos7870.dtsi"
+#include "exynos7870-rmem-3000MB.dtsi"
 
 / {
 	model = "Samsung J7Y17LTE board based on Exynos7870";
@@ -1511,34 +1511,26 @@
 
 	dsim_0: dsim@14800000 {
 		lcd_info = <&s6e3fa3>;
-		decon_board = <&decon_board>;
+		decon_board = <&decon_board_list>;
 		status = "okay";
 	};
 
-	decon_board: decon_board {
-		gpio_lcd_rst = <&gpd3 4 0x1>;
-
+	decon_board_list: decon_board_list {
 		dsim_set_panel_power_enable {
-			type =
-			"regulator,enable",	"LCD_3P0",
-			"regulator,enable",	"LCD_1P8",
-			"delay,usleep",	"5000 6000";
+			type = "regulator,enable", "regulator,enable", "delay,usleep";
+			regulator = "LCD_3P0", "LCD_1P8";
+			delay = <5000 6000>;
 		};
 		dsim_set_panel_power_disable {
-			type =
-			"gpio,low",	"gpio_lcd_rst",
-			"delay,usleep",	"10000 11000",
-			"regulator,disable",	"LCD_1P8",
-			"regulator,disable",	"LCD_3P0";
+			type = "gpio,low", "delay,usleep", "regulator,disable", "regulator,disable";
+			gpios = <&gpd3 4 0x1>;
+			regulator = "LCD_1P8", "LCD_3P0";
+			delay = <10000 11000>;
 		};
 		dsim_reset_panel {
-			type =
-			"gpio,high",	"gpio_lcd_rst",
-			"delay,usleep",	"5000 6000",
-			"gpio,low",	"gpio_lcd_rst",
-			"delay,usleep",	"5000 6000",
-			"gpio,high",	"gpio_lcd_rst",
-			"delay,usleep",	"10000 11000";
+			type = "gpio,high", "delay,usleep", "gpio,low", "delay,usleep", "gpio,high", "delay,usleep";
+			gpios = <&gpd3 4 0x1>, <&gpd3 4 0x1>, <&gpd3 4 0x1>;
+			delay = <5000 6000>, <5000 6000>, <10000 11000>;
 		};
 	};
 
