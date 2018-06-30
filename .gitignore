@@ -2,17 +2,17 @@ cmd_flags
 include/config/
 include/generated/
 patch
-rf-tools/AIK-Linux/boot.img
+Helios/AIK-Linux/boot.img
 scripts/dtc/dtc
 scripts/dtc/dtc-lexer.lex.c
 scripts/dtc/dtc-parser.tab.c
 scripts/dtc/dtc-parser.tab.h
-rf-tools/AIK-Linux/authors.txt
-rf-tools/AIK-Linux/cleanup.sh
-rf-tools/AIK-Linux/image-new.img
-rf-tools/AIK-Linux/ramdisk-new.cpio.gz
-rf-tools/AIK-Linux/ramdisk/
-rf-tools/AIK-Linux/split_img/
+Helios/AIK-Linux/authors.txt
+Helios/AIK-Linux/cleanup.sh
+Helios/AIK-Linux/image-new.img
+Helios/AIK-Linux/ramdisk-new.cpio.gz
+Helios/AIK-Linux/ramdisk/
+Helios/AIK-Linux/split_img/
 scripts/basic/fixdep
 scripts/genksyms/genksyms
 scripts/genksyms/keywords.hash.c
@@ -39,10 +39,10 @@ lazy.sh
 Module.symvers
 arch/arm64/include/generated/
 boot.img-dtb
-rf-tools/out/boot_J530F.img
+Helios/out/boot_J530F.img
 dmesg.sh
 drivers/leds/.tmp_led-class.ver
-rf-tools/out/
+Helios/out/
 drivers/leds/.tmp_led-class.ver
 bootfg.img-dtb
 crypto/.tmp_scatterwalk.ver
@@ -51,11 +51,15 @@ kernel/rcu/.tmp_update.ver
 arch/arm/include/generated/
 drivers/misc/dualwave/dualwave.mod.c
 .tmpconfig.8779
-rf-tools/J530_KERNEL/META-INF/com/google/android/updater-script/
-rf-tools/J530_KERNEL/*
+Helios/J530_KERNEL/META-INF/com/google/android/updater-script/
+Helios/J530_KERNEL/*
 dmesg.sh
-
-
+Helios/Out/*
+*.txt
+*.patch
+scripts/basic/bin2c
+Helios/A.I.K*
+Helios/temp/*
 
 
 
