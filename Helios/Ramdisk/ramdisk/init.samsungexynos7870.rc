@@ -30,12 +30,6 @@ on post-fs-data
 # Log data folder
 #   mkdir /data/log 0771 radio system
 
-#SystemFramework
-    chown system system /data/cache/backup
-    chmod 0711 /data/cache/backup
-    chown system system /data/cache/backup_stage
-    chmod 0711 /data/cache/backup_stage
-
 #Private Mode
     mkdir /mnt/shell/privatemode 0700 system system
     mkdir /storage/Private 0000 system system
@@ -121,6 +115,10 @@ on boot
     chmod 0664 /sys/class/sec/sec_nad/nad_dram
     chown system radio /sys/class/sec/sec_nad/nad_all
     chmod 0664 /sys/class/sec/sec_nad/nad_all
+    chown system radio /sys/class/sec/sec_nad/nad_support
+    chmod 0664 /sys/class/sec/sec_nad/nad_support
+	chown system radio /sys/class/sec/sec_nad/nad_api
+    chmod 0664 /sys/class/sec/sec_nad/nad_api
     chown system radio /dev/block/NAD_REFER
     chmod 0664 /dev/block/NAD_REFER
 
@@ -681,13 +679,6 @@ setprop ro.mst.support 0
 # Support AP/CP log dump
     chmod 0770 /system/bin/sced
 
-# Switch Device
-    chown system radio /sys/class/sec/switch/vbus_value
-
-# LPM mode for ccic
-    chown system radio /sys/class/sec/ccic/lpm_mode
-    chown system radio /sys/class/sec/ccic/ccic_control_option
-
 # IPSec for VOLTE
     chown root system /dev/socket
     chmod 0775 /dev/socket
@@ -719,13 +710,11 @@ on fs
 	chown system media_rw /sys/class/mdnie/mdnie/bypass
     chown system media_rw /sys/class/mdnie/mdnie/mode
     chown system media_rw /sys/class/mdnie/mdnie/scenario
-    chown system system /sys/class/mdnie/mdnie/accessibility
-    chown system system /sys/class/mdnie/mdnie/sensorRGB
-    chown system system /sys/class/mdnie/mdnie/mdnie_ldu
+	chown system system /sys/class/mdnie/mdnie/accessibility
     chown system system /sys/class/mdnie/mdnie/night_mode
     chown system system /sys/class/mdnie/mdnie/whiteRGB
-    chown system system /sys/class/mdnie/mdnie/light_notification
-    chown system system /sys/class/mdnie/mdnie/color_lens
+	chown system system /sys/class/mdnie/mdnie/light_notification
+	chown system system /sys/class/mdnie/mdnie/color_lens
 
 # For cpefs partition
     check_fs /dev/block/platform/13540000.dwmmc0/by-name/CPEFS ext4
@@ -826,7 +815,7 @@ on fs
 #ARGOSD network_throughput
     chown system system /dev/network_throughput
 # ARGOSD
-service argos-daemon /system/bin/argosd
+service argos-daemon /vendor/bin/argosd
     class main
     user system
     group system radio
@@ -1004,9 +993,3 @@ on property:ro.wsmd.enable=true
     chmod 0711 /dev/socket/wsm_socket
     chown system system /dev/socket/wsm_socket
     start wsmd
-
-on property:ro.multisim.simslotcount=1
-    setprop persist.radio.multisim.config ss
-
-on property:ro.multisim.simslotcount=2
-    setprop persist.radio.multisim.config dsds

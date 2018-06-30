@@ -651,3 +651,22 @@ auditfilter priv_app vendor_file:file read;
 # http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23107415
 auditfilter sec_untrusted_app proc:file read; comm="roid.oneconnect"
 
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23110510
+auditfilter mediaserver graphics_vulkan_prop:file read;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23117570
+auditfilter system_server zygote:process getpgid;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23120419
+auditfilter hal_drm_default mediaprovider:fd use;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23121946
+auditfilter system_app configfs:lnk_file getattr;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23118481
+auditfilter netmgrd diag_device:chr_file { read write };
+
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/22987712
+auditfilter radio radio_data_file:file execute;
+

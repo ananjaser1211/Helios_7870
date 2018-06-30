@@ -149,6 +149,9 @@
 # Google FRP solution
 /dev/block/platform/13540000.dwmmc0/by-name/PERSISTENT    0660    system    system
 
+# Reactivation Lock
+/dev/block/platform/13540000.dwmmc0/by-name/STEADY    0660    system    system
+
 # Sensorhub IIO
 /dev/ssp_sensorhub        0660   system       system
 /dev/iio:device*          0660   system       system
