@@ -161,7 +161,7 @@
 
 # TEEGRIS
 /dev/tzdev		0660	system		system
-/dev/ionfd2phys		0660	system		system
+/dev/ionfd2phys		0660	system		radio
 /dev/tuihw		0660	system		system
 /dev/tzirs		0660	system		system
 /dev/tz_shmem_validator	0666    system		system
