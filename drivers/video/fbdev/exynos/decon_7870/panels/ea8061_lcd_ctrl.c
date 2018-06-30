@@ -19,21 +19,16 @@
 
 #include "ea8061_param.h"
 
+#ifdef CONFIG_PANEL_AID_DIMMING
 #include "aid_dimming.h"
 #include "dimming_core.h"
 #include "ea8061_aid_dimming.h"
+#endif
 
 struct lcd_info {
-	unsigned int			connected;
 	struct lcd_device *ld;
 	struct backlight_device *bd;
-	union {
-		struct {
-			u8		reserved;
-			u8		id[EA8061_ID_LEN];
-		};
-		u32			value;
-	} id_info;
+	unsigned char id[3];
 	unsigned char code[5];
 	unsigned char tset[8];
 	unsigned char elvss[4];
@@ -50,6 +45,7 @@ struct lcd_info {
 	unsigned int acl_enable;
 	unsigned int current_acl;
 	unsigned int current_hbm;
+	unsigned int siop_enable;
 	unsigned char dump_info[3];
 
 	void *dim_data;
@@ -63,27 +59,30 @@ struct lcd_info {
 };
 
 
-static int dsim_write_hl_data(struct lcd_info *lcd, const u8 *cmd, u32 cmdsize)
+static int dsim_write_hl_data(struct lcd_info *lcd, const u8 *cmd, u32 cmdSize)
 {
-	int ret = 0;
-	int retry = 2;
+	int ret;
+	int retry;
+	struct panel_private *priv = &lcd->dsim->priv;
 
-	if (!lcd->connected)
-		return ret;
+	if (priv->lcdConnected == PANEL_DISCONNEDTED)
+		return cmdSize;
+
+	retry = 5;
 
 try_write:
-	if (cmdsize == 1)
+	if (cmdSize == 1)
 		ret = dsim_write_data(lcd->dsim, MIPI_DSI_DCS_SHORT_WRITE, cmd[0], 0);
-	else if (cmdsize == 2)
+	else if (cmdSize == 2)
 		ret = dsim_write_data(lcd->dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM, cmd[0], cmd[1]);
 	else
-		ret = dsim_write_data(lcd->dsim, MIPI_DSI_DCS_LONG_WRITE, (unsigned long)cmd, cmdsize);
+		ret = dsim_write_data(lcd->dsim, MIPI_DSI_DCS_LONG_WRITE, (unsigned long)cmd, cmdSize);
 
-	if (ret < 0) {
+	if (ret != 0) {
 		if (--retry)
 			goto try_write;
 		else
-			dev_err(&lcd->ld->dev, "%s: fail. %02x, ret: %d\n", __func__, cmd[0], ret);
+			dev_err(&lcd->ld->dev, "%s: fail. cmd: %x, ret: %d\n", __func__, cmd[0], ret);
 	}
 
 	return ret;
@@ -91,27 +90,52 @@ try_write:
 
 static int dsim_read_hl_data(struct lcd_info *lcd, u8 addr, u32 size, u8 *buf)
 {
-	int ret = 0, rx_size = 0;
-	int retry = 2;
+	int ret;
+	int retry = 4;
+	struct panel_private *priv = &lcd->dsim->priv;
 
-	if (!lcd->connected)
-		return ret;
+	if (priv->lcdConnected == PANEL_DISCONNEDTED)
+		return size;
 
 try_read:
-	rx_size = dsim_read_data(lcd->dsim, MIPI_DSI_DCS_READ, (u32)addr, size, buf);
-	dev_info(&lcd->ld->dev, "%s: %02x, %d, %d\n", __func__, addr, size, rx_size);
-	if (rx_size != size) {
+	ret = dsim_read_data(lcd->dsim, MIPI_DSI_DCS_READ, (u32)addr, size, buf);
+	dev_info(&lcd->ld->dev, "%s: addr: %x, ret: %d\n", __func__, addr, ret);
+	if (ret != size) {
 		if (--retry)
 			goto try_read;
-		else {
-			dev_err(&lcd->ld->dev, "%s: fail. %02x, %d\n", __func__, addr, rx_size);
-			ret = -EPERM;
-		}
+		else
+			dev_err(&lcd->ld->dev, "%s: fail. addr: %x, ret: %d\n", __func__, addr, ret);
 	}
 
 	return ret;
 }
 
+static int ea8061_read_id(struct lcd_info *lcd)
+{
+	struct panel_private *priv = &lcd->dsim->priv;
+	int ret = 0;
+	int i = 0;
+
+	priv->lcdConnected = PANEL_CONNECTED;
+
+	dsim_write_hl_data(lcd, SEQ_EA8061_READ_ID, ARRAY_SIZE(SEQ_EA8061_READ_ID));
+	ret = dsim_read_hl_data(lcd, EA8061_READ_RX_REG, EA8061_ID_LEN, lcd->id);
+	if (ret != EA8061_ID_LEN) {
+		dev_err(&lcd->ld->dev, "%s: can't find connected panel. check panel connection\n", __func__);
+		priv->lcdConnected = PANEL_DISCONNEDTED;
+		goto exit;
+	}
+
+	dev_info(&lcd->ld->dev, "READ ID : ");
+	for (i = 0; i < EA8061_ID_LEN; i++)
+		dev_info(&lcd->ld->dev, "%02x, ", lcd->id[i]);
+	dev_info(&lcd->ld->dev, "\n");
+
+exit:
+	return ret;
+}
+
+#ifdef CONFIG_PANEL_AID_DIMMING
 static unsigned int get_actual_br_value(struct lcd_info *lcd, int index)
 {
 	struct SmtDimInfo *dimming_info = (struct SmtDimInfo *)lcd->dim_info;
@@ -304,7 +328,7 @@ static int dsim_panel_set_acl(struct lcd_info *lcd, int force)
 {
 	int ret = 0, level = ACL_STATUS_8P;
 
-	if (LEVEL_IS_HBM(lcd->brightness))
+	if (lcd->siop_enable || LEVEL_IS_HBM(lcd->brightness))
 		goto acl_update;
 
 	if (!lcd->acl_enable)
@@ -321,6 +345,8 @@ acl_update:
 		dev_info(&lcd->ld->dev, "acl: %d, brightness: %d\n", lcd->current_acl, lcd->brightness);
 	}
 exit:
+	if (!ret)
+		ret = -EPERM;
 	return ret;
 }
 
@@ -392,16 +418,19 @@ static int get_acutal_br_index(struct lcd_info *lcd, int br)
 	}
 	return index;
 }
+#endif
 
 static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 {
 	int ret = 0;
 
+#ifdef CONFIG_PANEL_AID_DIMMING
 	int p_br = lcd->bd->props.brightness;
 	int acutal_br = 0;
 	int real_br = 0;
 	int prev_index = lcd->br_index;
 	struct dim_data *dimming;
+#endif
 
 	/* for ea8061 */
 	dimming = (struct dim_data *)lcd->dim_data;
@@ -418,6 +447,9 @@ static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 	real_br = get_actual_br_value(lcd, lcd->br_index);
 	lcd->acl_enable = ACL_IS_ON(real_br);
 
+	if (lcd->siop_enable)					/* check auto acl */
+		lcd->acl_enable = 1;
+
 	if (lcd->state != PANEL_STATE_RESUMED) {
 		dev_info(&lcd->ld->dev, "%s: panel is not active state\n", __func__);
 		goto set_br_exit;
@@ -433,7 +465,8 @@ static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 		goto set_br_exit;
 
 	ret = low_level_set_brightness(lcd, force);
-	if (ret < 0)
+
+	if (ret)
 		dev_err(&lcd->ld->dev, "%s: failed to set brightness : %d\n", __func__, acutal_br);
 
 set_br_exit:
@@ -456,9 +489,11 @@ static int panel_set_brightness(struct backlight_device *bd)
 	struct lcd_info *lcd = bl_get_data(bd);
 
 	ret = dsim_panel_set_brightness(lcd, 0);
-	if (ret < 0)
+	if (ret) {
 		dev_err(&lcd->ld->dev, "%s: failed to set brightness\n", __func__);
-
+		goto exit_set;
+	}
+exit_set:
 	return ret;
 
 }
@@ -469,6 +504,7 @@ static const struct backlight_ops panel_backlight_ops = {
 };
 
 
+#ifdef CONFIG_PANEL_AID_DIMMING
 static const unsigned char *ACL_CUTOFF_TABLE_15[ACL_STATUS_MAX] = {SEQ_ACL_OFF, SEQ_ACL_15};
 
 static const unsigned int br_tbl[EXTEND_BRIGHTNESS + 1] = {
@@ -638,7 +674,7 @@ static int init_dimming(struct lcd_info *lcd, u8 *mtp)
 	}
 
 	ret = generate_volt_table(dimming);
-	if (ret < 0) {
+	if (ret) {
 		dimm_err("[ERR:%s] failed to generate volt table\n", __func__);
 		goto error;
 	}
@@ -646,7 +682,7 @@ static int init_dimming(struct lcd_info *lcd, u8 *mtp)
 	for (i = 0; i < MAX_BR_INFO; i++) {
 		if (diminfo[i].way == DIMMING_METHOD_AID) {
 			ret = cal_gamma_from_index(dimming, &diminfo[i]);
-			if (ret < 0) {
+			if (ret) {
 				dev_err(&lcd->ld->dev, "failed to calculate gamma : index : %d\n", i);
 				goto error;
 			}
@@ -660,35 +696,30 @@ error:
 	return ret;
 
 }
+#endif
 
-static int ea8061_read_id(struct lcd_info *lcd)
-{
-	struct panel_private *priv = &lcd->dsim->priv;
-	int ret = 0;
-
-	lcd->id_info.value = 0;
-	priv->lcdconnected = lcd->connected = lcdtype ? 1 : 0;
-
-	dsim_write_hl_data(lcd, SEQ_EA8061_READ_ID, ARRAY_SIZE(SEQ_EA8061_READ_ID));
-	ret = dsim_read_hl_data(lcd, EA8061_READ_RX_REG, EA8061_ID_LEN, lcd->id_info.id);
-	if (ret < 0 || !lcd->id_info.value) {
-		priv->lcdconnected = lcd->connected = 0;
-		dev_err(&lcd->ld->dev, "%s: connected lcd is invalid\n", __func__);
-	}
-
-	dev_info(&lcd->ld->dev, "%s: %x\n", __func__, cpu_to_be32(lcd->id_info.value));
-
-	return ret;
-}
 
 static int ea8061_read_init_info(struct lcd_info *lcd, unsigned char *mtp)
 {
+	int i = 0;
 	int ret;
+	struct panel_private *priv = &lcd->dsim->priv;
 	unsigned char buf[60] = {0, };
 
-	dev_info(&lcd->ld->dev, "%s\n", __func__);
+	dev_info(&lcd->ld->dev, "MDD : %s was called\n", __func__);
 
-	ea8061_read_id(lcd);
+	dsim_write_hl_data(lcd, SEQ_EA8061_READ_ID, ARRAY_SIZE(SEQ_EA8061_READ_ID));
+	ret = dsim_read_hl_data(lcd, EA8061_READ_RX_REG, EA8061_ID_LEN, lcd->id);
+	if (ret != EA8061_ID_LEN) {
+		dev_err(&lcd->ld->dev, "%s: can't find connected panel. check panel connection\n", __func__);
+		priv->lcdConnected = PANEL_DISCONNEDTED;
+		goto read_exit;
+	}
+
+	dev_info(&lcd->ld->dev, "READ ID : ");
+	for (i = 0; i < EA8061_ID_LEN; i++)
+		dev_info(&lcd->ld->dev, "%02x, ", lcd->id[i]);
+	dev_info(&lcd->ld->dev, "\n");
 
 	ret = dsim_write_hl_data(lcd, SEQ_TEST_KEY_ON_F0, ARRAY_SIZE(SEQ_TEST_KEY_ON_F0));
 	if (ret < 0)
@@ -697,7 +728,7 @@ static int ea8061_read_init_info(struct lcd_info *lcd, unsigned char *mtp)
 	/* mtp SEQ_EA8061_READ_MTP */
 	dsim_write_hl_data(lcd, SEQ_EA8061_READ_MTP, ARRAY_SIZE(SEQ_EA8061_READ_MTP));
 	ret = dsim_read_hl_data(lcd, EA8061_READ_RX_REG, EA8061_MTP_DATE_SIZE, buf);
-	if (ret < 0) {
+	if (ret != EA8061_MTP_DATE_SIZE) {
 		dev_err(&lcd->ld->dev, "failed to read mtp, check panel connection\n");
 		goto read_fail;
 	}
@@ -706,7 +737,7 @@ static int ea8061_read_init_info(struct lcd_info *lcd, unsigned char *mtp)
 	/* read DB */
 	dsim_write_hl_data(lcd, SEQ_EA8061_READ_DB, ARRAY_SIZE(SEQ_EA8061_READ_DB));
 	ret = dsim_read_hl_data(lcd, EA8061_READ_RX_REG, EA8061_MTP_DB_SIZE, buf);
-	if (ret < 0) {
+	if (ret != EA8061_MTP_DB_SIZE) {
 		dev_err(&lcd->ld->dev, "failed to read mtp, check panel connection\n");
 		goto read_fail;
 	}
@@ -719,7 +750,7 @@ static int ea8061_read_init_info(struct lcd_info *lcd, unsigned char *mtp)
 	/* read B2 */
 	dsim_write_hl_data(lcd, SEQ_EA8061_READ_B2, ARRAY_SIZE(SEQ_EA8061_READ_B2));
 	ret = dsim_read_hl_data(lcd, EA8061_READ_RX_REG, EA8061_MTP_B2_SIZE, buf);
-	if (ret < 0) {
+	if (ret != EA8061_MTP_B2_SIZE) {
 		dev_err(&lcd->ld->dev, "failed to read mtp, check panel connection\n");
 		goto read_fail;
 	}
@@ -728,21 +759,38 @@ static int ea8061_read_init_info(struct lcd_info *lcd, unsigned char *mtp)
 	/* read D4 */
 	dsim_write_hl_data(lcd, SEQ_EA8061_READ_D4, ARRAY_SIZE(SEQ_EA8061_READ_D4));
 	ret = dsim_read_hl_data(lcd, EA8061_READ_RX_REG, EA8061_MTP_D4_SIZE, buf);
-	if (ret < 0) {
+	if (ret != EA8061_MTP_D4_SIZE) {
 		dev_err(&lcd->ld->dev, "failed to read mtp, check panel connection\n");
 		goto read_fail;
 	}
 	memcpy(lcd->D4, buf, EA8061_MTP_D4_SIZE);
 
+read_exit:
+	return 0;
+
 read_fail:
+	return -ENODEV;
+}
+
+static int ea8061_displayon(struct lcd_info *lcd)
+{
+	int ret = 0;
+
+	dev_info(&lcd->ld->dev, "MDD : %s was called\n", __func__);
+
+	goto displayon_err;
+
+
+displayon_err:
 	return ret;
+
 }
 
 static int ea8061_exit(struct lcd_info *lcd)
 {
 	int ret = 0;
 
-	dev_info(&lcd->ld->dev, "%s\n", __func__);
+	dev_info(&lcd->ld->dev, "MDD : %s was called\n", __func__);
 	ret = dsim_write_hl_data(lcd, SEQ_DISPLAY_OFF, ARRAY_SIZE(SEQ_DISPLAY_OFF));
 	if (ret < 0) {
 		dev_err(&lcd->ld->dev, "%s: failed to write CMD : DISPLAY_OFF\n", __func__);
@@ -767,13 +815,11 @@ static int ea8061_init(struct lcd_info *lcd)
 {
 	int ret;
 
-	dev_info(&lcd->ld->dev, "%s\n", __func__);
+	dev_info(&lcd->ld->dev, "MDD : %s was called\n", __func__);
 
 	usleep_range(5000, 6000);
 
-#if defined(CONFIG_SEC_FACTORY)
 	ea8061_read_id(lcd);
-#endif
 
 	ret = dsim_write_hl_data(lcd, SEQ_TEST_KEY_ON_F0, ARRAY_SIZE(SEQ_TEST_KEY_ON_F0));
 	if (ret < 0) {
@@ -838,40 +884,49 @@ init_exit:
 	return ret;
 }
 
-static int ea8061_probe(struct lcd_info *lcd)
+static int ea8061_probe(struct dsim_device *dsim)
 {
 	int ret = 0;
+	struct panel_private *priv = &dsim->priv;
+	struct lcd_info *lcd = dsim->priv.par;
 	unsigned char mtp[EA8061_MTP_SIZE] = {0, };
 
-	dev_info(&lcd->ld->dev, "+ %s\n", __func__);
+	dev_info(&lcd->ld->dev, "MDD : %s was called\n", __func__);
 
+	priv->lcdConnected = PANEL_CONNECTED;
 	lcd->bd->props.max_brightness = EXTEND_BRIGHTNESS;
 	lcd->bd->props.brightness = UI_DEFAULT_BRIGHTNESS;
+	lcd->dsim = dsim;
 	lcd->state = PANEL_STATE_RESUMED;
 	lcd->temperature = NORMAL_TEMPERATURE;
 	lcd->acl_enable = 0;
 	lcd->current_acl = 0;
+	lcd->siop_enable = 0;
 	lcd->current_hbm = 0;
 
 	ret = ea8061_read_init_info(lcd, mtp);
-	if (ret < 0)
-		dev_err(&lcd->ld->dev, "%s: failed to init informatioin\n", __func__);
+	if (priv->lcdConnected == PANEL_DISCONNEDTED) {
+		dev_err(&lcd->ld->dev, "dsim : %s lcd was not connected\n", __func__);
+		goto probe_exit;
+	}
 
+#ifdef CONFIG_PANEL_AID_DIMMING
 	ret = init_dimming(lcd, mtp);
-	if (ret < 0)
+	if (ret)
 		dev_err(&lcd->ld->dev, "%s: failed to generate gamma table\n", __func__);
+#endif
 
-	dev_info(&lcd->ld->dev, "- %s\n", __func__);
-
-	return 0;
+probe_exit:
+	return ret;
 }
+
 
 static ssize_t lcd_type_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
 	struct lcd_info *lcd = dev_get_drvdata(dev);
 
-	sprintf(buf, "SDC_%02X%02X%02X\n", lcd->id_info.id[0], lcd->id_info.id[1], lcd->id_info.id[2]);
+	sprintf(buf, "SDC_%02X%02X%02X\n", lcd->id[0], lcd->id[1], lcd->id[2]);
 
 	return strlen(buf);
 }
@@ -881,7 +936,7 @@ static ssize_t window_type_show(struct device *dev,
 {
 	struct lcd_info *lcd = dev_get_drvdata(dev);
 
-	sprintf(buf, "%x %x %x\n", lcd->id_info.id[0], lcd->id_info.id[1], lcd->id_info.id[2]);
+	sprintf(buf, "%x %x %x\n", lcd->id[0], lcd->id[1], lcd->id[2]);
 
 	return strlen(buf);
 }
@@ -906,6 +961,72 @@ static ssize_t brightness_table_show(struct device *dev,
 	return pos - buf;
 }
 
+static ssize_t siop_enable_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct lcd_info *lcd = dev_get_drvdata(dev);
+
+	sprintf(buf, "%u\n", lcd->siop_enable);
+
+	return strlen(buf);
+}
+
+static ssize_t siop_enable_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct lcd_info *lcd = dev_get_drvdata(dev);
+	int value;
+	int rc;
+
+	rc = kstrtoul(buf, (unsigned int)0, (unsigned long *)&value);
+	if (rc < 0)
+		return rc;
+	else {
+		if (lcd->siop_enable != value) {
+			dev_info(dev, "%s: %d, %d\n", __func__, lcd->siop_enable, value);
+			mutex_lock(&lcd->lock);
+			lcd->siop_enable = value;
+			mutex_unlock(&lcd->lock);
+
+			dsim_panel_set_brightness(lcd, 1);
+		}
+	}
+	return size;
+}
+
+static ssize_t power_reduce_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct lcd_info *lcd = dev_get_drvdata(dev);
+
+	sprintf(buf, "%u\n", lcd->acl_enable);
+
+	return strlen(buf);
+}
+
+static ssize_t power_reduce_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct lcd_info *lcd = dev_get_drvdata(dev);
+	int value;
+	int rc;
+
+	rc = kstrtoul(buf, (unsigned int)0, (unsigned long *)&value);
+
+	if (rc < 0)
+		return rc;
+	else {
+		if (lcd->acl_enable != value) {
+			dev_info(dev, "%s: %d, %d\n", __func__, lcd->acl_enable, value);
+			mutex_lock(&lcd->lock);
+			lcd->acl_enable = value;
+			mutex_unlock(&lcd->lock);
+			dsim_panel_set_brightness(lcd, 1);
+		}
+	}
+	return size;
+}
+
 static ssize_t temperature_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
@@ -923,15 +1044,17 @@ static ssize_t temperature_store(struct device *dev,
 	int rc;
 
 	rc = kstrtoint(buf, 10, &value);
+
 	if (rc < 0)
 		return rc;
+	else {
+		mutex_lock(&lcd->lock);
+		lcd->temperature = value;
+		mutex_unlock(&lcd->lock);
 
-	mutex_lock(&lcd->lock);
-	lcd->temperature = value;
-	mutex_unlock(&lcd->lock);
-
-	dsim_panel_set_brightness(lcd, 1);
-	dev_info(dev, "%s: %d, %d\n", __func__, value, lcd->temperature);
+		dsim_panel_set_brightness(lcd, 1);
+		dev_info(dev, "%s: %d, %d\n", __func__, value, lcd->temperature);
+	}
 
 	return size;
 }
@@ -962,6 +1085,7 @@ static ssize_t manufacture_date_show(struct device *dev,
 	return strlen(buf);
 }
 
+#ifdef CONFIG_PANEL_AID_DIMMING
 static void show_aid_log(struct lcd_info *lcd)
 {
 	int i, j, k;
@@ -1012,6 +1136,7 @@ static ssize_t aid_log_show(struct device *dev,
 	show_aid_log(lcd);
 	return strlen(buf);
 }
+#endif
 
 static ssize_t manufacture_code_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
@@ -1030,7 +1155,7 @@ static ssize_t dump_register_show(struct device *dev,
 	struct lcd_info *lcd = dev_get_drvdata(dev);
 	char *pos = buf;
 	u8 reg, len, offset;
-	int ret, i;
+	int i;
 	u8 *dump = NULL;
 	unsigned char read_reg[] = {
 		EA8061_READ_TX_REG,
@@ -1053,11 +1178,7 @@ static ssize_t dump_register_show(struct device *dev,
 			dev_err(&lcd->ld->dev, "failed to write test on f0 command.\n");
 
 		dsim_write_hl_data(lcd, read_reg, ARRAY_SIZE(read_reg));
-		ret = dsim_read_hl_data(lcd, EA8061_READ_RX_REG, len, dump);
-		if (ret < 0) {
-			dev_err(&lcd->ld->dev, "%s: failed to read, %x, %d, %d\n", __func__, reg, len, offset);
-			goto exit;
-		}
+		dsim_read_hl_data(lcd, EA8061_READ_RX_REG, len, dump);
 
 		if (dsim_write_hl_data(lcd, SEQ_TEST_KEY_OFF_F0, ARRAY_SIZE(SEQ_TEST_KEY_OFF_F0)) < 0)
 			dev_err(&lcd->ld->dev, "failed to write test off f0 command.\n");
@@ -1110,10 +1231,14 @@ static DEVICE_ATTR(lcd_type, 0444, lcd_type_show, NULL);
 static DEVICE_ATTR(window_type, 0444, window_type_show, NULL);
 static DEVICE_ATTR(manufacture_code, 0444, manufacture_code_show, NULL);
 static DEVICE_ATTR(brightness_table, 0444, brightness_table_show, NULL);
+static DEVICE_ATTR(siop_enable, 0664, siop_enable_show, siop_enable_store);
+static DEVICE_ATTR(power_reduce, 0664, power_reduce_show, power_reduce_store);
 static DEVICE_ATTR(temperature, 0664, temperature_show, temperature_store);
 static DEVICE_ATTR(color_coordinate, 0444, color_coordinate_show, NULL);
 static DEVICE_ATTR(manufacture_date, 0444, manufacture_date_show, NULL);
+#ifdef CONFIG_PANEL_AID_DIMMING
 static DEVICE_ATTR(aid_log, 0444, aid_log_show, NULL);
+#endif
 static DEVICE_ATTR(dump_register, 0644, dump_register_show, dump_register_store);
 
 static struct attribute *lcd_sysfs_attributes[] = {
@@ -1121,6 +1246,8 @@ static struct attribute *lcd_sysfs_attributes[] = {
 	&dev_attr_window_type.attr,
 	&dev_attr_manufacture_code.attr,
 	&dev_attr_brightness_table.attr,
+	&dev_attr_siop_enable.attr,
+	&dev_attr_power_reduce.attr,
 	&dev_attr_temperature.attr,
 	&dev_attr_color_coordinate.attr,
 	&dev_attr_manufacture_date.attr,
@@ -1171,13 +1298,15 @@ static int dsim_panel_probe(struct dsim_device *dsim)
 
 	mutex_init(&lcd->lock);
 
-	lcd->dsim = dsim;
-	ret = ea8061_probe(lcd);
-	if (ret < 0)
+	ret = ea8061_probe(dsim);
+	if (ret) {
 		dev_err(&lcd->ld->dev, "%s: failed to probe panel\n", __func__);
+		goto probe_err;
+	}
 
+#if defined(CONFIG_EXYNOS_DECON_LCD_SYSFS)
 	lcd_init_sysfs(lcd);
-
+#endif
 	dev_info(&lcd->ld->dev, "%s: %s: done\n", kbasename(__FILE__), __func__);
 probe_err:
 	return ret;
@@ -1186,32 +1315,50 @@ probe_err:
 static int dsim_panel_displayon(struct dsim_device *dsim)
 {
 	struct lcd_info *lcd = dsim->priv.par;
+	int ret = 0;
 
 	if (lcd->state == PANEL_STATE_SUSPENED) {
-		ea8061_init(lcd);
+		ret = ea8061_init(lcd);
 		lcd->state = PANEL_STATE_RESUMED;
+		if (ret) {
+			dev_err(&lcd->ld->dev, "%s: failed to panel init\n", __func__);
+			lcd->state = PANEL_STATE_SUSPENED;
+			goto displayon_err;
+		}
 	}
 
 	dsim_panel_set_brightness(lcd, 1);
 
-	return 0;
+	ret = ea8061_displayon(lcd);
+	if (ret) {
+		dev_err(&lcd->ld->dev, "%s: failed to panel display on\n", __func__);
+		goto displayon_err;
+	}
+
+displayon_err:
+	return ret;
 }
 
 static int dsim_panel_suspend(struct dsim_device *dsim)
 {
 	struct lcd_info *lcd = dsim->priv.par;
+	int ret = 0;
 
 	if (lcd->state == PANEL_STATE_SUSPENED)
-		goto exit;
+		goto suspend_err;
 
 	lcd->state = PANEL_STATE_SUSPENDING;
 
-	ea8061_exit(lcd);
+	ret = ea8061_exit(lcd);
+	if (ret) {
+		dev_err(&lcd->ld->dev, "%s: failed to panel exit\n", __func__);
+		goto suspend_err;
+	}
 
 	lcd->state = PANEL_STATE_SUSPENED;
 
-exit:
-	return 0;
+suspend_err:
+	return ret;
 }
 
 struct mipi_dsim_lcd_driver ea8061_mipi_lcd_driver = {

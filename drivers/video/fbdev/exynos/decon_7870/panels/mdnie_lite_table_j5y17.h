@@ -6,15 +6,21 @@
 /* SCR Position can be different each panel */
 static struct mdnie_scr_info scr_info = {
 	.index = 1,
-	.cr = 107,		/* ASCR_WIDE_CR[7:0] */
-	.wr = 125,		/* ASCR_WIDE_WR[7:0] */
-	.wg = 127,		/* ASCR_WIDE_WG[7:0] */
-	.wb = 129		/* ASCR_WIDE_WB[7:0] */
+	.color_blind = 107,	/* ASCR_WIDE_CR[7:0] */
+	.white_r = 125,		/* ASCR_WIDE_WR[7:0] */
+	.white_g = 127,		/* ASCR_WIDE_WG[7:0] */
+	.white_b = 129		/* ASCR_WIDE_WB[7:0] */
+};
+
+static struct mdnie_trans_info trans_info = {
+	.index = 1,
+	.offset = 1,
+	.enable = 0
 };
 
 static struct mdnie_night_info night_info = {
-	.max_w = 24,
-	.max_h = 11
+	.index_max_num = 11,
+	.index_size = 24
 };
 
 static inline int color_offset_f1(int x, int y)
@@ -4645,7 +4651,7 @@ static unsigned char COLOR_BLIND_2[] = {
 	0x00, //data_width mask 00 000
 };
 
-static unsigned char LIGHT_NOTIFICATION_1[] = {
+static unsigned char COLOR_BLIND_HBM_1[] = {
 	0xEC,
 	0x00, //roi ctrl
 	0x00, //roi1 y end
@@ -4753,33 +4759,33 @@ static unsigned char LIGHT_NOTIFICATION_1[] = {
 	0xff, //ascr_skin_Wr
 	0xff, //ascr_skin_Wg
 	0xff, //ascr_skin_Wb
-	0x66, //ascr_Cr
+	0x00, //ascr_Cr
 	0xff, //ascr_Rr
-	0xf9, //ascr_Cg
-	0x60, //ascr_Rg
-	0xac, //ascr_Cb
-	0x13, //ascr_Rb
+	0xff, //ascr_Cg
+	0x00, //ascr_Rg
+	0xff, //ascr_Cb
+	0x00, //ascr_Rb
 	0xff, //ascr_Mr
-	0x66, //ascr_Gr
-	0x60, //ascr_Mg
-	0xf9, //ascr_Gg
-	0xac, //ascr_Mb
-	0x13, //ascr_Gb
+	0x00, //ascr_Gr
+	0x00, //ascr_Mg
+	0xff, //ascr_Gg
+	0xff, //ascr_Mb
+	0x00, //ascr_Gb
 	0xff, //ascr_Yr
-	0x66, //ascr_Br
-	0xf9, //ascr_Yg
-	0x60, //ascr_Bg
-	0x13, //ascr_Yb
-	0xac, //ascr_Bb
+	0x00, //ascr_Br
+	0xff, //ascr_Yg
+	0x00, //ascr_Bg
+	0x00, //ascr_Yb
+	0xff, //ascr_Bb
 	0xff, //ascr_Wr
-	0x66, //ascr_Kr
-	0xf9, //ascr_Wg
-	0x60, //ascr_Kg
-	0xac, //ascr_Wb
-	0x13, //ascr_Kb
+	0x00, //ascr_Kr
+	0xff, //ascr_Wg
+	0x00, //ascr_Kg
+	0xff, //ascr_Wb
+	0x00, //ascr_Kb
 };
 
-static unsigned char LIGHT_NOTIFICATION_2[] = {
+static unsigned char COLOR_BLIND_HBM_2[] = {
 	0xEB,
 	0x01, //mdnie_en
 	0x30, //scr_roi 1 scr algo_roi 1 algo 00 1 0 00 1 0
@@ -7213,16 +7219,13 @@ static struct mdnie_table bypass_table[BYPASS_MAX] = {
 	[BYPASS_ON] = MDNIE_SET(BYPASS)
 };
 
-static struct mdnie_table light_notification_table[LIGHT_NOTIFICATION_MAX] = {
-	[LIGHT_NOTIFICATION_ON] = MDNIE_SET(LIGHT_NOTIFICATION)
-};
-
 static struct mdnie_table accessibility_table[ACCESSIBILITY_MAX] = {
 	[NEGATIVE] = MDNIE_SET(NEGATIVE),
 	MDNIE_SET(COLOR_BLIND),
 	MDNIE_SET(SCREEN_CURTAIN),
 	MDNIE_SET(GRAYSCALE),
-	MDNIE_SET(GRAYSCALE_NEGATIVE)
+	MDNIE_SET(GRAYSCALE_NEGATIVE),
+	MDNIE_SET(COLOR_BLIND_HBM)
 };
 
 static struct mdnie_table hbm_table[HBM_MAX] = {
@@ -7309,7 +7312,6 @@ static struct mdnie_table main_table[SCENARIO_MAX][MODE_MAX] = {
 static struct mdnie_tune tune_info = {
 	.bypass_table = bypass_table,
 	.accessibility_table = accessibility_table,
-	.light_notification_table = light_notification_table,
 	.hbm_table = hbm_table,
 	.night_table = night_table,
 	.dmb_table = dmb_table,
@@ -7318,8 +7320,10 @@ static struct mdnie_tune tune_info = {
 	.coordinate_table = coordinate_data,
 	.adjust_ldu_table = adjust_ldu_data,
 	.night_mode_table = night_mode_data,
+	.max_adjust_ldu = 6,
 	.scr_info = &scr_info,
 	.get_hbm_index = get_hbm_index,
+	.trans_info = &trans_info,
 	.night_info = &night_info,
 	.color_offset = {NULL, color_offset_f1, color_offset_f2, color_offset_f3, color_offset_f4}
 };

@@ -1,5 +1,5 @@
-#ifndef __MDNIE_TABLE_A7XE_H__
-#define __MDNIE_TABLE_A7XE_H__
+#ifndef __MDNIE_TABLE_A7MAX_H__
+#define __MDNIE_TABLE_A7MAX_H__
 
 /* 2015.11.06 */
 

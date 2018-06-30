@@ -7,14 +7,15 @@
 
 #define EXTEND_BRIGHTNESS	365
 #define UI_MAX_BRIGHTNESS	255
+#define UI_MIN_BRIGHTNESS	0
 #define UI_DEFAULT_BRIGHTNESS	128
 #define NORMAL_TEMPERATURE	25	/* 25 degrees Celsius */
 
-#define GAMMA_CMD_CNT				((u16)ARRAY_SIZE(SEQ_GAMMA_CONDITION_SET))
-#define ACL_CMD_CNT					((u16)ARRAY_SIZE(SEQ_ACL_OFF))
-#define OPR_CMD_CNT					((u16)ARRAY_SIZE(SEQ_ACL_OPR_OFF))
-#define ELVSS_CMD_CNT				((u16)ARRAY_SIZE(SEQ_ELVSS_SET))
-#define AID_CMD_CNT					((u16)ARRAY_SIZE(SEQ_AID_SETTING))
+#define GAMMA_CMD_CNT				ARRAY_SIZE(SEQ_GAMMA_CONDITION_SET)
+#define ACL_CMD_CNT					ARRAY_SIZE(SEQ_ACL_OFF)
+#define OPR_CMD_CNT					ARRAY_SIZE(SEQ_ACL_OPR_OFF)
+#define ELVSS_CMD_CNT				ARRAY_SIZE(SEQ_ELVSS_SET)
+#define AID_CMD_CNT					ARRAY_SIZE(SEQ_AID_SETTING)
 
 #define LDI_REG_ELVSS				0xB5
 #define LDI_REG_COORDINATE			0xA1
@@ -246,7 +247,7 @@ static const unsigned char SEQ_LTPS_EQ[] = {
 	0x6A, 0x08, 0x06, 0x04, 0x65, 0x00, 0x00, 0x07,
 	0x00, 0x00, 0xAA, 0xAA, 0xAA, 0x10, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x40, 0x5A, 0x80, 0x17, 0x25,
-	0x6E, 0xA5, 0x55, 0x85, 0x00, 0x41, 0x01
+	0x6E, 0xA5, 0x55, 0x85, 0x00, 0x41, 0x01,
 };
 
 static const unsigned char SEQ_ALPM_OFF[] = {
@@ -367,6 +368,15 @@ static unsigned char elvss_mpscon_offset_data[IBRIGHTNESS_HBM_MAX][4] = {
 	[IBRIGHTNESS_555NIT] = {0xB5, 0xA0, 0x1C, 0x4D},
 	[IBRIGHTNESS_578NIT] = {0xB5, 0xA0, 0x1C, 0x4B},
 	[IBRIGHTNESS_600NIT] = {0xB5, 0xA0, 0x1C, 0x4A}
+};
+
+struct elvss_otp_info {
+	unsigned int	nit;
+	int not_otp[TEMP_MAX];
+};
+
+struct elvss_otp_info elvss_otp_data[IBRIGHTNESS_MAX] = {
+	[IBRIGHTNESS_002NIT] = {2,	{-1, -1, -1} },
 };
 
 static unsigned char AOR_TABLE[EXTEND_BRIGHTNESS + 1][AID_CMD_CNT] = {

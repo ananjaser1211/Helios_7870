@@ -27,17 +27,17 @@ struct lcd_seq_info {
 	unsigned int	sleep;
 };
 
-struct i2c_rom_data {
+struct ISL98611_rom_data {
 	u8 addr;
 	u8 val;
 };
 
-static const struct i2c_rom_data ISL98611_RESET[] = {
+static const struct ISL98611_rom_data ISL98611_RESET[] = {
 	{0x02, 0x3F},
 };
 
 #if defined(CONFIG_PANEL_BRIGHTNESS_MAX_480CD)
-static const struct i2c_rom_data ISL98611_INIT[] = {
+static const struct ISL98611_rom_data ISL98611_INIT[] = {
 	{0x01, 0x00},
 	{0x02, 0xBF},
 	{0x03, 0x02},
@@ -46,14 +46,14 @@ static const struct i2c_rom_data ISL98611_INIT[] = {
 	{0x06, 0xF4},
 	{0x10, 0xFF},
 	{0x11, 0x07},
-	{0x12, 0xBF}, /* 25mA */
-	{0x13, 0xC4},
+	{0x12, 0xBF}, //25mA
+	{0x13, 0x87},
 	{0x14, 0xFD},
 	{0x16, 0xF5},
 	{0x17, 0x8D},
 };
 #else
-static const struct i2c_rom_data ISL98611_INIT[] = {
+static const struct ISL98611_rom_data ISL98611_INIT[] = {
 	{0x01, 0x00},
 	{0x02, 0xBF},
 	{0x03, 0x02},
@@ -62,8 +62,8 @@ static const struct i2c_rom_data ISL98611_INIT[] = {
 	{0x06, 0xF4},
 	{0x10, 0xFF},
 	{0x11, 0x07},
-	{0x12, 0x3F}, /* 20mA */
-	{0x13, 0xC4},
+	{0x12, 0x3F}, //20mA
+	{0x13, 0x87},
 	{0x14, 0xFD},
 	{0x16, 0xF5},
 	{0x17, 0x8D},
@@ -85,22 +85,18 @@ static const unsigned char SEQ_TD4300_ADDRESS[] = {
 	0x40,
 };
 
-static const unsigned char SEQ_CABC_MIN[] = {
-	0x5E,
-	0x03,
-};
 
 static const unsigned char SEQ_SLEEP_OUT[] = {
 	0x11,
 	0x00, 0x00
 };
 
-static const unsigned char SEQ_SLEEP_IN[] = {
+const const unsigned char SEQ_SLEEP_IN[] = {
 	0x10,
 	0x00, 0x00
 };
 
-static const unsigned char SEQ_DISPLAY_OFF[] = {
+const const unsigned char SEQ_DISPLAY_OFF[] = {
 	0x28,
 	0x00, 0x00
 };

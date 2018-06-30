@@ -7,6 +7,7 @@
 
 #define EXTEND_BRIGHTNESS	365
 #define UI_MAX_BRIGHTNESS	255
+#define UI_MIN_BRIGHTNESS	0
 #define UI_DEFAULT_BRIGHTNESS	128
 #define NORMAL_TEMPERATURE	25	/* 25 degrees Celsius */
 
@@ -362,6 +363,15 @@ static unsigned char elvss_mpscon_offset_data[IBRIGHTNESS_HBM_MAX][4] = {
 	[IBRIGHTNESS_555NIT] = {0xB5, 0xA0, 0x1C, 0x4D},
 	[IBRIGHTNESS_578NIT] = {0xB5, 0xA0, 0x1C, 0x4B},
 	[IBRIGHTNESS_600NIT] = {0xB5, 0xA0, 0x1C, 0x4A}
+};
+
+struct elvss_otp_info {
+	unsigned int	nit;
+	int not_otp[TEMP_MAX];
+};
+
+struct elvss_otp_info elvss_otp_data[IBRIGHTNESS_MAX] = {
+	[IBRIGHTNESS_002NIT] = {2,	{-1, -1, -1} },
 };
 
 static unsigned char AOR_TABLE[EXTEND_BRIGHTNESS + 1][AID_CMD_CNT] = {

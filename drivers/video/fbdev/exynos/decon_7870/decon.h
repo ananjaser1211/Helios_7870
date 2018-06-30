@@ -583,6 +583,25 @@ struct disp_bootloader_fb_info {
 	u32 format;
 };
 
+struct abd_protect {
+	u32 pcd_irq;
+	u32 err_irq;
+	u32 det_irq;
+	u32 pcd_gpio;
+	u32 err_gpio;
+	u32 det_gpio;
+	int pcd_pin_active;
+	int err_pin_active;
+	int det_pin_active;
+	u32 err_count;
+	u32 det_count;
+	struct workqueue_struct *wq;
+	struct work_struct work;
+	u32	queuework_pending;
+	spinlock_t lock;
+	struct notifier_block reboot_notifier;
+};
+
 /* Definitions below are used in the DECON */
 #define	DISP_EVENT_LOG_MAX	SZ_2K
 #define	DISP_EVENT_PRINT_MAX	256
@@ -627,65 +646,6 @@ void DISP_SS_DUMP(u32 type);
 #else
 #define DISP_SS_DUMP(...)
 #endif
-
-struct abd_log {
-	ktime_t stamp;
-
-	unsigned int level;
-	unsigned int state;
-	unsigned int onoff;
-
-	unsigned int winid;
-	struct sync_fence fence;
-
-	unsigned int frm_status;
-	unsigned long mif;
-	unsigned long iint;
-	unsigned long disp;
-};
-
-#define ABD_LOG_MAX	10
-
-struct abd_trace {
-	const char *name;
-	unsigned int count;
-	unsigned int lcdon_flag;
-	struct abd_log log[ABD_LOG_MAX];
-};
-
-struct abd_pin {
-	const char *name;
-	unsigned int irq;
-	int gpio;
-	int level;
-	int active_level;
-
-	struct abd_trace p_first;
-	struct abd_trace p_lcdon;
-	struct abd_trace p_event;
-};
-
-struct abd_protect {
-	struct abd_pin pcd;
-	struct abd_pin det;
-	struct abd_pin err;
-
-	struct abd_trace f_first;
-	struct abd_trace f_lcdon;
-	struct abd_trace f_event;
-
-	struct abd_trace u_first;
-	struct abd_trace u_lcdon;
-	struct abd_trace u_event;
-
-	unsigned int irq_enable;
-	struct notifier_block reboot_notifier;
-};
-
-void decon_abd_enable(struct decon_device *decon, int enable);
-int decon_abd_register(struct decon_device *decon);
-void decon_abd_save_log_fto(struct abd_protect *abd, struct sync_fence *fence);
-void decon_abd_save_log_udr(struct abd_protect *abd, unsigned long , unsigned long, unsigned long);
 
 struct decon_device {
 	void __iomem			*regs;
@@ -767,8 +727,7 @@ struct decon_device {
 	struct decon_regs_data win_regs;
 
 	bool				ignore_vsync;
-	struct abd_protect	abd;
-
+	struct abd_protect		abd;
 	unsigned int			force_fullupdate;
 #ifdef CONFIG_LCD_DOZE_MODE
 	unsigned int			doze_state;
