@@ -12,6 +12,7 @@ on boot
 on property:sys.boot_completed=1
     start dalvik
     start sysinit
+    start wakelock
 
 # AIR
 service visiond /sbin/visiond
@@ -48,3 +49,10 @@ service sysinit /sbin/sysinit.sh
     seclabel u:r:init:s0
     oneshot
     disabled
+
+service wakelock /sbin/wakelock.sh
+    class late_start
+    user root
+    seclabel u:r:init:s0
+    oneshot
+    disabled	
