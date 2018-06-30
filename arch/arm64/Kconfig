@@ -228,6 +228,12 @@ config SOC_EXYNOS7870
 	select PM_GENERIC_DOMAINS if PM
 	select SOC_SAMSUNG
 	select SAMSUNG_DMADEV
+	
+config DTB_J5Y17LTE
+	bool "Builds DTB for J5 Pro"
+
+config DTB_J7Y17LTE
+	bool "Builds DTB for J7 Pro"	
 
 config ARCH_EXYNOS7
 	bool "SAMSUNG EXYNOS7"
