@@ -4,7 +4,7 @@
 # specify MF_CHECK, and must come before any filesystems that do specify MF_CHECK
 
 
-# /dev/block/platform/13540000.dwmmc0/by-name/SYSTEM	/system	ext4      ro,errors=panic,block_validity                                                    wait
+/dev/block/platform/13540000.dwmmc0/by-name/SYSTEM	/system	ext4      ro,errors=panic,noload                                                            wait
 /dev/block/platform/13540000.dwmmc0/by-name/CACHE	/cache	ext4      nosuid,nodev,noatime,noauto_da_alloc,discard,journal_async_commit,errors=panic    wait,check
 /dev/block/platform/13540000.dwmmc0/by-name/USERDATA	/data	ext4      nosuid,nodev,noatime,noauto_da_alloc,discard,journal_async_commit,errors=panic    wait,check
 /dev/block/platform/13540000.dwmmc0/by-name/EFS		/efs	ext4      nosuid,nodev,noatime,noauto_da_alloc,discard,journal_async_commit,errors=panic    wait,check

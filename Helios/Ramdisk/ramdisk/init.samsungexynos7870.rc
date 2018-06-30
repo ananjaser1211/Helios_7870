@@ -121,10 +121,6 @@ on boot
     chmod 0664 /sys/class/sec/sec_nad/nad_dram
     chown system radio /sys/class/sec/sec_nad/nad_all
     chmod 0664 /sys/class/sec/sec_nad/nad_all
-    chown system radio /sys/class/sec/sec_nad/nad_support
-    chmod 0664 /sys/class/sec/sec_nad/nad_support
-    chown system radio /sys/class/sec/sec_nad/nad_api
-    chmod 0664 /sys/class/sec/sec_nad/nad_api
     chown system radio /dev/block/NAD_REFER
     chmod 0664 /dev/block/NAD_REFER
 
@@ -684,6 +680,13 @@ setprop ro.mst.support 0
 
 # Support AP/CP log dump
     chmod 0770 /system/bin/sced
+
+# Switch Device
+    chown system radio /sys/class/sec/switch/vbus_value
+
+# LPM mode for ccic
+    chown system radio /sys/class/sec/ccic/lpm_mode
+    chown system radio /sys/class/sec/ccic/ccic_control_option
 
 # IPSec for VOLTE
     chown root system /dev/socket

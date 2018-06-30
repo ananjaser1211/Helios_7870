@@ -1050,12 +1050,6 @@ on boot
    chmod 0640 /efs/FactoryApp/cisd_wc_data
    chown radio system /efs/Battery/batt_capacity_max
    chmod 0664 /efs/Battery/batt_capacity_max
-   chown system system /sys/class/power_supply/battery/fg_asoc
-   chmod 0640 /sys/class/power_supply/battery/fg_asoc
-   chown system system /sys/class/power_supply/battery/fg_capacity
-   chmod 0640 /sys/class/power_supply/battery/fg_capacity
-   chown system system /sys/class/power_supply/battery/fg_fullcapnom
-   chmod 0640 /sys/class/power_supply/battery/fg_fullcapnom
 
 #Meta event
     chown system radio /sys/class/sensors/sensor_dev/flush

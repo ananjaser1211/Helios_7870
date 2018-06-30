@@ -149,9 +149,6 @@
 # Google FRP solution
 /dev/block/platform/13540000.dwmmc0/by-name/PERSISTENT    0660    system    system
 
-# Reactivation Lock
-/dev/block/platform/13540000.dwmmc0/by-name/STEADY    0660    system    system
-
 # Sensorhub IIO
 /dev/ssp_sensorhub        0660   system       system
 /dev/iio:device*          0660   system       system
@@ -161,7 +158,7 @@
 
 # TEEGRIS
 /dev/tzdev		0660	system		system
-/dev/ionfd2phys		0660	system		radio
+/dev/ionfd2phys		0660	system		system
 /dev/tuihw		0660	system		system
 /dev/tzirs		0660	system		system
 /dev/tz_shmem_validator	0666    system		system
