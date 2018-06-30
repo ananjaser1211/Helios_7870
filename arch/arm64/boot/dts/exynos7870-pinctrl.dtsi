@@ -200,14 +200,14 @@
 			samsung,pins = "gpz1-0", "gpz1-1", "gpz1-2", "gpz1-3", "gpz1-4";
 			samsung,pin-function = <2>;
 			samsung,pin-pud = <3>;
-			samsung,pin-drv = <5>;
+			samsung,pin-drv = <2>;
 		};
 
 		i2s_pmic_amp_bus_idle: i2s-pmic-amp-bus-idle {
 			samsung,pins = "gpz1-0", "gpz1-1", "gpz1-2", "gpz1-3", "gpz1-4";
 			samsung,pin-function = <0>;
 			samsung,pin-pud = <3>;
-			samsung,pin-drv = <5>;
+			samsung,pin-drv = <2>;
 		};
 
 		i2s_amp_bus: i2s-amp-bus {
@@ -236,7 +236,7 @@
 			samsung,pin-function = <0>;
 			samsung,pin-pud = <0>;
 			samsung,pin-drv = <2>;
-		};
+		};		
 	};
 
 	/* FSYS */
@@ -833,15 +833,6 @@
 			samsung,pin-pud = <3>;
 			samsung,pin-drv = <0>;
 		};
-
-		/* HSI2C_SPI_FRONTFROM */
-		hs_i2c2_2_bus: hs-i2c2-2-bus {
-		   samsung,pins = "gpf4-2", "gpf4-3";
-		   samsung,pin-function = <3>;
-		   samsung,pin-pud = <0>;
-		   samsung,pin-drv = <0>;
-		};
-
 		/* SPI_FRONTFROM */
 
 		/delete-node/ spi4-bus;
@@ -910,14 +901,6 @@
 			samsung,pin-drv = <2>;
 		};
 
-		fimc_is_mclk2_out: fimc_is_mclk2_out {
-			samsung,pins = "gpf4-4";
-			samsung,pin-function = <1>;
-			samsung,pin-pud = <0>;
-			samsung,pin-drv = <2>;
-			samsung,pin-val = <0>;
-		};
-
 		fimc_is_mclk0_fn: fimc_is_mclk0_fn {
 			samsung,pins = "gpe0-0";
 			samsung,pin-function = <2>;
@@ -930,13 +913,6 @@
 			samsung,pin-function = <2>;
 			samsung,pin-pud = <0>;
 			samsung,pin-drv = <1>;
-		};
-
-		fimc_is_mclk2_fn: fimc_is_mclk2_fn {
-			samsung,pins = "gpf4-4";
-			samsung,pin-function = <2>;
-			samsung,pin-pud = <0>;
-			samsung,pin-drv = <2>;
 		};
 
 		fimc_is_flash: fimc-is-flash {

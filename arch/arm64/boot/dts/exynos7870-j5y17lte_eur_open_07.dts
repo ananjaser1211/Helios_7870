@@ -49,7 +49,6 @@
 				torch_current = <75>;
 				factory_current = <300>;
 				front_torch_current = <100>;
-				factory_front_torch_current = <25>;	/* prevent glare */
 
 				status = "okay";
 				s2mu005-leds1 {

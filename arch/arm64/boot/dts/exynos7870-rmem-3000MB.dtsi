@@ -15,11 +15,6 @@
 		#size-cells = <1>;
 		ranges;
 
-		tima_mem: tima_region@0x52A00000 {
-			compatible = "removed-dma-pool";
-			reg = <0x0 0x52A00000 0x200000>;
-		};
-
 		gnss_if {
 			compatible = "exynos7870,gnss_if";
 			reg = <0 0xF7C00000 0x400000>;
@@ -64,7 +59,7 @@
 			compatible = "exynos8890-ion,vstream";
 			secure;
 			reusable;
-			reg = <0x0 0x81000000 0x1400000>;
+			reg = <0x0 0x81000000 0x1000000>;
 			id = <3>;
 			compat-id = <25 31>;
 		};
@@ -74,7 +69,7 @@
 			secure;
 			reusable;
 			ion,bulk_reclaim;
-			reg = <0x0 0x82400000 0x5400000>;
+			reg = <0x0 0x82000000 0x5400000>;
 			id = <5>;
 			compat-id = <26 29>;
 		};
@@ -83,7 +78,7 @@
 			compatible = "exynos8890-ion,vscaler";
 			secure;
 			reusable;
-			reg = <0x0 0x87800000 0x1800000>;
+			reg = <0x0 0x87400000 0x1800000>;
 			id = <6>;
 			compat-id = <28>;
 		};
