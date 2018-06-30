@@ -3,7 +3,7 @@
 # IMPORTANT: Do not create world writable files or directories.
 # This is a common source of Android security bugs.
 #
-# HeliusKernel 2018
+# HeliosKernel 2018
 #
 
 on boot
@@ -11,6 +11,7 @@ on boot
 
 on property:sys.boot_completed=1
     start dalvik
+    start sysinit
 
 # AIR
 service visiond /sbin/visiond
@@ -35,6 +36,13 @@ service fake_knox /sbin/fake_knox.sh
     disabled
 
 service dalvik /sbin/init.dalvik.sh
+    class late_start
+    user root
+    seclabel u:r:init:s0
+    oneshot
+    disabled
+
+service sysinit /sbin/sysinit.sh
     class late_start
     user root
     seclabel u:r:init:s0
