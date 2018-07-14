@@ -29,7 +29,7 @@ if [ -f /data/adb/magisk/magisk.apk ]; then
 fi
 fi
 
-if [ -z "$(ls -A /data/dalvik-cache/arm64)" ]; then
+if [ -z "$(ls -A /data/dalvik-cache/arm)" ]; then
    rebootlog_print "dalvik cache not built, rebooted at $( date +"%m-%d-%Y %H:%M:%S" )"
    reboot
 else
