@@ -55,7 +55,19 @@ CR_VARIANT_J530Y=J530Y-YM
 CR_DTSFILES_J730F="exynos7870-j7y17lte_eur_open_00.dtb exynos7870-j7y17lte_eur_open_01.dtb exynos7870-j7y17lte_eur_open_02.dtb exynos7870-j7y17lte_eur_open_03.dtb exynos7870-j7y17lte_eur_open_04.dtb exynos7870-j7y17lte_eur_open_05.dtb exynos7870-j7y17lte_eur_open_06.dtb exynos7870-j7y17lte_eur_open_07.dtb"
 CR_CONFG_J730F=j7y17lte_eur_open_defconfig
 CR_VARIANT_J730F=J730F-G
-##########################################
+#####################################################
+################# TEST VERSION ######################
+#####################################################
+# Device specific Variables [TEST]
+CR_DTSFILES_TEST="exynos7870-j5y17lte_eur_open_00.dtb exynos7870-j5y17lte_eur_open_01.dtb exynos7870-j5y17lte_eur_open_02.dtb exynos7870-j5y17lte_eur_open_03.dtb exynos7870-j5y17lte_eur_open_05.dtb exynos7870-j5y17lte_eur_open_07.dtb"
+CR_CONFG_TEST=j5y17lte_TEST_defconfig
+CR_VARIANT_TEST=J530F
+CR_VERSION_TEST=V0.1
+CR_NAME_TEST=Helios_TEST
+CR_RAMDISK_TEST=$CR_DIR/Helios/Ramdisk_TEST
+#####################################################
+################# TEST VERSION ######################
+#####################################################
 
 # Script functions
 CLEAN_SOURCE()
@@ -133,14 +145,59 @@ PACK_BOOT_IMG()
 	mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT.img
 	$CR_AIK/cleanup.sh
 }
-
+#####################################################
+################# TEST VERSION ######################
+#####################################################
+TEST_KERNEL()
+{
+echo "Cleaning"	
+# make clean
+# make mrproper
+# rm -r -f $CR_OUT/*
+CR_VARIANT=$CR_VARIANT_TEST
+CR_VERSION2=$CR_VERSION_TEST
+CR_NAME=$CR_NAME_TEST
+rm -r -f $CR_DTB
+rm -rf $CR_DTS/.*.tmp
+rm -rf $CR_DTS/.*.cmd
+rm -rf $CR_DTS/*.dtb
+echo "Building zImage for $CR_VARIANT"	
+export LOCALVERSION=-$CR_NAME-$CR_VERSION2-$CR_VARIANT-$CR_DATE
+make  $CR_CONFG_TEST
+make -j$CR_JOBS
+echo "Building DTB for $CR_VARIANT"	
+export $CR_ARCH
+export CROSS_COMPILE=$CR_TC
+export ANDROID_MAJOR_VERSION=$CR_ANDROID
+make  $CR_CONFG_TEST
+make $CR_DTSFILES_TEST
+./scripts/dtbTool/dtbTool -o ./boot.img-dtb -d $CR_DTS/ -s 2048
+du -k "./boot.img-dtb" | cut -f1 >sizT
+sizT=$(head -n 1 sizT)
+rm -rf sizT
+echo "Combined DTB Size = $sizT Kb"
+rm -rf $CR_DTS/.*.tmp
+rm -rf $CR_DTS/.*.cmd
+rm -rf $CR_DTS/*.dtb	
+echo "Building Boot.img for $CR_VARIANT_TEST"
+cp -rf $CR_RAMDISK_TEST/* $CR_AIK
+mv $CR_KERNEL $CR_AIK/split_img/boot.img-zImage
+mv $CR_DTB $CR_AIK/split_img/boot.img-dtb
+$CR_AIK/repackimg.sh
+echo -n "SEANDROIDENFORCE" » $CR_AIK/image-new.img
+mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION2-$CR_DATE-$CR_VARIANT.img
+$CR_AIK/cleanup.sh  
+}
+#####################################################
+################# TEST VERSION ######################
+#####################################################
 # Main Menu
 clear
 echo "----------------------------------------------"
 echo "$CR_NAME $CR_VERSION Build Script"
 echo "----------------------------------------------"
-PS3='Please select your option (1-5): '
-menuvar=("SM-J530F-G" "SM-J530FM-GM" "SM-J530Y-YM" "SM-J730F-G" "Exit")
+PS3='Please select your option (1-6): '
+menuvar=("SM-J530F-G" "SM-J530FM-GM" "SM-J530Y-YM" "SM-J730F-G" "Exit" "TEST")
 select menuvar in "${menuvar[@]}"
 do
     case $menuvar in
@@ -223,7 +280,31 @@ do
             echo "----------------------------------------------"
             read -n1 -r key
             break
-            ;;			
+            ;;
+#####################################################
+################# TEST VERSION ######################
+#####################################################            
+        "TEST")
+            clear
+            CLEAN_SOURCE
+            echo "Starting $CR_VARIANT_TEST kernel build..."
+            CR_VARIANT=$CR_VARIANT_TEST
+            CR_CONFG=$CR_CONFG_TEST
+            CR_DTSFILES=$CR_DTSFILES_TEST
+            TEST_KERNEL
+            echo " "
+            echo "----------------------------------------------"
+            echo "$CR_VARIANT_TEST kernel build finished."
+            echo "$CR_VARIANT_TEST Ready at $CR_OUT"
+            echo "Combined DTB Size = $sizT Kb"
+            echo "Press Any key to end the script"
+            echo "----------------------------------------------"
+            read -n1 -r key
+            break
+            ;;	            
+#####################################################
+################# TEST VERSION ######################
+#####################################################            
         "Exit")
             break
             ;;

@@ -1,0 +1,51 @@
+service zygote /system/bin/app_process64 -Xzygote /system/bin --zygote --start-system-server --socket-name=zygote
+    class main
+    priority -20
+    user root
+    group root readproc
+    socket zygote stream 660 root system
+    onrestart write /sys/android_power/request_state wake
+    onrestart write /sys/power/state on
+    onrestart restart audioserver
+    onrestart restart cameraserver
+    onrestart restart media
+    onrestart restart netd
+    onrestart restart wificond
+    writepid /dev/cpuset/foreground/tasks
+
+service zygote_secondary /system/bin/app_process32 -Xzygote /system/bin --zygote --socket-name=zygote_secondary --enable-lazy-preload
+    class main
+    priority -20
+    user root
+    group root readproc
+    socket zygote_secondary stream 660 root system
+    onrestart restart zygote
+    writepid /dev/cpuset/foreground/tasks
+
+# Enhanced Zygote ASLR for untrusted 3rd party apps, by isolating memory layout from system apps to prevent direct memory leakage
+service zygote_agent64 /system/bin/app_process64 -Xzygote /system/bin --zygote --zygote-aslr-agent --socket-name=zygote_agent64
+    class main
+    socket zygote_agent64 stream 660 root system
+    writepid /dev/cpuset/foreground/tasks /dev/stune/foreground/tasks
+    # "disabled" means this service will not automatically start with its class. It must be explicitly started by name.
+    disabled
+
+service zygote_agent32 /system/bin/app_process32 -Xzygote /system/bin --zygote --zygote-aslr-agent --socket-name=zygote_agent32
+    class main
+    socket zygote_agent32 stream 660 root system
+    writepid /dev/cpuset/foreground/tasks /dev/stune/foreground/tasks
+    # "disabled" means this service will not automatically start with its class. It must be explicitly started by name.
+    disabled
+
+# The original Zygote as the ASLR master will setprop this value to 1 to start the Zygote ASLR agent
+on property:zygote.aslr.agent64=1
+    start zygote_agent64
+
+on property:zygote.aslr.agent32=1
+    start zygote_agent32
+
+on property:zygote.aslr.agent64=0
+    stop zygote_agent64
+
+on property:zygote.aslr.agent32=0
+    stop zygote_agent32
