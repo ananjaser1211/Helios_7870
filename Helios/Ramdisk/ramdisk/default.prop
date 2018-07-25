@@ -12,7 +12,6 @@ persist.sys.usb.config=mtp,adb
 persist.service.adb.enable=1
 persist.service.debuggable=1
 ro.telephony.default_network=9
-ro.multisim.simslotcount=2
 ro.radio.noril=no
 ro.telephony.default_cdma_sub=0
 ro.zygote=zygote32
