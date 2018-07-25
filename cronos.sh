@@ -75,8 +75,8 @@ CLEAN_SOURCE()
 echo "----------------------------------------------"
 echo " "
 echo "Cleaning"	
-# make clean
-# make mrproper
+make clean
+make mrproper
 # rm -r -f $CR_OUT/*
 rm -r -f $CR_DTB
 rm -rf $CR_DTS/.*.tmp
