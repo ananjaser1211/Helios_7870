@@ -256,7 +256,9 @@ setprop ro.mst.support 0
     chown system radio /sys/class/sensors/accelerometer_sensor/name
     chown system radio /sys/class/sensors/accelerometer_sensor/selftest
     chown system radio /sys/class/sensors/accelerometer_sensor/lowpassfilter
-    chown system radio /sys/class/sensors/accelerometer_sensor/dhr_sensor_info
+    chown system system /efs/calibration_data
+    chmod 0666 /efs/calibration_data
+
 # Proximity_sensor
     chown system radio /sys/class/sensors/proximity_sensor/state
     chown system radio /sys/class/sensors/proximity_sensor/raw_data
@@ -266,20 +268,25 @@ setprop ro.mst.support 0
     chown system radio /sys/class/sensors/proximity_sensor/name
     chown system radio /sys/class/sensors/proximity_sensor/thresh_high
     chown system radio /sys/class/sensors/proximity_sensor/thresh_low
+    chown system radio /sys/class/sensors/proximity_sensor/barcode_emul_en
     chown system radio /sys/class/sensors/proximity_sensor/prox_offset_pass
     chown system radio /sys/class/sensors/proximity_sensor/prox_trim
-    chown system radio /sys/class/sensors/proximity_sensor/dhr_sensor_info
+
 # Light_sensor
     chown system radio /sys/class/sensors/light_sensor/lux
     chown system radio /sys/class/sensors/light_sensor/raw_data
     chown system radio /sys/class/sensors/light_sensor/vendor
     chown system radio /sys/class/sensors/light_sensor/name
+
 # Gyro_sensor
+    chown system radio /sys/class/sensors/gyro_sensor/power_on
+    chown system radio /sys/class/sensors/gyro_sensor/power_off
     chown system radio /sys/class/sensors/gyro_sensor/temperature
     chown system radio /sys/class/sensors/gyro_sensor/selftest
+    chown system radio /sys/class/sensors/gyro_sensor/selftest_dps
     chown system radio /sys/class/sensors/gyro_sensor/vendor
     chown system radio /sys/class/sensors/gyro_sensor/name
-    chown system radio /sys/class/sensors/gyro_sensor/selftest_revised
+
 # Magnetic_sensor
     chown system radio /sys/class/sensors/magnetic_sensor/raw_data
     chown system radio /sys/class/sensors/magnetic_sensor/vendor
@@ -319,13 +326,13 @@ setprop ro.mst.support 0
     chown system radio /sys/class/sensors/grip_sensor/grip_earjack
     chown system radio /sys/class/sensors/grip_sensor/grip_gain
     chown system radio /sys/class/sensors/grip_sensor/grip_raw
-	chown system radio /sys/class/sensors/grip_sensor/grip_raw_d
+    chown system radio /sys/class/sensors/grip_sensor/grip_raw_d
     chown system radio /sys/class/sensors/grip_sensor/grip_sw_reset
     chown system radio /sys/class/sensors/grip_sensor/grip_threshold
     chown system radio /sys/class/sensors/grip_sensor/grip_total_cap
     chown system radio /sys/class/sensors/grip_sensor/grip_check
     chown system radio /sys/class/sensors/grip_sensor/grip
-	chown system radio /sys/class/sensors/grip_sensor/grip_diff_d
+    chown system radio /sys/class/sensors/grip_sensor/grip_diff_d
     chown system radio /sys/class/sensors/grip_sensor/grip_baseline
     chown system radio /sys/class/sensors/grip_sensor/grip_irq_count
 
@@ -698,7 +705,9 @@ on fs
 # Permissions for LCD
     chown system radio /sys/class/lcd/panel/manufacture_code
     chown system radio /sys/class/lcd/panel/lcd_type
+    chown system system /sys/class/lcd/panel/siop_enable
     chown system system /sys/class/lcd/panel/temperature
+    chown system radio /sys/class/lcd/panel/power_reduce
     chown system system /sys/class/lcd/panel/lux
     chown system media_rw /sys/class/lcd/panel/adaptive_control
     chown system system /sys/class/lcd/panel/dpui
@@ -707,14 +716,14 @@ on fs
     chown system system /sys/devices/svc/OCTA/SVC_OCTA_CHIPID
 
 # Permissions for MDNIE
-	chown system media_rw /sys/class/mdnie/mdnie/bypass
+    chown system media_rw /sys/class/mdnie/mdnie/bypass
     chown system media_rw /sys/class/mdnie/mdnie/mode
     chown system media_rw /sys/class/mdnie/mdnie/scenario
-	chown system system /sys/class/mdnie/mdnie/accessibility
-    chown system system /sys/class/mdnie/mdnie/night_mode
+    chown system system /sys/class/mdnie/mdnie/accessibility
+    chown system system /sys/class/mdnie/mdnie/sensorRGB
     chown system system /sys/class/mdnie/mdnie/whiteRGB
-	chown system system /sys/class/mdnie/mdnie/light_notification
-	chown system system /sys/class/mdnie/mdnie/color_lens
+    chown system system /sys/class/mdnie/mdnie/night_mode
+    chown system system /sys/class/mdnie/mdnie/mdnie_ldu
 
 # For cpefs partition
     check_fs /dev/block/platform/13540000.dwmmc0/by-name/CPEFS ext4
