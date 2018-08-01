@@ -715,6 +715,9 @@ on fs
     chown system system /sys/devices/svc/OCTA/SVC_OCTA
     chown system system /sys/devices/svc/OCTA/SVC_OCTA_CHIPID
 
+# Permissions for ALPM
+    chown system system /sys/class/lcd/panel/alpm
+
 # Permissions for MDNIE
     chown system media_rw /sys/class/mdnie/mdnie/bypass
     chown system media_rw /sys/class/mdnie/mdnie/mode
