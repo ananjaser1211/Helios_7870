@@ -37,12 +37,6 @@ on init
 
     ffu
 
-# [ SEC_SELINUX_PORTING_COMMON
-    # for audit message
-    chown system system /proc/avc_msg
-    chmod 0660 /proc/avc_msg
-# ] SEC_SELINUX_PORTING_COMMON
-
     # Mix device-specific information into the entropy pool
     copy /proc/cmdline /dev/urandom
     copy /default.prop /dev/urandom
@@ -438,11 +432,6 @@ on late-fs
 
 on post-fs-data
 # [ SEC_SELINUX_PORTING_COMMON
-# [ SEC_SELINUX_SPD
-    # Reload SE Android Policy
-    setprop selinux.reload_policy 1
-# ] SEC_SELINUX_SPD
-
     # sec_efs_file
     mkdir /efs/sec_efs 0775 radio system
 # ] SEC_SELINUX_PORTING_COMMON
@@ -533,21 +522,6 @@ on post-fs-data
 
     # Professioanl Audio
     mkdir /data/misc/jack 0770 jack system
-
-# [ SEC_PRODUCT_FEATURE_SECURITY_SUPPORT_FIVE
-    mkdir /data/misc/integrity 0775 audit system
-# ] SEC_PRODUCT_FEATURE_SECURITY_SUPPORT_FIVE
-
-# [ SEC_SELINUX_PORTING_COMMON
-    mkdir /data/misc/audit 0775 audit system
-
-    # start auditd
-    # start auditd
-# [ SEC_SELINUX_SPD
-    # Separate location for storing security policy files on data
-    mkdir /data/security 0701 system system
-# [ SEC_SELINUX_SPD
-# ] SEC_SELINUX_PORTING_COMMON
 
     mkdir /data/vendor 0771 root root
     mkdir /data/vendor/hardware 0771 root root
@@ -728,10 +702,6 @@ on zygote-start && property:ro.crypto.state=encrypted && property:ro.crypto.type
     start zygote_secondary
 
 on boot
-    #knox_kap
-    chown system system /dev/knox_kap
-    chmod 0644 /dev/knox_kap
-
     # basic network init
     ifup lo
     hostname localhost
@@ -1088,10 +1058,6 @@ on boot
     chown radio system /sys/devices/virtual/relay_on
     chown radio system /sys/devices/virtual/data_on
 
-    # KNOX_NAP
-    chmod 0660 /dev/ncm_dev
-    chown system system /dev/ncm_dev
-
 #OTP
     mkdir /data/otp 0700 system system
 
@@ -1381,20 +1347,6 @@ on property:ro.debuggable=1
     chmod 0773 /data/misc/trace
     start console
 
-## WTL_EDM_START
-## EDM AuditLog
-service edmaudit /system/bin/edmaudit
-    class main
-    user root
-    disabled
-
-on property:security.edmaudit=true
-    start edmaudit
-
-on property:security.edmaudit=false
-    stop edmaudit
-## WTL_EDM_END
-
 # LPM
 service lpm /system/bin/lpm
     class sec-charger
@@ -1432,14 +1384,6 @@ service charon /system/bin/charon
     group vpn net_admin inet shell
     disabled
     oneshot
-
-# [ SEC_SELINUX_PORTING_COMMON
-service auditd /system/bin/auditd -k
-    class main
-    seclabel u:r:auditd:s0
-    disabled
-    oneshot
-# ] SEC_SELINUX_PORTING_COMMON
 
 service scs /system/bin/scs
     class main
@@ -1524,73 +1468,6 @@ on property:persist.security.tlc.esecomm=1
     start esecomm
     setprop persist.security.tlc.esecomm 0
 
-# knox_changer service
-# Allow the Knox Active Protection mode to be set from recovery
-service kap_enable /sbin/knox_changer -e
-    seclabel u:r:kapd:s0
-    class main
-    disabled
-    oneshot
-
-service kap_disable /sbin/knox_changer -d
-    seclabel u:r:kapd:s0
-    class main
-    disabled
-    oneshot
-
-on property:security.knox_kap_mode=true
-    start kap_enable
-
-on property:security.knox_kap_mode=false
-    start kap_disable
-
-# Allow the AFW mode to be set from recovery
-service afw_enable /sbin/knox_changer -f
-    seclabel u:r:kapd:s0
-    class main
-    disabled
-    oneshot
-
-service afw_disable /sbin/knox_changer -s
-    seclabel u:r:kapd:s0
-    class main
-    disabled
-    oneshot
-
-on property:security.knox_afw_mode=true
-    start afw_enable
-
-on property:security.knox_afw_mode=false
-    start afw_disable
-
-
-# UCM ODE mode
-service ucs_enable /sbin/knox_changer -u
-    class main
-    seclabel u:r:kapd:s0
-    disabled
-    oneshot
-
-service ucs_disable /sbin/knox_changer -v
-    class main
-    seclabel u:r:kapd:s0
-    disabled
-    oneshot
-
-service ucs_reset /sbin/knox_changer -w
-    class main
-    seclabel u:r:kapd:s0
-    disabled
-    oneshot
-
-on property:security.knox_ucs_mode=true
-    start ucs_enable
-
-on property:security.knox_ucs_mode=false
-    start ucs_disable
 
 on property:sys.sf.restart=1
     restart surfaceflinger
-
-on property:security.knox_ucs_mode=reset
-    start ucs_reset
