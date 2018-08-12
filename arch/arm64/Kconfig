@@ -229,8 +229,11 @@ config SOC_EXYNOS7870
 	select SOC_SAMSUNG
 	select SAMSUNG_DMADEV
 	
-config DTB_J5Y17LTE
-	bool "Builds DTB for J5 Pro"
+config DTB_J5Y17LTE_2G
+	bool "Builds DTB for J5 Pro 2GB Variants"
+	
+config DTB_J5Y17LTE_3G
+	bool "Builds DTB for J5 Pro 3GB Variants"	
 
 config DTB_J7Y17LTE
 	bool "Builds DTB for J7 Pro"	
