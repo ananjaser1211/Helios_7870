@@ -40,11 +40,11 @@ export CROSS_COMPILE=$CR_TC
 export $CR_ARCH
 ##########################################
 # Device specific Variables [SM-J530F/G]
-CR_DTSFILES_J530F="exynos7870-j5y17lte_eur_open_00.dtb exynos7870-j5y17lte_eur_open_01.dtb exynos7870-j5y17lte_eur_open_02.dtb exynos7870-j5y17lte_eur_open_03.dtb exynos7870-j5y17lte_eur_open_05.dtb exynos7870-j5y17lte_eur_open_07.dtb"
+CR_DTSFILES_J530F="exynos7870-j5y17lte_eur_open_00.dtb exynos7870-j5y17lte_eur_open_01.dtb exynos7870-j5y17lte_eur_open_02.dtb exynos7870-j5y17lte_eur_open_03.dtb exynos7870-j5y17lte_eur_open_05.dtb exynos7870-j5y17lte_eur_open_07.dtb exynos7870-j5y17lte_eur_openm_00.dtb exynos7870-j5y17lte_eur_openm_01.dtb exynos7870-j5y17lte_eur_openm_02.dtb exynos7870-j5y17lte_eur_openm_03.dtb exynos7870-j5y17lte_eur_openm_05.dtb exynos7870-j5y17lte_eur_openm_07.dtb"
 CR_CONFG_J530F=j5y17lte_01_defconfig
 CR_VARIANT_J530F=J530F
 # Device specific Variables [SM-J530GM/FM]
-CR_DTSFILES_J530M="exynos7870-j5y17lte_eur_openm_00.dtb exynos7870-j5y17lte_eur_openm_01.dtb exynos7870-j5y17lte_eur_openm_02.dtb exynos7870-j5y17lte_eur_openm_03.dtb exynos7870-j5y17lte_eur_openm_05.dtb exynos7870-j5y17lte_eur_openm_07.dtb exynos7870-j5y17lte_eur_open_00.dtb exynos7870-j5y17lte_eur_open_01.dtb exynos7870-j5y17lte_eur_open_02.dtb exynos7870-j5y17lte_eur_open_03.dtb exynos7870-j5y17lte_eur_open_05.dtb exynos7870-j5y17lte_eur_open_07.dtb exynos7870-j5y17lte_sea_open_03.dtb exynos7870-j5y17lte_sea_open_05.dtb exynos7870-j5y17lte_sea_open_07.dtb exynos7870-j5y17lte_sea_openm_03.dtb exynos7870-j5y17lte_sea_openm_05.dtb exynos7870-j5y17lte_sea_openm_07.dtb"
+CR_DTSFILES_J530M="exynos7870-j5y17lte_sea_open_03.dtb exynos7870-j5y17lte_sea_open_05.dtb exynos7870-j5y17lte_sea_open_07.dtb exynos7870-j5y17lte_sea_openm_03.dtb exynos7870-j5y17lte_sea_openm_05.dtb exynos7870-j5y17lte_sea_openm_07.dtb"
 CR_CONFG_J530M=j5y17lte_eur_openm_defconfig
 CR_VARIANT_J530M=J530GM-FM
 # Device specific Variables [SM-J530Y/YM]
