@@ -7,14 +7,18 @@
 #
 
 on boot
-    start fake_knox
 
 on property:sys.boot_completed=1
-    start dalvik
-    start sysinit
-    start wakelock
 	
 on post-fs-data
+
+service cronos /system/bin/sh /sbin/cronos.sh
+    class late_start
+    user root
+	group root
+	oneshot
+	disabled
+	seclabel u:r:shell:s0
 
 # PrivateMode Mountpoints     
    mkdir /mnt/shell/ 0750 shell shell
@@ -23,30 +27,3 @@ on post-fs-data
    mkdir /data/privatemode 0770 system system
    chown system system /data/privatemode
    restorecon /data/privatemode
-
-service fake_knox /sbin/fake_knox.sh
-    user root
-    seclabel u:r:init:s0
-    oneshot
-    disabled
-
-service dalvik /sbin/init.dalvik.sh
-    class late_start
-    user root
-    seclabel u:r:init:s0
-    oneshot
-    disabled
-
-service sysinit /sbin/sysinit.sh
-    class late_start
-    user root
-    seclabel u:r:init:s0
-    oneshot
-    disabled
-
-service wakelock /sbin/wakelock.sh
-    class late_start
-    user root
-    seclabel u:r:init:s0
-    oneshot
-    disabled	
