@@ -40,13 +40,13 @@ export CROSS_COMPILE=$CR_TC
 export $CR_ARCH
 ##########################################
 # Device specific Variables [SM-J530_2GB (F/G/S/L/K)]
-CR_DTSFILES_J530F="exynos7870-j5y17lte_eur_open_00.dtb exynos7870-j5y17lte_eur_open_01.dtb exynos7870-j5y17lte_eur_open_02.dtb exynos7870-j5y17lte_eur_open_03.dtb exynos7870-j5y17lte_eur_open_05.dtb exynos7870-j5y17lte_eur_open_07.dtb exynos7870-j5y17lte_eur_openm_00.dtb exynos7870-j5y17lte_eur_openm_01.dtb exynos7870-j5y17lte_eur_openm_02.dtb exynos7870-j5y17lte_eur_openm_03.dtb exynos7870-j5y17lte_eur_openm_05.dtb exynos7870-j5y17lte_eur_openm_07.dtb"
+CR_DTSFILES_J530F="exynos7870-j5y17lte_eur_open_00.dtb exynos7870-j5y17lte_eur_open_01.dtb exynos7870-j5y17lte_eur_open_02.dtb exynos7870-j5y17lte_eur_open_03.dtb exynos7870-j5y17lte_eur_open_05.dtb exynos7870-j5y17lte_eur_open_07.dtb"
 CR_CONFG_J530F=j5y17lte_2G_defconfig
-CR_VARIANT_J530F=J530F
+CR_VARIANT_J530F=J530F_2GB
 # Device specific Variables [SM-J530_3GB (Y/YM/FM/GM)]
-CR_DTSFILES_J530M="exynos7870-j5y17lte_sea_open_03.dtb exynos7870-j5y17lte_sea_open_05.dtb exynos7870-j5y17lte_sea_open_07.dtb exynos7870-j5y17lte_sea_openm_03.dtb exynos7870-j5y17lte_sea_openm_05.dtb exynos7870-j5y17lte_sea_openm_07.dtb"
+CR_DTSFILES_J530M="exynos7870-j5y17lte_sea_open_03.dtb exynos7870-j5y17lte_sea_open_05.dtb exynos7870-j5y17lte_sea_open_07.dtb"
 CR_CONFG_J530M=j5y17lte_3G_defconfig
-CR_VARIANT_J530M=J530Y
+CR_VARIANT_J530M=J530Y_3GB
 # Device specific Variables [SM-J730F/G]
 CR_DTSFILES_J730F="exynos7870-j7y17lte_eur_open_00.dtb exynos7870-j7y17lte_eur_open_01.dtb exynos7870-j7y17lte_eur_open_02.dtb exynos7870-j7y17lte_eur_open_03.dtb exynos7870-j7y17lte_eur_open_04.dtb exynos7870-j7y17lte_eur_open_05.dtb exynos7870-j7y17lte_eur_open_06.dtb exynos7870-j7y17lte_eur_open_07.dtb"
 CR_CONFG_J730F=j7y17lte_eur_open_defconfig
@@ -192,12 +192,12 @@ clear
 echo "----------------------------------------------"
 echo "$CR_NAME $CR_VERSION Build Script"
 echo "----------------------------------------------"
-PS3='Please select your option (1-6): '
-menuvar=("SM-J530F-G" "SM-J530FM-GM" "SM-J530Y-YM" "SM-J730F-G" "Exit" "TEST")
+PS3='Please select your option (1-5): '
+menuvar=("SM-J530_2G" "SM-J530_3G" "SM-J730F-G" "Exit" "TEST")
 select menuvar in "${menuvar[@]}"
 do
     case $menuvar in
-        "SM-J530F-G")
+        "SM-J530_2G")
             clear
             CLEAN_SOURCE
             echo "Starting $CR_VARIANT_J530F kernel build..."
@@ -217,33 +217,13 @@ do
             read -n1 -r key
             break
             ;;
-        "SM-J530FM-GM")
+        "SM-J530_3G")
             clear
             CLEAN_SOURCE
             echo "Starting $CR_VARIANT_J530M kernel build..."
 	    CR_VARIANT=$CR_VARIANT_J530M
-       	    CR_CONFG=$CR_CONFG_J530M
+	    CR_CONFG=$CR_CONFG_J530M
             CR_DTSFILES=$CR_DTSFILES_J530M
-	    BUILD_ZIMAGE
-            BUILD_DTB
-            PACK_BOOT_IMG
-            echo " "
-            echo "----------------------------------------------"
-            echo "$CR_VARIANT kernel build finished."
-            echo "$CR_VARIANT Ready at $CR_OUT"
-            echo "Combined DTB Size = $sizT Kb"
-	    echo "Press Any key to end the script"
-            echo "----------------------------------------------"
-            read -n1 -r key
-            break
-            ;;
-        "SM-J530Y-YM")
-            clear
-            CLEAN_SOURCE
-            echo "Starting $CR_VARIANT_J530Y kernel build..."
-	    CR_VARIANT=$CR_VARIANT_J530Y
-	    CR_CONFG=$CR_CONFG_J530Y
-            CR_DTSFILES=$CR_DTSFILES_J530Y
 	    BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
