@@ -241,7 +241,7 @@ on boot
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
 
 #MST HW Support
-setprop ro.mst.support 0
+#setprop ro.mst.support 1
 
 #Secure OS migration
     chown radio system /sys/devices/system/sec_os_ctrl/migrate_os
