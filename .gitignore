@@ -7189,3 +7189,8 @@ net/netfilter/xt_oneshot.o
 scripts/basic/.bin2c.cmd
 security/tima_uevent/.tima_uevent.o.cmd
 security/tima_uevent/tima_uevent.o
+drivers/gpu/arm/t83x/r22p0/platform/exynos/.gpu_ipa.o.cmd
+drivers/gpu/arm/t83x/r22p0/platform/exynos/gpu_ipa.o
+drivers/thermal/.ipa.o.cmd
+drivers/thermal/.ipa.o.d
+drivers/thermal/ipa.o
