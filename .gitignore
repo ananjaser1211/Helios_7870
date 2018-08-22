@@ -66,6 +66,8 @@ Helios/temp/*
 
 # Generated
 
+.old_version
+libmpfr.so.4
 .missing-syscalls.d
 .tmp_System.map
 .tmp_kallsyms1.o
