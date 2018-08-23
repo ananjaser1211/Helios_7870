@@ -62,6 +62,9 @@ config MCINFO_SYSFS
 	depends on EXYNOS_MCINFO
 	default	y if SYSFS
 
+config STATE_NOTIFIER
+    	bool "State Notifier"
+
 endif #SOC_SAMSUNG
 
 config SEC_INCELL
