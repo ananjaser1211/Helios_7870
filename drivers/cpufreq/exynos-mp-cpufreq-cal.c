@@ -212,9 +212,6 @@ static int exynos_mp_cpufreq_init_cal_table(cluster_type cluster)
 			ptr_temp_table[cal_max_support_idx].rate,
 			ptr_temp_table[ptr->max_support_idx].rate);
 
-	if (ptr->max_support_idx < cal_max_support_idx)
-		ptr->max_support_idx = cal_max_support_idx;
-
 	pr_info("CPUFREQ of %s Current max freq %lu KHz\n",
 				cluster ? "CL1" : "CL0",
 				ptr_temp_table[ptr->max_support_idx].rate);
