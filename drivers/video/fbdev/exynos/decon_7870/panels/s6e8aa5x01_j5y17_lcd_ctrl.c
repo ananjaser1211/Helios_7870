@@ -11,6 +11,7 @@
 */
 
 #include <linux/lcd.h>
+#include <linux/display_state.h>
 #include <linux/backlight.h>
 #include <linux/of_device.h>
 #include <video/mipi_display.h>
@@ -26,6 +27,12 @@
 
 #ifdef CONFIG_DISPLAY_USE_INFO
 #include "dpui.h"
+
+bool display_on = true;
+bool is_display_on()
+{
+	return display_on;
+}
 
 #define	DPUI_VENDOR_NAME	"SDC"
 #define DPUI_MODEL_NAME		"AMS520KT10"
@@ -1737,6 +1744,8 @@ static int dsim_panel_displayon(struct dsim_device *dsim)
 		goto displayon_err;
 	}
 
+display_on = true;
+
 displayon_err:
 	mutex_lock(&lcd->lock);
 	lcd->state = PANEL_STATE_RESUMED;
@@ -1759,6 +1768,8 @@ static int dsim_panel_suspend(struct dsim_device *dsim)
 		goto suspend_err;
 
 	lcd->state = PANEL_STATE_SUSPENDING;
+
+	display_on = false;
 
 	ret = s6e8aa5x01_exit(lcd);
 	if (ret) {
