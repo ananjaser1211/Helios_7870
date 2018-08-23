@@ -663,13 +663,13 @@
 		non_hw_trigger_levels = <7>;
 
 		/* Throttling Level */
-		trigger_levels_0 = <76>;
-		trigger_levels_1 = <81>;
-		trigger_levels_2 = <86>;
-		trigger_levels_3 = <91>;
-		trigger_levels_4 = <96>;
-		trigger_levels_5 = <101>;
-		trigger_levels_6 = <111>;
+		trigger_levels_0 = <81>;
+		trigger_levels_1 = <86>;
+		trigger_levels_2 = <91>;
+		trigger_levels_3 = <96>;
+		trigger_levels_4 = <101>;
+		trigger_levels_5 = <106>;
+		trigger_levels_6 = <112>;
 		trigger_levels_7 = <115>;
 
 		trigger_enable_0 = <ENABLE>;
@@ -699,7 +699,7 @@
 		freq_clip_max_4 = <1248000>;
 		freq_clip_max_5 = <546000>;
 		freq_clip_max_6 = <449000>;
-		freq_clip_max_7 = <343000>;		
+		freq_clip_max_7 = <343000>;	
 		
 		cooling_level_0 = <76>;
 		cooling_level_1 = <76>;
@@ -720,13 +720,13 @@
 		non_hw_trigger_levels = <7>;
 
 		/* Throttling Level */
-		trigger_levels_0 = <76>;
-		trigger_levels_1 = <81>;
-		trigger_levels_2 = <86>;
-		trigger_levels_3 = <91>;
-		trigger_levels_4 = <96>;
-		trigger_levels_5 = <101>;
-		trigger_levels_6 = <111>;
+		trigger_levels_0 = <81>;
+		trigger_levels_1 = <86>;
+		trigger_levels_2 = <91>;
+		trigger_levels_3 = <96>;
+		trigger_levels_4 = <101>;
+		trigger_levels_5 = <106>;
+		trigger_levels_6 = <112>;
 		trigger_levels_7 = <115>;
 
 		trigger_enable_0 = <ENABLE>;
