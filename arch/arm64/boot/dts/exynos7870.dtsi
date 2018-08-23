@@ -414,9 +414,9 @@
 
 		/* For CPUFREQ table */
 		/* CL0 */
-		cl0_idx_num = <17>;
-		cl0_max_support_idx = <2>;
-		cl0_min_support_idx = <14>;
+		cl0_idx_num = <18>;
+		cl0_max_support_idx = <3>;
+		cl0_min_support_idx = <17>;
 		cl0_boot_max_qos = <1482000>;
 		cl0_boot_min_qos = <1482000>;
 		cl0_boot_lock_time = <40000000>;
@@ -424,9 +424,9 @@
 		cl0_regulator = "BUCK1";
 
 		/* CL1 */
-		cl1_idx_num = <17>;
-		cl1_max_support_idx = <2>;
-		cl1_min_support_idx = <14>;
+		cl1_idx_num = <18>;
+		cl1_max_support_idx = <3>;
+		cl1_min_support_idx = <17>;
 		cl1_boot_max_qos = <1482000>;
 		cl1_boot_min_qos = <1482000>;
 		cl1_boot_lock_time = <40000000>;
@@ -452,7 +452,8 @@
 				  13   676000  800000	450000
 				  14   546000  800000	450000
 				  15   449000  800000	450000
-				  16   343000  800000	450000 >;
+				  16   343000  800000	450000
+				  17   250000  750000	450000 >;
 
 		/* CL1 table ->	 idx  freq    volt   bus_lock */
 		cl1_dvfs_domain_name = "dvfs_cpucl1";
@@ -472,7 +473,8 @@
 				  13   676000  800000	450000
 				  14   546000  800000	450000
 				  15   449000  800000	450000
-				  16   343000  800000	450000 >;
+				  16   343000  800000	450000
+				  17   250000  700000	450000 >;	
 	};
 
 	smc_info: mcinfo@10400000 {
