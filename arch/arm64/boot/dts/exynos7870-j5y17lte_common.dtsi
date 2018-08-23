@@ -762,12 +762,12 @@
 
 		freq_tab_count = <6>;
 
-		freq_clip_max_0 = <1246000>;
-		freq_clip_max_1 = <1146000>;
-		freq_clip_max_2 = <1001000>;
-		freq_clip_max_3 = <728000>;
+		freq_clip_max_0 = <1146000>;
+		freq_clip_max_1 = <1001000>;
+		freq_clip_max_2 = <728000>;
+		freq_clip_max_3 = <545000>;
 		freq_clip_max_4 = <343000>;
-		freq_clip_max_5 = <343000>;
+		freq_clip_max_5 = <160000>;
 
 		cooling_level_0 = <76>;
 		cooling_level_1 = <81>;
@@ -777,14 +777,16 @@
 		cooling_level_5 = <101>;
 
 		/* gpu cooling related table */
-		gpu_idx_num = <6>;
+		gpu_idx_num = <8>;
 		/* flags, driver_data(index), frequency */
-		gpu_cooling_table = < 0 0 1001000
-				      0 1 845000
-				      0 2 728000
-				      0 3 545000
-				      0 4 343000
-				      0 5 TABLE_END>;
+		gpu_cooling_table = < 0 0 1146000
+				      0 1 1001000
+				      0 2 845000
+				      0 3 728000
+				      0 4 545000
+				      0 5 343000
+				      0 6 160000
+				      0 7 TABLE_END>;
 	};
 
 	/* modem_interface */
