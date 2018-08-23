@@ -769,12 +769,12 @@
 		freq_clip_max_4 = <343000>;
 		freq_clip_max_5 = <160000>;
 
-		cooling_level_0 = <76>;
-		cooling_level_1 = <81>;
-		cooling_level_2 = <86>;
-		cooling_level_3 = <91>;
-		cooling_level_4 = <96>;
-		cooling_level_5 = <101>;
+		cooling_level_0 = <81>;
+		cooling_level_1 = <86>;
+		cooling_level_2 = <91>;
+		cooling_level_3 = <96>;
+		cooling_level_4 = <101>;
+		cooling_level_5 = <106>;
 
 		/* gpu cooling related table */
 		gpu_idx_num = <8>;
