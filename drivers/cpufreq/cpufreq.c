@@ -1788,6 +1788,21 @@ void *cpufreq_get_driver_data(void)
 }
 EXPORT_SYMBOL_GPL(cpufreq_get_driver_data);
 
+/**
+ * cpufreq_notify_utilization - notify CPU userspace about CPU utilization
+ * change
+ *
+ * This function is called everytime the CPU load is evaluated by the
+ * ondemand governor. It notifies userspace of cpu load changes via sysfs.
+ */
+void cpufreq_notify_utilization(struct cpufreq_policy *policy,
+		unsigned int util)
+{
+	if (policy) {
+		policy->util = util;
+	}
+}
+
 /*********************************************************************
  *                     NOTIFIER LISTS INTERFACE                      *
  *********************************************************************/
