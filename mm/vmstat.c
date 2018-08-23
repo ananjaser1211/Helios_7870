@@ -797,6 +797,9 @@ const char * const vmstat_text[] = {
 	"nr_anon_transparent_hugepages",
 	"nr_free_cma",
 
+#ifdef CONFIG_UKSM
+	"nr_uksm_zero_pages",
+#endif
 	/* enum writeback_stat_item counters */
 	"nr_dirty_threshold",
 	"nr_dirty_background_threshold",
