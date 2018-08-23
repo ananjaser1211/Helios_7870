@@ -30,6 +30,7 @@
 #include "gpu_control.h"
 #ifdef CONFIG_CPU_THERMAL_IPA
 #include "gpu_ipa.h"
+#include <linux/ipa.h>
 #endif /* CONFIG_CPU_THERMAL_IPA */
 #include "gpu_custom_interface.h"
 
@@ -37,6 +38,9 @@
 #define GPU_MAX_VOLT		950000
 #define GPU_MIN_VOLT		800000
 #define GPU_VOLT_STEP		6250
+#else
+#error "Please define gpu voltage ranges for current SoC."
+#endif
 
 #if defined (CONFIG_SOC_EXYNOS7870) && defined(CONFIG_PWRCAL)
 #include <linux/apm-exynos.h>
@@ -2463,7 +2467,7 @@ int gpu_create_sysfs_file(struct device *dev)
 		goto out;
 	}
 
-if (device_create_file(dev, &dev_attr_volt_table)) {
+	if (device_create_file(dev, &dev_attr_volt_table)) {
 		GPU_LOG(DVFS_ERROR, DUMMY, 0u, 0u, "couldn't create sysfs file [volt_table]\n");
 		goto out;
 	}
