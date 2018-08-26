@@ -29,14 +29,14 @@ CR_DTB=$CR_DIR/boot.img-dtb
 CR_VERSION=V2.0
 CR_NAME=HeliosPro_Kernel
 CR_JOBS=5
-#CR_ANDROID=o
-#CR_PLATFORM=8.0.0
+CR_ANDROID=o
+CR_PLATFORM=8.0.0
 CR_ARCH=arm64
 CR_DATE=$(date +%Y%m%d)
 # Init build
 export CROSS_COMPILE=$CR_TC
-#export ANDROID_MAJOR_VERSION=$CR_ANDROID
-#export PLATFORM_VERSION=$CR_PLATFORM
+export ANDROID_MAJOR_VERSION=$CR_ANDROID
+export PLATFORM_VERSION=$CR_PLATFORM
 export $CR_ARCH
 ##########################################
 # Device specific Variables [SM-J530_2GB (F/G/S/L/K)]
