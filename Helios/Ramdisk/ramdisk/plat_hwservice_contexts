@@ -6,10 +6,11 @@ android.hardware.audio::IDevicesFactory                         u:object_r:hal_a
 android.hardware.biometrics.fingerprint::IBiometricsFingerprint u:object_r:hal_fingerprint_hwservice:s0
 android.hardware.bluetooth::IBluetoothHci                       u:object_r:hal_bluetooth_hwservice:s0
 android.hardware.boot::IBootControl                             u:object_r:hal_bootctl_hwservice:s0
-android.hardware.broadcastradio::IBroadcastRadioFactory         u:object_r:hal_audio_hwservice:s0
+android.hardware.broadcastradio::IBroadcastRadioFactory         u:object_r:hal_broadcastradio_hwservice:s0
 android.hardware.camera.provider::ICameraProvider               u:object_r:hal_camera_hwservice:s0
 android.hardware.configstore::ISurfaceFlingerConfigs            u:object_r:hal_configstore_ISurfaceFlingerConfigs:s0
 android.hardware.contexthub::IContexthub                        u:object_r:hal_contexthub_hwservice:s0
+android.hardware.cas::IMediaCasService                          u:object_r:hal_cas_hwservice:s0
 android.hardware.drm::ICryptoFactory                            u:object_r:hal_drm_hwservice:s0
 android.hardware.drm::IDrmFactory                               u:object_r:hal_drm_hwservice:s0
 android.hardware.dumpstate::IDumpstateDevice                    u:object_r:hal_dumpstate_hwservice:s0
@@ -25,6 +26,7 @@ android.hardware.light::ILight                                  u:object_r:hal_l
 android.hardware.media.omx::IOmx                                u:object_r:hal_omx_hwservice:s0
 android.hardware.media.omx::IOmxStore                           u:object_r:hal_omx_hwservice:s0
 android.hardware.memtrack::IMemtrack                            u:object_r:hal_memtrack_hwservice:s0
+android.hardware.neuralnetworks::IDevice                        u:object_r:hal_neuralnetworks_hwservice:s0
 android.hardware.nfc::INfc                                      u:object_r:hal_nfc_hwservice:s0
 android.hardware.oemlock::IOemLock                              u:object_r:hal_oemlock_hwservice:s0
 android.hardware.power::IPower                                  u:object_r:hal_power_hwservice:s0
@@ -35,6 +37,7 @@ android.hardware.renderscript::IDevice                          u:object_r:hal_r
 android.hardware.sensors::ISensors                              u:object_r:hal_sensors_hwservice:s0
 android.hardware.soundtrigger::ISoundTriggerHw                  u:object_r:hal_audio_hwservice:s0
 android.hardware.thermal::IThermal                              u:object_r:hal_thermal_hwservice:s0
+android.hardware.thermal::IThermalCallback                      u:object_r:thermalcallback_hwservice:s0
 android.hardware.tv.cec::IHdmiCec                               u:object_r:hal_tv_cec_hwservice:s0
 android.hardware.tv.input::ITvInput                             u:object_r:hal_tv_input_hwservice:s0
 android.hardware.usb::IUsb                                      u:object_r:hal_usb_hwservice:s0
@@ -42,11 +45,13 @@ android.hardware.vibrator::IVibrator                            u:object_r:hal_v
 android.hardware.vr::IVr                                        u:object_r:hal_vr_hwservice:s0
 android.hardware.weaver::IWeaver                                u:object_r:hal_weaver_hwservice:s0
 android.hardware.wifi::IWifi                                    u:object_r:hal_wifi_hwservice:s0
+android.hardware.wifi.offload::IOffload                         u:object_r:hal_wifi_offload_hwservice:s0
 android.hardware.wifi.supplicant::ISupplicant                   u:object_r:hal_wifi_supplicant_hwservice:s0
 android.hidl.allocator::IAllocator                              u:object_r:hidl_allocator_hwservice:s0
 android.hidl.base::IBase                                        u:object_r:hidl_base_hwservice:s0
 android.hidl.manager::IServiceManager                           u:object_r:hidl_manager_hwservice:s0
 android.hidl.memory::IMapper                                    u:object_r:hidl_memory_hwservice:s0
 android.hidl.token::ITokenManager                               u:object_r:hidl_token_hwservice:s0
+android.system.net.netd::INetd                                  u:object_r:system_net_netd_hwservice:s0
 android.system.wifi.keystore::IKeystore                         u:object_r:system_wifi_keystore_hwservice:s0
 *                                                               u:object_r:default_android_hwservice:s0

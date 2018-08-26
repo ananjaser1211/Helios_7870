@@ -13,10 +13,12 @@ user=_app seinfo=trustonicpartner domain=trustonicpartner_app type=app_data_file
 user=_app seinfo=good_trustonicpartner domain=trustonicpartner_app type=app_data_file levelFrom=user
 user=oneseg domain=oneseg_apk type=app_data_file levelFrom=user
 user=system seinfo=platform name=com.policydm domain=policyloader_app type=policyloader_app_data_file
+user=system seinfo=platform name=com.samsung.android.spdclient domain=policyloader_app type=policyloader_app_data_file
 user=_app seinfo=platform name=com.gd.mobicore.pa domain=mobicore_app type=app_data_file levelFrom=user
 user=_app seinfo=platform name=com.trustonic.tuiservice domain=mobicore_app type=app_data_file levelFrom=user
 user=_app seinfo=vzw_untrusted domain=vzwfiltered_untrusted_app type=app_data_file levelFrom=user
 user=_app seinfo=xcal_untrusted domain=vzwfiltered_untrusted_app type=app_data_file levelFrom=user
+user=_app seinfo=platform name=com.samsung.sdm.sdmviewer domain=platform_app type=app_data_file
 user=drm seinfo=platform name=com.sec.android.SamsungDrmProvider domain=platform_app type=platform_app_data_file levelFrom=user
 user=smartcard seinfo=platform domain=platform_app type=platform_app_data_file levelFrom=user
 user=msgcom seinfo=platform domain=platform_app type=app_data_file levelFrom=user
@@ -71,7 +73,7 @@ user=system seinfo=platform name=com.android.data.backup domain=blocked_app type
 user=system seinfo=platform name=com.android.sec.backup.svc domain=blocked_app type=system_app_data_file
 user=_app seinfo=platform name=com.android.data.backup domain=blocked_app type=app_data_file
 user=_app seinfo=platform name=com.android.sec.backup.svc domain=blocked_app type=app_data_file
-user=_app seinfo=platform name=com.samsung.android.lxd domain=lxd_app type=app_data_file
+user=_app seinfo=platform name=com.samsung.android.lxd* domain=lxd_app type=app_data_file
 user=_app seinfo=attiqi name=com.att.iqi domain=attiqi_app type=attiqi_app_data_file
 user=oem_5500 domain=felica_app type=app_data_file levelFrom=user
 user=oem_5501 domain=felica_app type=app_data_file levelFrom=user

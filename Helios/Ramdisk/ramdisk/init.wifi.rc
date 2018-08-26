@@ -71,7 +71,7 @@ on post-fs-data
     chown system wifi /vendor/etc/wifi/indoorchannel.info
 
     # for fwpath
-    chmod 0666 /sys/module/wlan/parameters/fwpath
+    chown wifi wifi /sys/module/wlan/parameters/fwpath
 
 	
 on boot
@@ -99,7 +99,7 @@ service mfgloader /system/vendor/bin/hw/mfgloader
 service wlandutservice /system/bin/wlandutservice
     class main
     user system
-    group wifi net_raw net_admin system inet
+    group system wifi net_raw net_admin inet
     disabled
     oneshot
 
@@ -112,12 +112,6 @@ on property:init.svc.macloader=stopped
     chmod 0664 /data/misc/conn/.cid.info
     chown system root /data/.rev
     chmod 0664 /data/.rev
-
-# for wlan FTM app
-service ftm_ptt /system/bin/ftm_ptt -d
-    user root
-    group radio system
-    disabled
 
 # end of WiFi MFG (TestMode)
 # It is present in hostapd.android.rc

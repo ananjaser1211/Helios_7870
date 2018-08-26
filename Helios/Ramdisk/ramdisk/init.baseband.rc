@@ -69,8 +69,7 @@ on property:ro.multisim.simslotcount=*
    write /sys/module/modem_ctrl_ss310ap/parameters/ds_detect ${ro.multisim.simslotcount}
 
 on property:ro.multisim.simslotcount=1
-    setprop persist.radio.multisim.config ss
+   setprop persist.radio.multisim.config ss
 
 on property:ro.multisim.simslotcount=2
-    setprop persist.radio.multisim.config dsds
-
+   setprop persist.radio.multisim.config dsds

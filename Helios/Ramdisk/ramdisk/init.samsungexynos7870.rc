@@ -37,9 +37,7 @@ on post-fs-data
     chown system system /data/privatemode
     restorecon /data/privatemode
 
-# Permissions for gnss
-    chmod 0660 /dev/gnss_ipc
-    chown system system /dev/gnss_ipc
+# Directory for GPS
     mkdir /data/system 0771 system system
     chown system system /data/system
     mkdir /data/system/gps 0771 system system
@@ -73,7 +71,7 @@ on post-fs-data
     chown system audio /sys/class/nxp/tfa_log/count_overtmax
 
 
-# Magnetic sensor YAS539 lib
+# Magnetic sensor YAS537 lib
     mkdir /data/system/yas_lib 0770 system system
 
 on boot
@@ -156,10 +154,6 @@ on boot
     chown radio system /sys/class/devfreq/17000020.devfreq_int/available_frequencies
     chmod 0664 /sys/class/devfreq/17000020.devfreq_int/available_frequencies
 
-    #Mem_boost
-    chown radio system /sys/kernel/mm/vmscan/am_mem_boost_mode
-    chmod 0664 /sys/kernel/mm/vmscan/am_mem_boost_mode
-
     # Change permission for interactive governor
     chown system system /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_rate
     chmod 0660 /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_rate
@@ -220,7 +214,7 @@ on boot
 
     # RTC status
     chown system system /sys/power/rtc_status
-    chmod 0444 /sys/power/rtc_status
+    chmod 0664 /sys/power/rtc_status
     chown system system /efs/FactoryApp/rtc_status
     chmod 0664 /efs/FactoryApp/rtc_status
 
@@ -237,11 +231,11 @@ on boot
     chown radio bluetooth /efs/bluetooth/bt_addr
     chmod 0640 /efs/bluetooth/bt_addr
     chmod 0660 /sys/class/rfkill/rfkill0/state
-    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
-    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
+    chown bluetooth net_bt /sys/class/rfkill/rfkill0/state
+    chown bluetooth net_bt /sys/class/rfkill/rfkill0/type
 
 #MST HW Support
-#setprop ro.mst.support 1
+setprop ro.mst.support 1
 
 #Secure OS migration
     chown radio system /sys/devices/system/sec_os_ctrl/migrate_os
@@ -256,6 +250,7 @@ on boot
     chown system radio /sys/class/sensors/accelerometer_sensor/name
     chown system radio /sys/class/sensors/accelerometer_sensor/selftest
     chown system radio /sys/class/sensors/accelerometer_sensor/lowpassfilter
+    chown system radio /sys/class/sensors/accelerometer_sensor/dhr_sensor_info
     chown system system /efs/calibration_data
     chmod 0666 /efs/calibration_data
 
@@ -699,6 +694,9 @@ on fs
     chmod 0660 /sys/class/ion_cma/ion_video_ext/isolated
     chown system system /sys/class/ion_cma/ion_video_ext/isolated
 
+# Permissions for gnss
+    chmod 0660 /dev/gnss_ipc
+    chown system system /dev/gnss_ipc
 # Permissions for backlight
     chown system system /sys/class/backlight/panel/brightness
 
@@ -822,12 +820,12 @@ on fs
 # FM Radio
     chown system audio /dev/radio0
     chmod 0660 /dev/radio0
-    chown bluetooth bluetooth /sys/devices/bluetooth/fm_dtv_ctrl
+    chown bluetooth bluetooth /sys/devices/bluetooth/lna_en
 
 #ARGOSD network_throughput
     chown system system /dev/network_throughput
 # ARGOSD
-service argos-daemon /vendor/bin/argosd
+service argos-daemon /system/bin/argosd
     class main
     user system
     group system radio
@@ -872,6 +870,12 @@ on property:sys.mobicoredaemon.enable=true
     start cs_service
     write /proc/iccc_ready 1
 
+on property:ro.multisim.simslotcount=1
+    setprop persist.radio.multisim.config ss
+
+on property:ro.multisim.simslotcount=2
+    setprop persist.radio.multisim.config dsds
+
 # Modem boot daemon
 #    service cpboot-daemon /system/bin/cbd -d
 #    class main
@@ -894,6 +898,12 @@ service fingerprintd /system/bin/fingerprintd
 service faced /system/bin/faced
     class late_start
     user system
+    group system
+
+# VC daemon
+    service VC-daemon /system/bin/vcd
+    class main
+    user root
     group system
 
 # SCE daemon
@@ -932,7 +942,6 @@ on property:ro.debuggable=1
     write /sys/module/kgdboc/parameters/kgdboc ttyFIQ1
     write /sys/module/fiq_debugger/parameters/kgdb_enable 1
 
-# Sysscope
 service prepare_param /system/bin/prepare_param.sh /dev/block/platform/13540000.dwmmc0/by-name/PARAM
     class core
     user root

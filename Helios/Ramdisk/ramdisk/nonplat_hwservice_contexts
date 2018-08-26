@@ -12,6 +12,8 @@ vendor.samsung.hardware.wifi.sec_hostapd::ISemHostapd                 u:object_r
 vendor.samsung.frameworks.ucm.wifi::IUCMKeystore                 u:object_r:ucm_hwservice:s0
 vendor.samsung.hardware.radio.secoemhook::ISecOemHook           u:object_r:hal_telephony_hwservice:s0
 vendor.samsung.hardware.radio.channel::ISecChannel              u:object_r:hal_telephony_hwservice:s0
+vendor.samsung.security.wsm::IWsmDaemon                         u:object_r:hal_wsm_hwservice:s0
 vendor.samsung_slsi.hardware.ExynosHWCServiceTW::IExynosHWCServiceTW  u:object_r:hal_exynos_hwservice:s0
 com.qualcomm.qti.ant::IAntHci              u:object_r:hal_bluetooth_hwservice:s0
 vendor.samsung.hardware.digitaltv.fullseg::IFullseg      u:object_r:digitaltv_fullseg_hwservice:s0
+vendor.samsung.hardware.dtvtuner::IDtvTuner               u:object_r:digitaltv_fullseg_hwservice:s0

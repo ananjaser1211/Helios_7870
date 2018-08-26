@@ -22,9 +22,12 @@ auditfilter at_distributor rild_log_data:dir write;
 auditfilter atfwd sysfs:file read;
 auditfilter blkid_untrusted blkid_untrusted:capability { dac_override dac_read_search };
 auditfilter blkid_untrusted ion_device:chr_file read;
+auditfilter blkid_untrusted paramblk_device:blk_file read;
 auditfilter blkid_untrusted steady_block_device:blk_file read;
 auditfilter blkid_untrusted vold:unix_stream_socket { read write };
-auditfilter bootchecker logd_socket:sock_file write;
+auditfilter bluetooth overlay_prop:file { read getattr };
+auditfilter bluetooth security_sepolicy_prop:file { read getattr };
+auditfilter bluetooth aslr_prop:file { read getattr };
 auditfilter bootstat bootstat:capability { dac_override dac_read_search };
 auditfilter cameraserver boot_prop:file open;
 auditfilter cameraserver mediacodec:binder call;
@@ -40,6 +43,7 @@ auditfilter dex2oat app_data_file:dir search; comm="dex2oat"
 auditfilter dex2oat selinuxfs:file write;
 auditfilter dex2oat untrusted_app:fd use;
 auditfilter dexoptanalyzer app_data_file:dir write; comm="main"
+auditfilter dmb gpu_device:chr_file { read write };
 auditfilter drmserver proc_avc_msg:file { open write };
 auditfilter drmserver serialno_prop:file read;
 auditfilter dumpstate dumpstate:dir write;
@@ -57,19 +61,24 @@ auditfilter epmlogd storage_file:dir { getattr search };
 auditfilter eris proc_net:file write;
 auditfilter fsck sec_efs_file:dir getattr; comm="e2fsck"
 auditfilter fsck_untrusted steady_block_device:blk_file read;
+auditfilter filtered_untrusted_app proc:file read;
+auditfilter filtered_untrusted_app shell_data_file:dir search;
 auditfilter hal_audio_default diag_device:chr_file { read write };
 auditfilter hal_audio_default imei_efs_file:dir search;
 auditfilter hal_audio_default system_app:fd use;
+auditfilter hal_audio_default sysfs_battery:file read;
 auditfilter hal_camera_default gpu_device:chr_file { read write };
 auditfilter hal_camera_default boot_prop:file read;
 auditfilter hal_camera_default remosaicd:binder call;
 auditfilter hal_camera_default kernel:process setsched;
+auditfilter hal_camera_default debugfs:file read;
+auditfilter hal_camera_default surfaceflinger:process setsched;
 auditfilter hal_drm_default app_data_file:file write;
 auditfilter hal_drm_default radio_data_file:file write;
 auditfilter hal_drm_default sec_efs_file:file read;
 auditfilter hal_drm_default system_app_data_file:file write;
 auditfilter hal_drm_default untrusted_app:fd use;
-auditfilter hal_graphics_composer_default { firmware_file sysfs }:file read;
+auditfilter hal_graphics_composer_default sysfs:file read;
 auditfilter hal_graphics_composer_default diag_device:chr_file { read write };
 auditfilter hal_graphics_composer_default secmem_device:chr_file { read write };
 auditfilter hal_graphics_composer_default system_data_file:dir write;
@@ -85,6 +94,7 @@ auditfilter init proc:dir write;
 auditfilter init qti-testscripts:process transition;
 auditfilter init sysfs_devices_system_cpu:dir write;
 auditfilter init vendor_file:file execute;
+auditfilter init_system_shell vendor_file:file read;
 auditfilter installd installd:capability { ipc_lock sys_resource };
 auditfilter installd system_data_file:dir relabelto;
 auditfilter installd system_data_file:file { read write };
@@ -98,6 +108,9 @@ auditfilter kernel system_data_file:file write;
 auditfilter macloader macloader:capability fowner;
 auditfilter mediacodec system_server:fifo_file write;
 auditfilter mediacodec camera_device:chr_file getattr;
+auditfilter mediadrmserver debugfs_tracing:file write;
+auditfilter mediaextractor gpu_device:chr_file { read write };
+auditfilter mediaprovider shell_data_file:dir { search getattr };
 auditfilter mobicoredaemon vendor_app_file:dir search;
 auditfilter netd sysfs:dir { write add_name };
 auditfilter netutils_wrapper netutils_wrapper:capability sys_module; comm="tc"
@@ -161,6 +174,7 @@ auditfilter priv_app wifi_prop:file read;
 auditfilter pvclicense_sample servicemanager:binder call;
 auditfilter python toolbox_exec:file execute;
 auditfilter python vendor_toolbox_exec:file execute_no_trans;
+auditfilter qti_init_shell debugfs:file write;
 auditfilter qti_init_shell debugfs_tracing:file write;
 auditfilter qti_init_shell default_prop:property_service set;
 auditfilter qti_init_shell proc:dir write;
@@ -177,9 +191,12 @@ auditfilter radio bluetooth_prop:file read;
 auditfilter remotedisplay system_app:fd use;
 auditfilter rfs_access vendor_tombstone_data_file:dir write;
 auditfilter rild eris:tun_socket relabelfrom;
+auditfilter rild system_file:file setattr;
 auditfilter scs scs:capability fowner;
 auditfilter sdcardd tee_device:chr_file { read write };
 auditfilter sdcardd users_system_data_file:file read;
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23151115
+auditfilter sdcardd unlabeled:file read;
 auditfilter sec_untrusted_app proc:file getattr;
 auditfilter sem vendor_app_file:dir search;
 auditfilter sensors diag_device:chr_file { read write };
@@ -198,7 +215,6 @@ auditfilter storaged debugfs_mmc:dir search;
 auditfilter storaged dumpstate:fd use;
 auditfilter storaged storaged:capability { dac_override dac_read_search };
 auditfilter storaged system_app:fd use;
-auditfilter surfaceflinger mediacodec:binder call;
 auditfilter system_app apk_data_file:dir { add_name remove_name }; comm="id.app.omcagent"
 auditfilter system_app apk_data_file:dir write;
 auditfilter system_app apk_data_file:file { create write unlink }; comm="id.app.omcagent"
@@ -236,7 +252,7 @@ auditfilter system_server shell_exec:file execute_no_trans;
 auditfilter system_server system_file:file execute_no_trans;
 auditfilter system_server vendor_file:file read;
 auditfilter system_server vendor_shell_exec:file { execute execute_no_trans };
-auditfilter system_server vfat:dir { read open };
+auditfilter system_server vfat:dir { read open setattr };
 auditfilter system_server vfat:file { read open };
 auditfilter system_server webview_zygote:process sigkill; comm="ActivityManager"
 auditfilter time_daemon sysfs:file read;
@@ -261,7 +277,6 @@ auditfilter untrusted_app app_data_file:dir search;
 auditfilter untrusted_app app_data_file:lnk_file unlink;comm="rm"
 auditfilter untrusted_app config_gz:file getattr;
 auditfilter untrusted_app file_contexts_file:file read;
-auditfilter untrusted_app graphics_vulkan_prop:file read;
 auditfilter untrusted_app hwservice_contexts_file:file read;
 auditfilter untrusted_app mac_perms_file:file read;
 auditfilter untrusted_app net_dns_prop:file read;
@@ -291,7 +306,6 @@ auditfilter untrusted_app_25 configfs:lnk_file { getattr read };
 auditfilter untrusted_app_25 connfwexe_socket:sock_file getattr;
 auditfilter untrusted_app_25 crash_dump_exec:file execute_no_trans;
 auditfilter untrusted_app_25 file_contexts_file:file read;
-auditfilter untrusted_app_25 graphics_vulkan_prop:file read;
 auditfilter untrusted_app_25 hal_memtrack_hwservice:hwservice_manager find;
 auditfilter untrusted_app_25 hwservice_contexts_file:file read;
 auditfilter untrusted_app_25 info_extra_system_file:file read;
@@ -424,9 +438,6 @@ auditfilter platform_app system_app:dir read;
 # P171214-00363 / P171214-00537
 auditfilter init shell_data_file:lnk_file getattr;
 auditfilter installd attiqi_app_data_file:file unlink;
-
-# P171214-03047
-auditfilter priv_app net_dns_prop:file read;
 
 # P171215-04714
 auditfilter trustonicpartner_app bluetooth_prop:file read;
@@ -612,8 +623,6 @@ auditfilter dumpstate app_data_file:file read;
 auditfilter system_app system_app_data_file:file execute;
 
 # OS 8.1 (Crown)
-# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/22989217
-auditfilter dumpstate sysfs_vnswap:file read;
 
 # http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23001124
 auditfilter dumpstate sysfs_mmc_host:file read;
@@ -657,16 +666,143 @@ auditfilter mediaserver graphics_vulkan_prop:file read;
 # http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23117570
 auditfilter system_server zygote:process getpgid;
 
-# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23120419
-auditfilter hal_drm_default mediaprovider:fd use;
-
 # http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23121946
 auditfilter system_app configfs:lnk_file getattr;
 
 # http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23118481
 auditfilter netmgrd diag_device:chr_file { read write };
 
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23135697
+auditfilter qti_init_shell system_data_file:file create;
 
 # http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/22987712
 auditfilter radio radio_data_file:file execute;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23142395
+auditfilter priv_app camera_prop:file read;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23142985
+auditfilter priv_app app_data_file:file open;
+auditfilter priv_app kernel:fd use;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23147919
+auditfilter surfaceflinger system_data_file:dir write;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23132584
+auditfilter wificond act_system_app:fd use;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23152101
+auditfilter system_server mediaserver:process sigkill;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23160439
+auditfilter hal_iop_default shell_data_file:dir open;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23161671
+auditfilter mediaprovider system_server:unix_stream_socket connectto;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23154904/?page=1
+auditfilter netd system_file:dir { write add_name };
+auditfilter netd system_file:file create;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23165403
+auditfilter system_app system_data_file:file append; name="glsl_shader_log.txt"
+auditfilter platform_app system_data_file:file append; name="glsl_shader_log.txt"
+auditfilter policyloader_app system_data_file:file append; name="glsl_shader_log.txt"
+auditfilter untrusted_app system_data_file:file append; name="glsl_shader_log.txt"
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23168540
+auditfilter sgdisk kernel:system module_request;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23177171
+auditfilter clatd devpts:chr_file { read write };
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23179723
+auditfilter system_server system_server:unix_stream_socket ioctl;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23164441
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23184814
+auditfilter platform_app tz_user_device:chr_file { read write };
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23188543/
+auditfilter dumpstate freecessmonitor:binder call;
+
+# P180509-03694
+auditfilter netutils_wrapper netmgrd:socket { read write };
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23189693
+auditfilter radio serialno_prop:file { read getattr open };
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23190281
+auditfilter netd sysfs:file create;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23192536
+auditfilter at_distributor shell_exec:file execute; comm="at_distributor"
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23191854
+# avc: denied { read } for pid=25697 comm=4465766963655363616E204374726C name="07010000000000000000000000000000.tlbin" dev="dm-0" ino=20 scontext=u:r:priv_app:s0:c512,c768 tcontext=u:object_r:mobicore_vendor_file:s0 tclass=file permissive=0 SEPF_SM-N960U_8.1.0_0001 unfiltered
+auditfilter priv_app mobicore_vendor_file:file read;
+
+# P180516-01192 
+auditfilter ephemeral_app trust_service:service_manager find;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23216390/?page=1
+auditfilter remotedisplay gpu_device:chr_file { read write };
+auditfilter remotedisplay graphics_vulkan_prop:file read;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23222206
+# avc:  denied  { read } for  pid=10678 comm="apexserver" name="u:object_r:graphics_vulkan_prop:s0" dev="tmpfs" ino=24239 scontext=u:r:apexserver:s0 tcontext=u:object_r:graphics_vulkan_prop:s0 tclass=file permissive=0 SEPF_SM-N960U_8.1.0_0001 unfiltered
+auditfilter apexserver graphics_vulkan_prop:file read;
+
+# P180529-05723 P180529-02404 
+auditfilter platform_app proc_interrupts:file read;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23225396
+auditfilter platform_app cpefs_block_device:blk_file getattr;
+
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23230968
+auditfilter system_server crash_dump:process getpgid;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23231612
+auditfilter mm-qcamerad debugfs:file read;
+
+# P180605-03838 
+auditfilter shell security_prop:file { open read };
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23247194
+auditfilter trustonicpartner_app proc_interrupts:file read;
+
+# P180611-01893 
+auditfilter trustonicpartner_app debugfs:file read;
+
+# P180607-00503 
+# avc:  denied  { read } for  pid=1961 comm="Thread-7" name="libGLES_mali.so" dev="dm-0" ino=864 scontext=u:r:trustonicpartner_app:s0:c512,c768 tcontext=u:object_r:same_process_hal_file:s0 tclass=lnk_file permissive=0 SEPF_SM-N960N_8.1.0_0001 unfiltered
+# avc:  denied  { getattr } for  pid=1961 comm="pool-1-thread-1" path="/dev/event-log-tags" dev="tmpfs" ino=18825 scontext=u:r:trustonicpartner_app:s0:c512,c768 tcontext=u:object_r:runtime_event_log_tags_file:s0 tclass=file permissive=0 SEPF_SM-N960N_8.1.0_0001 unfiltered
+auditfilter trustonicpartner_app same_process_hal_file:lnk_file read;
+auditfilter trustonicpartner_app runtime_event_log_tags_file:file getattr;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23255267
+auditfilter priv_app nonplat_service_contexts_file:file read;
+
+# P180615-02508
+auditfilter shell vendor_toolbox_exec:file execute;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23257437
+auditfilter netd app_data_file:file append;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23251422
+auditfilter dumpstate freecessmonitor:binder call;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23257009
+auditfilter hal_wifi_default proc_wifi_dbg:file read;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23271457
+auditfilter policyloader_app dalvikcache_data_file:file write;
+
+# P180705-01190
+auditfilter mm-qcamerad sysfs:file read;
+auditfilter qti_init_shell file_contexts_file:file read;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23332975
+auditfilter dumpstate su:unix_stream_socket ioctl; comm="ls"
 
