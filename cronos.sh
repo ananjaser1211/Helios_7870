@@ -70,48 +70,48 @@ CLEAN_SOURCE()
 {
 echo "----------------------------------------------"
 echo " "
-echo "Cleaning"	
+echo "Cleaning"
 #make clean
 #make mrproper
 # rm -r -f $CR_OUT/*
 rm -r -f $CR_DTB
 rm -rf $CR_DTS/.*.tmp
 rm -rf $CR_DTS/.*.cmd
-rm -rf $CR_DTS/*.dtb	
+rm -rf $CR_DTS/*.dtb
 echo " "
-echo "----------------------------------------------"	
+echo "----------------------------------------------"
 }
 DIRTY_SOURCE()
 {
 echo "----------------------------------------------"
 echo " "
-echo "Cleaning"	
+echo "Cleaning"
 # make clean
 # make mrproper
 # rm -r -f $CR_OUT/*
 rm -r -f $CR_DTB
 rm -rf $CR_DTS/.*.tmp
 rm -rf $CR_DTS/.*.cmd
-rm -rf $CR_DTS/*.dtb	
+rm -rf $CR_DTS/*.dtb
 echo " "
-echo "----------------------------------------------"	
+echo "----------------------------------------------"
 }
 BUILD_ZIMAGE()
 {
 	echo "----------------------------------------------"
 	echo " "
-	echo "Building zImage for $CR_VARIANT"	
+	echo "Building zImage for $CR_VARIANT"
 	export LOCALVERSION=-$CR_NAME-$CR_VERSION-$CR_VARIANT-$CR_DATE
 	make  $CR_CONFG
 	make -j$CR_JOBS
 	echo " "
-	echo "----------------------------------------------"	
+	echo "----------------------------------------------"
 }
 BUILD_DTB()
 {
 	echo "----------------------------------------------"
 	echo " "
-	echo "Building DTB for $CR_VARIANT"	
+	echo "Building DTB for $CR_VARIANT"
 	export $CR_ARCH
 	export CROSS_COMPILE=$CR_TC
 	export ANDROID_MAJOR_VERSION=$CR_ANDROID
@@ -124,7 +124,7 @@ BUILD_DTB()
 	echo "Combined DTB Size = $sizT Kb"
 	rm -rf $CR_DTS/.*.tmp
 	rm -rf $CR_DTS/.*.cmd
-	rm -rf $CR_DTS/*.dtb	
+	rm -rf $CR_DTS/*.dtb
 	echo " "
 	echo "----------------------------------------------"
 }
@@ -146,7 +146,7 @@ PACK_BOOT_IMG()
 #####################################################
 TEST_KERNEL()
 {
-echo "Cleaning"	
+echo "Cleaning"
 # make clean
 # make mrproper
 # rm -r -f $CR_OUT/*
@@ -157,11 +157,11 @@ rm -r -f $CR_DTB
 rm -rf $CR_DTS/.*.tmp
 rm -rf $CR_DTS/.*.cmd
 rm -rf $CR_DTS/*.dtb
-echo "Building zImage for $CR_VARIANT"	
+echo "Building zImage for $CR_VARIANT"
 export LOCALVERSION=-$CR_NAME-$CR_VERSION2-$CR_VARIANT-$CR_DATE
 make  $CR_CONFG_TEST
 make -j$CR_JOBS
-echo "Building DTB for $CR_VARIANT"	
+echo "Building DTB for $CR_VARIANT"
 export $CR_ARCH
 export CROSS_COMPILE=$CR_TC
 export ANDROID_MAJOR_VERSION=$CR_ANDROID
@@ -174,7 +174,7 @@ rm -rf sizT
 echo "Combined DTB Size = $sizT Kb"
 rm -rf $CR_DTS/.*.tmp
 rm -rf $CR_DTS/.*.cmd
-rm -rf $CR_DTS/*.dtb	
+rm -rf $CR_DTS/*.dtb
 echo "Building Boot.img for $CR_VARIANT_TEST"
 cp -rf $CR_RAMDISK_TEST/* $CR_AIK
 mv $CR_KERNEL $CR_AIK/split_img/boot.img-zImage
@@ -182,7 +182,7 @@ mv $CR_DTB $CR_AIK/split_img/boot.img-dtb
 $CR_AIK/repackimg.sh
 echo -n "SEANDROIDENFORCE" » $CR_AIK/image-new.img
 mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION2-$CR_DATE-$CR_VARIANT.img
-$CR_AIK/cleanup.sh  
+$CR_AIK/cleanup.sh
 }
 #####################################################
 ################# TEST VERSION ######################
@@ -259,7 +259,7 @@ do
             ;;
 #####################################################
 ################# TEST VERSION ######################
-#####################################################            
+#####################################################
         "TEST")
             clear
             CLEAN_SOURCE
@@ -277,10 +277,10 @@ do
             echo "----------------------------------------------"
             read -n1 -r key
             break
-            ;;	            
+            ;;
 #####################################################
 ################# TEST VERSION ######################
-#####################################################            
+#####################################################
         "Exit")
             break
             ;;
