@@ -5,18 +5,16 @@
 
 #define EXTEND_BRIGHTNESS	306
 #define UI_MAX_BRIGHTNESS	255
-#define UI_MIN_BRIGHTNESS	0
 #define UI_DEFAULT_BRIGHTNESS	128
 #define DEFAULT_CANDELA		92
 #define DIM_BRIGHTNESS		15
-#define NORMAL_TEMPERATURE	25	/* 25 degrees Celsius */
 
-struct LM3632_rom_data {
+struct i2c_rom_data {
 	u8 addr;
 	u8 val;
 };
 
-static char UI_MDNIE_1[] ={
+static char UI_MDNIE_1[] = {
 	//start
 	0xE8,
 	0x00, //roi0 x start
@@ -37,7 +35,7 @@ static char UI_MDNIE_1[] ={
 	0x00,
 };
 
-static char UI_MDNIE_2[] ={
+static char UI_MDNIE_2[] = {
 	0xE9,
 	0x00, //scr Cr Yb
 	0xff, //scr Rr Bb
@@ -65,7 +63,7 @@ static char UI_MDNIE_2[] ={
 	0x00, //scr Kb Kr
 };
 
-static char UI_MDNIE_3[] ={
+static char UI_MDNIE_3[] = {
 	0xEA,
 	0x00, //curve 1 b
 	0x20, //curve 1 a
@@ -121,7 +119,7 @@ static char UI_MDNIE_4[] = {
 	0xFF, //curve24 a
 };
 
-static char UI_MDNIE_5[] ={
+static char UI_MDNIE_5[] = {
 	0xEC,
 	0x04, //cc r1 0.15
 	0x88,
@@ -143,7 +141,7 @@ static char UI_MDNIE_5[] ={
 	0x6c,
 };
 
-static char UI_MDNIE_6[] ={
+static char UI_MDNIE_6[] = {
 	0xE7,
 	0x08, //roi_ctrl rgb_if_type mdnie_en mask 00 00 0 000
 	0x03, //scr_roi 1 scr algo_roi 1 algo 00 1 0 00 1 0
@@ -155,7 +153,7 @@ static char UI_MDNIE_6[] ={
 	//end
 };
 
-static char OUTDOOR_MDNIE_1[] ={
+static char OUTDOOR_MDNIE_1[] = {
 	//start
 	0xE8,
 	0x00, //roi0 x start
@@ -176,7 +174,7 @@ static char OUTDOOR_MDNIE_1[] ={
 	0x00,
 };
 
-static char OUTDOOR_MDNIE_2[] ={
+static char OUTDOOR_MDNIE_2[] = {
 	0xE9,
 	0x00, //scr Cr Yb
 	0xff, //scr Rr Bb
@@ -204,7 +202,7 @@ static char OUTDOOR_MDNIE_2[] ={
 	0x00, //scr Kb Kr
 };
 
-static char OUTDOOR_MDNIE_3[] ={
+static char OUTDOOR_MDNIE_3[] = {
 	0xEA,
 	0x00, //curve 1 b
 	0x7b, //curve 1 a
@@ -232,7 +230,7 @@ static char OUTDOOR_MDNIE_3[] ={
 	0x28, //curve12 a
 };
 
-static char OUTDOOR_MDNIE_4[] ={
+static char OUTDOOR_MDNIE_4[] = {
 	0xEB,
 	0x19, //curve13 b
 	0x22, //curve13 a
@@ -260,7 +258,7 @@ static char OUTDOOR_MDNIE_4[] ={
 	0xFF, //curve24 a
 };
 
-static char OUTDOOR_MDNIE_5[] ={
+static char OUTDOOR_MDNIE_5[] = {
 	0xEC,
 	0x04, //cc r1 0.15
 	0x88,
@@ -282,7 +280,7 @@ static char OUTDOOR_MDNIE_5[] ={
 	0x6c,
 };
 
-static char OUTDOOR_MDNIE_6[] ={
+static char OUTDOOR_MDNIE_6[] = {
 	0xE7,
 	0x08, //roi_ctrl rgb_if_type mdnie_en mask 00 00 0 000
 	0x03, //scr_roi 1 scr algo_roi 1 algo 00 1 0 00 1 0
@@ -294,7 +292,7 @@ static char OUTDOOR_MDNIE_6[] ={
 	//end
 };
 
-static const struct LM3632_rom_data backlight_ic_tuning[] = {//LM3632_eprom_drv_arr[] = {
+static const struct i2c_rom_data backlight_ic_tuning[] = {//LM3632_eprom_drv_arr[] = {
 	{ 0x09, 0x41},
 	{ 0x02, 0x50},
 	{ 0x03, 0x0D},
@@ -308,19 +306,19 @@ static const struct LM3632_rom_data backlight_ic_tuning[] = {//LM3632_eprom_drv_
 };
 
 /*
-static const struct LM3632_rom_data backlight_i2c_bl_ctrl[] = {	//LM3632_eprom_drv_arr_off[] = {
+static const struct i2c_rom_data backlight_i2c_bl_ctrl[] = {	//LM3632_eprom_drv_arr_off[] = {
 	{ 0x04, 0x00},
 	{ 0x05, 0x00},
 
 };
 */
-static const struct LM3632_rom_data backlight_ic_tuning_outdoor[] = {//LM3632_eprom_drv_arr_outdoor_on[] = {
+static const struct i2c_rom_data backlight_ic_tuning_outdoor[] = {//LM3632_eprom_drv_arr_outdoor_on[] = {
 	{ 0x09, 0x01},
 	{ 0x04, 0x07},
 	{ 0x05, 0xCB},
 };
 
-static const struct LM3632_rom_data backlight_ic_tuning_normal[] = {//LM3632_eprom_drv_arr_outdoor_off[] = {
+static const struct i2c_rom_data backlight_ic_tuning_normal[] = {//LM3632_eprom_drv_arr_outdoor_off[] = {
 	{ 0x04, 0x05},
 	{ 0x05, 0xCC},
 	{ 0x09, 0x41},

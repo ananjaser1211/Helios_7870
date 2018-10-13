@@ -36,7 +36,6 @@ enum {
 #define NORMAL_TEMPERATURE	25	/* 25 degrees Celsius */
 #define EXTEND_BRIGHTNESS	355
 #define UI_MAX_BRIGHTNESS	255
-#define UI_MIN_BRIGHTNESS	0
 #define UI_DEFAULT_BRIGHTNESS	134
 
 #define MTP_ADDR		0xC8
@@ -54,6 +53,16 @@ enum {
 
 #define GAMMA_CMD_CNT			ARRAY_SIZE(SEQ_GAMMA_CONDITION_SET)
 #define AID_CMD_CNT		ARRAY_SIZE(SEQ_AID_SET)
+
+static const unsigned char SEQ_POWER_SEQ[] = {
+	0xB1,
+	0x3C, 0x89, 0x00, 0x05, 0x33, 0x31, 0x14,
+};
+
+static const unsigned char SEQ_AOR_MAX[] = {
+	0xB2,
+	0x00, 0x00, 0x05, 0x10,
+};
 
 static const unsigned char SEQ_SOURCE_SLEW[] = {
 	0xBA,

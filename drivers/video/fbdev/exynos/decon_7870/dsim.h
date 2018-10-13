@@ -94,7 +94,7 @@ struct dsim_resources {
 };
 
 struct panel_private {
-	unsigned int lcdConnected;
+	unsigned int lcdconnected;
 	void *par;
 };
 
@@ -154,12 +154,12 @@ struct dsim_device {
  */
 
 struct mipi_dsim_lcd_driver {
+	char	*name;
 	int	(*early_probe)(struct dsim_device *dsim);
 	int	(*probe)(struct dsim_device *dsim);
 	int	(*suspend)(struct dsim_device *dsim);
 	int	(*displayon)(struct dsim_device *dsim);
-	int	(*displayon_late)(struct dsim_device *dsim);
-	int	(*prepare)(struct dsim_device *dsim);
+	int	(*resume_early)(struct dsim_device *dsim);
 	int	(*resume)(struct dsim_device *dsim);
 	int	(*dump)(struct dsim_device *dsim);
 #ifdef CONFIG_LCD_DOZE_MODE

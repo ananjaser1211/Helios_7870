@@ -22,7 +22,7 @@
 #include "../decon_notify.h"
 #include <linux/pwm.h>
 #include "s6d78a0_qhd_gppiris_param.h"
-#include "backlight_tuning.h"
+#include "dd.h"
 
 #define POWER_IS_ON(pwr)			(pwr <= FB_BLANK_NORMAL)
 #define LEVEL_IS_HBM(brightness)		(brightness == EXTEND_BRIGHTNESS)
@@ -44,7 +44,6 @@ struct lcd_info {
 		};
 		u32 value;
 	} id_info;
-	unsigned char dump_info[3];
 	struct dsim_device *dsim;
 	struct mutex lock;
 	int lux;
@@ -563,7 +562,7 @@ static void lcd_init_sysfs(struct lcd_info *lcd)
 	if (ret < 0)
 		dev_err(&lcd->ld->dev, "failed to add lcd sysfs\n");
 
-	init_bl_curve_debugfs(lcd->bd, brightness_table, NULL);
+	init_debugfs_backlight(lcd->bd, brightness_table, NULL);
 }
 
 static int dsim_panel_probe(struct dsim_device *dsim)

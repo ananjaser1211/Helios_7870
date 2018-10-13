@@ -46,6 +46,7 @@
 #include "decon.h"
 #include "panels/dsim_panel.h"
 #include "decon_board.h"
+#include "panels/dd.h"
 
 #define MHZ (1000 * 1000)
 
@@ -178,6 +179,7 @@ int dsim_write_data(struct dsim_device *dsim, unsigned int data_id,
 		goto err_exit;
 	}
 	DISP_SS_EVENT_LOG_CMD(&dsim->sd, data_id, data0);
+	dsim_write_data_dump(dsim, data_id, data0, data1);
 
 	switch (data_id) {
 	/* short packet types of packet types for command. */
@@ -327,7 +329,7 @@ static int dsim_partial_area_command(struct dsim_device *dsim, void *arg)
 	char data_2b[5];
 	int retry;
 
-	if (priv->lcdConnected == PANEL_DISCONNEDTED)
+	if (!priv->lcdconnected)
 		return 0;
 
 	/* w is right & h is bottom */
@@ -381,6 +383,41 @@ static void dsim_set_lcd_full_screen(struct dsim_device *dsim)
 }
 #endif
 
+static int decon_reg_wait_linecnt_is_safe_timeout(u32 id, int dsi_idx,
+				unsigned long timeout, unsigned int limit)
+{
+	unsigned long delay_time = 10;
+	unsigned long cnt = timeout / delay_time;
+	u32 linecnt;
+	void __iomem *vidcon0, *vidcon1;
+
+	vidcon0 = decon_int_drvdata ? decon_int_drvdata->regs + VIDCON0 : ioremap(0x14830000, SZ_4);
+	vidcon1 = decon_int_drvdata ? decon_int_drvdata->regs + VIDCON1(dsi_idx) : ioremap(0x14830600, SZ_4);
+
+	if (!(readl(vidcon0) & VIDCON0_DECON_STOP_STATUS))
+		goto exit;
+
+	do {
+		linecnt = VIDCON1_LINECNT_GET(readl(vidcon1));
+		if (linecnt && linecnt < limit)
+			break;
+		cnt--;
+		udelay(delay_time);
+	} while (cnt);
+
+	if (!cnt) {
+		decon_err("wait timeout linecount is safe(%u)\n", linecnt);
+	}
+
+exit:
+	if (!decon_int_drvdata) {
+		iounmap(vidcon0);
+		iounmap(vidcon1);
+	}
+
+	return 0;
+}
+
 int dsim_read_data(struct dsim_device *dsim, u32 data_id,
 	 u32 addr, u32 count, u8 *buf)
 {
@@ -407,6 +444,10 @@ int dsim_read_data(struct dsim_device *dsim, u32 data_id,
 	/* Set the maximum packet size returned */
 	dsim_write_data(dsim,
 		MIPI_DSI_SET_MAXIMUM_RETURN_PACKET_SIZE, count, 0);
+
+	/* Read request will be sent at safe region */
+	if (dsim->lcd_info.mode == DECON_VIDEO_MODE)
+		decon_reg_wait_linecnt_is_safe_timeout(DECON_INT, dsim->id, 35 * 1000, (dsim->lcd_info.yres >> 2));
 
 	/* Read request */
 	dsim_write_data(dsim, data_id, addr, 0);
@@ -683,7 +724,7 @@ static int dsim_reset_panel(struct dsim_device *dsim)
 	return 0;
 }
 
-int dsim_set_panel_pre_power(struct dsim_device *dsim)
+int dsim_set_panel_power_early(struct dsim_device *dsim)
 {
 	dsim_dbg("%s +\n", __func__);
 
@@ -728,17 +769,17 @@ static int dsim_enable(struct dsim_device *dsim)
 		goto exit;
 	}
 
-	/* Panel power on early*/
-	dsim_set_panel_pre_power(dsim);
-
-	call_panel_ops(dsim, prepare, dsim);
-
 #ifdef CONFIG_EXYNOS_MIPI_DSI_ENABLE_EARLY
 	if (dsim->enable_early == DSIM_ENABLE_EARLY_DONE) {
 		dsim_info("%s: LP11 reset is already done. Jump to enable_hs_clk\n", __func__);
 		goto enable_hs_clk;
 	}
 #endif
+
+	/* Panel power on early*/
+	dsim_set_panel_power_early(dsim);
+
+	call_panel_ops(dsim, resume_early, dsim);
 
 	dsim_info("%s: ++\n", __func__);
 
@@ -835,7 +876,8 @@ static int dsim_disable(struct dsim_device *dsim)
 	dsim_pkt_go_enable(dsim, false);
 #endif
 	dsim_set_lcd_full_screen(dsim);
-	call_panel_ops(dsim, suspend, dsim);
+	if (dsim->lcd_info.mode != DECON_VIDEO_MODE)
+		call_panel_ops(dsim, suspend, dsim);
 
 #ifdef CONFIG_LCD_DOZE_MODE
 	dsim->doze_state = DOZE_STATE_SUSPEND;
@@ -1513,14 +1555,6 @@ static int dsim_probe(struct platform_device *pdev)
 		goto err_mem_region;
 	}
 
-	dsim->irq = res->start;
-	ret = devm_request_irq(dev, res->start,
-			dsim_interrupt_handler, 0, pdev->name, dsim);
-	if (ret) {
-		dev_err(dev, "failed to install irq\n");
-		goto err_irq;
-	}
-
 	ret = dsim_register_entity(dsim);
 	if (ret)
 		goto err_irq;
@@ -1560,6 +1594,14 @@ static int dsim_probe(struct platform_device *pdev)
 	dsim_runtime_resume(dsim->dev);
 #endif
 
+	dsim->irq = res->start;
+	ret = devm_request_irq(dev, res->start,
+			dsim_interrupt_handler, 0, pdev->name, dsim);
+	if (ret) {
+		dev_err(dev, "failed to install irq\n");
+		goto err_irq;
+	}
+
 	/* DPHY init and power on */
 	phy_init(dsim->phy);
 	phy_power_on(dsim->phy);
@@ -1571,7 +1613,7 @@ static int dsim_probe(struct platform_device *pdev)
 	}
 
 	/* Panel power on */
-	ret = dsim_set_panel_pre_power(dsim);
+	ret = dsim_set_panel_power_early(dsim);
 	if (ret) {
 		dsim_err("%s : failed to panel power early\n", __func__);
 		goto err;

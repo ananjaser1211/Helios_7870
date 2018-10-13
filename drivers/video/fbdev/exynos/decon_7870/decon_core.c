@@ -865,341 +865,6 @@ static int decon_win_update_disp_config(struct decon_device *decon,
 }
 #endif
 
-
-static void decon_abd_clear_pending_bit(int irq)
-{
-	struct irq_desc *desc;
-
-	desc = irq_to_desc(irq);
-	if (desc->irq_data.chip->irq_ack) {
-		desc->irq_data.chip->irq_ack(&desc->irq_data);
-		desc->istate &= ~IRQS_PENDING;
-	}
-}
-
-static void decon_abd_enable_interrupt(struct decon_device *decon, bool enable)
-{
-	struct abd_protect *abd = &decon->abd;
-
-	if (!abd)
-		return;
-
-	if (enable) {
-		if (abd->pcd_irq) {
-			decon_info("%s: %d, vsync: %d, pcd(%d) level: %d\n", __func__, enable, decon->ignore_vsync, abd->pcd_irq, gpio_get_value(abd->pcd_gpio));
-			if (abd->pcd_pin_active == gpio_get_value(abd->pcd_gpio)) {
-				decon_info("%s: detection panel crack. from now ignore vsync\n", __func__);
-				decon->ignore_vsync = true;
-			}
-			decon_abd_clear_pending_bit(abd->pcd_irq);
-			enable_irq(abd->pcd_irq);
-		}
-		if (abd->err_irq) {
-			decon_info("%s: %d, vsync: %d, err(%d) level: %d\n", __func__, enable, decon->ignore_vsync, abd->err_irq, gpio_get_value(abd->err_gpio));
-			decon_abd_clear_pending_bit(abd->err_irq);
-			enable_irq(abd->err_irq);
-		}
-		if (abd->det_irq) {
-			decon_info("%s: %d, vsync: %d, det(%d) level: %d\n", __func__, enable, decon->ignore_vsync, abd->det_irq, gpio_get_value(abd->det_gpio));
-			decon_abd_clear_pending_bit(abd->det_irq);
-			enable_irq(abd->det_irq);
-		}
-	} else {
-		if (abd->pcd_irq) {
-			decon_info("%s: %d, vsync: %d, pcd(%d) level: %d\n", __func__, enable, decon->ignore_vsync, abd->pcd_irq, gpio_get_value(abd->pcd_gpio));
-			disable_irq_nosync(abd->pcd_irq);
-		}
-		if (abd->err_irq) {
-			decon_info("%s: %d, vsync: %d, err(%d) level: %d\n", __func__, enable, decon->ignore_vsync, abd->err_irq, gpio_get_value(abd->err_gpio));
-			disable_irq_nosync(abd->err_irq);
-		}
-		if (abd->det_irq) {
-			decon_info("%s: %d, vsync: %d, det(%d) level: %d\n", __func__, enable, decon->ignore_vsync, abd->det_irq, gpio_get_value(abd->det_gpio));
-			disable_irq_nosync(abd->det_irq);
-		}
-	}
-}
-
-static int decon_abd_reset(struct decon_device *decon)
-{
-	struct abd_protect *abd = &decon->abd;
-	int ret = 0;
-
-	decon_info("++ %s\n", __func__);
-
-	if (decon->state == DECON_STATE_OFF) {
-		decon_warn("decon status is inactive\n");
-		return ret;
-	}
-
-	decon_lpd_block_exit(decon);
-
-	mutex_lock(&decon->output_lock);
-
-	if (decon->pdata->psr_mode == DECON_MIPI_COMMAND_MODE)
-		decon->ignore_vsync = true;
-
-	flush_kthread_worker(&decon->update_regs_worker);
-
-	/* stop output device (mipi-dsi or hdmi) */
-	ret = v4l2_subdev_call(decon->output_sd, video, s_stream, 0);
-	if (ret) {
-		decon_err("stopping stream failed for %s\n",
-				decon->output_sd->name);
-		goto reset_fail;
-	}
-
-	ret = v4l2_subdev_call(decon->output_sd, video, s_stream, 1);
-	if (ret) {
-		decon_err("starting stream failed for %s\n",
-				decon->output_sd->name);
-		goto reset_fail;
-	}
-
-reset_fail:
-	spin_lock(&abd->lock);
-	abd->queuework_pending = 0;
-	spin_unlock(&abd->lock);
-
-	if (decon->pdata->psr_mode == DECON_MIPI_COMMAND_MODE)
-		decon->ignore_vsync = false;
-
-#ifdef CONFIG_FB_WINDOW_UPDATE
-	decon->need_update = true;
-	decon->update_win.x = 0;
-	decon->update_win.y = 0;
-	decon->update_win.w = decon->lcd_info->xres;
-	decon->update_win.h = decon->lcd_info->yres;
-	decon->force_fullupdate = 1;
-#endif
-
-	mutex_unlock(&decon->output_lock);
-
-	decon_lpd_unblock(decon);
-
-	decon_abd_enable_interrupt(decon, true);
-
-	decon_info("-- %s\n", __func__);
-
-	return ret;
-}
-
-static void decon_abd_work(struct work_struct *work)
-{
-	struct abd_protect *abd = container_of(work, struct abd_protect, work);
-	struct decon_device *decon = container_of(abd, struct decon_device, abd);
-	int ret = 0;
-
-	decon_info("%s\n", __func__);
-
-	if (decon->out_type == DECON_OUT_DSI) {
-		ret = decon_abd_reset(decon);
-		if (ret)
-			decon_err("%s: failed to panel reset", __func__);
-	}
-}
-
-irqreturn_t decon_abd_pcd_handler(int irq, void *dev_id)
-{
-	struct decon_device *decon = (struct decon_device *)dev_id;
-	struct abd_protect *abd = &decon->abd;
-	int level = gpio_get_value(abd->pcd_gpio);
-
-	decon_info("%s: level: %d, state: %d\n",  __func__, level, decon->state);
-
-	if (abd->pcd_pin_active != level)
-		goto handler_exit;
-
-	decon_info("%s: detection panel crack. from now ignore vsync\n", __func__);
-
-	decon->ignore_vsync = true;
-
-handler_exit:
-	return IRQ_HANDLED;
-}
-
-irqreturn_t decon_abd_err_handler(int irq, void *dev_id)
-{
-	struct decon_device *decon = (struct decon_device *)dev_id;
-	struct abd_protect *abd = &decon->abd;
-	int level = gpio_get_value(abd->err_gpio);
-
-	decon_info("%s: level: %d, state: %d, count: %d\n",  __func__, level, decon->state, decon->abd.err_count);
-
-	if (abd->err_pin_active != level)
-		goto handler_exit;
-
-	if (decon->state == DECON_STATE_OFF)
-		goto handler_exit;
-
-	spin_lock(&abd->lock);
-	if (abd->wq && !abd->queuework_pending) {
-		decon_abd_enable_interrupt(decon, false);
-		abd->queuework_pending = 1;
-		decon->abd.err_count++;
-		queue_work(abd->wq, &abd->work);
-	}
-	spin_unlock(&abd->lock);
-
-handler_exit:
-	return IRQ_HANDLED;
-}
-
-irqreturn_t decon_abd_det_handler(int irq, void *dev_id)
-{
-	struct decon_device *decon = (struct decon_device *)dev_id;
-	struct abd_protect *abd = &decon->abd;
-	int level = gpio_get_value(abd->det_gpio);
-
-	decon_info("%s: level: %d, state: %d, count: %d\n",  __func__, level, decon->state, decon->abd.det_count);
-
-	if (abd->det_pin_active != level)
-		goto handler_exit;
-
-	if (decon->state == DECON_STATE_OFF)
-		goto handler_exit;
-
-	spin_lock(&abd->lock);
-	if (abd->wq && !abd->queuework_pending) {
-		decon_abd_enable_interrupt(decon, false);
-		abd->queuework_pending = 1;
-		decon->abd.det_count++;
-		queue_work(abd->wq, &abd->work);
-	}
-	spin_unlock(&abd->lock);
-
-handler_exit:
-	return IRQ_HANDLED;
-}
-
-static int decon_abd_reboot_notifier(struct notifier_block *this,
-		unsigned long code, void *unused)
-{
-	struct abd_protect *abd = container_of(this, struct abd_protect, reboot_notifier);
-	struct decon_device *decon = container_of(abd, struct decon_device, abd);
-
-	decon_info("%s: %lu\n",  __func__, code);
-
-	decon_abd_enable_interrupt(decon, false);
-
-	return NOTIFY_DONE;
-}
-
-static int decon_abd_register_function(struct decon_device *decon)
-{
-	int ret = 0;
-	struct abd_protect *abd = &decon->abd;
-	struct device *dev = decon->dev;
-	enum of_gpio_flags flags;
-	unsigned int pcd_irqf_type = IRQF_TRIGGER_RISING;
-	unsigned int err_irqf_type = IRQF_TRIGGER_RISING;
-	unsigned int det_irqf_type = IRQF_TRIGGER_RISING;
-
-	decon_info("%s: ++\n", __func__);
-
-	abd->pcd_gpio = of_get_named_gpio_flags(dev->of_node, "gpio_pcd", 0, &flags);
-	if (gpio_is_valid(abd->pcd_gpio)) {
-		decon_info("%s: found gpio_pcd(%d) success\n", __func__, abd->pcd_gpio);
-		abd->pcd_irq = gpio_to_irq(abd->pcd_gpio);
-		abd->pcd_pin_active = !(flags & OF_GPIO_ACTIVE_LOW);
-		pcd_irqf_type = (flags & OF_GPIO_ACTIVE_LOW) ? IRQF_TRIGGER_FALLING : IRQF_TRIGGER_RISING;
-		decon_info("%s: pcd is active %s, %s\n", __func__, abd->pcd_pin_active ? "high" : "low",
-			(pcd_irqf_type == IRQF_TRIGGER_RISING) ? "rising" : "falling");
-		ret++;
-
-		if (abd->pcd_pin_active == gpio_get_value(abd->pcd_gpio)) {
-			decon_info("%s: pcd(%d) is already %s(%d)\n", __func__, abd->pcd_gpio,
-				(abd->pcd_pin_active) ? "high" : "low", gpio_get_value(abd->pcd_gpio));
-		}
-	}
-
-	abd->err_gpio = of_get_named_gpio_flags(dev->of_node, "gpio_err", 0, &flags);
-	if (gpio_is_valid(abd->err_gpio)) {
-		decon_info("%s: found gpio_err(%d) success\n", __func__, abd->err_gpio);
-		abd->err_irq = gpio_to_irq(abd->err_gpio);
-		abd->err_pin_active = !(flags & OF_GPIO_ACTIVE_LOW);
-		err_irqf_type = (flags & OF_GPIO_ACTIVE_LOW) ? IRQF_TRIGGER_FALLING : IRQF_TRIGGER_RISING;
-		decon_info("%s: err is active %s, %s\n", __func__, abd->err_pin_active ? "high" : "low",
-			(err_irqf_type == IRQF_TRIGGER_RISING) ? "rising" : "falling");
-		ret++;
-
-		if (abd->err_pin_active == gpio_get_value(abd->err_gpio)) {
-			decon_info("%s: err(%d) is already %s(%d)\n", __func__, abd->err_gpio,
-				(abd->err_pin_active) ? "high" : "low", gpio_get_value(abd->err_gpio));
-		}
-	}
-
-	abd->det_gpio = of_get_named_gpio_flags(dev->of_node, "gpio_det", 0, &flags);
-	if (gpio_is_valid(abd->det_gpio)) {
-		decon_info("%s: found gpio_det(%d) success\n", __func__, abd->det_gpio);
-		abd->det_irq = gpio_to_irq(abd->det_gpio);
-		abd->det_pin_active = !(flags & OF_GPIO_ACTIVE_LOW);
-		det_irqf_type = (flags & OF_GPIO_ACTIVE_LOW) ? IRQF_TRIGGER_FALLING : IRQF_TRIGGER_RISING;
-		decon_info("%s: det is active %s, %s\n", __func__, abd->det_pin_active ? "high" : "low",
-			(det_irqf_type == IRQF_TRIGGER_RISING) ? "rising" : "falling");
-		ret++;
-
-		if (abd->det_pin_active == gpio_get_value(abd->det_gpio)) {
-			decon_info("%s: det(%d) is already %s(%d)\n", __func__, abd->det_gpio,
-				(abd->det_pin_active) ? "high" : "low", gpio_get_value(abd->det_gpio));
-		}
-	}
-
-	if (ret == 0)
-		goto register_exit;
-
-	if (abd->err_irq || abd->det_irq) {
-		abd->wq = create_singlethread_workqueue("decon_abd");
-		INIT_WORK(&abd->work, decon_abd_work);
-		spin_lock_init(&abd->lock);
-	}
-
-	if (abd->pcd_irq) {
-		irq_set_irq_type(abd->pcd_irq, pcd_irqf_type);
-		irq_set_status_flags(abd->pcd_irq, _IRQ_NOAUTOEN);
-		decon_abd_clear_pending_bit(abd->pcd_irq);
-
-		if (devm_request_irq(dev, abd->pcd_irq, decon_abd_pcd_handler,
-				pcd_irqf_type, "pcd-irq", decon)) {
-			decon_err("%s: failed to request irq for pcd\n", __func__);
-			abd->pcd_irq = 0;
-			ret--;
-		}
-	}
-	if (abd->err_irq) {
-		irq_set_irq_type(abd->err_irq, err_irqf_type);
-		irq_set_status_flags(abd->err_irq, _IRQ_NOAUTOEN);
-		decon_abd_clear_pending_bit(abd->err_irq);
-
-		if (devm_request_irq(dev, abd->err_irq, decon_abd_err_handler,
-				err_irqf_type, "err-irq", decon)) {
-			decon_err("%s: failed to request irq for err\n", __func__);
-			abd->err_irq = 0;
-			ret--;
-		}
-	}
-	if (abd->det_irq) {
-		irq_set_irq_type(abd->det_irq, det_irqf_type);
-		irq_set_status_flags(abd->det_irq, _IRQ_NOAUTOEN);
-		decon_abd_clear_pending_bit(abd->det_irq);
-
-		if (devm_request_irq(dev, abd->det_irq, decon_abd_det_handler,
-				det_irqf_type, "det-irq", decon)) {
-			decon_err("%s: failed to request irq for det\n", __func__);
-			abd->det_irq = 0;
-			ret--;
-		}
-	}
-
-	abd->reboot_notifier.notifier_call = decon_abd_reboot_notifier;
-	register_reboot_notifier(&abd->reboot_notifier);
-
-register_exit:
-	decon_info("%s: -- %d entity was registered\n", __func__, ret);
-
-	return ret;
-}
-
 static int decon_reg_set_regs_data_init(struct fb_info *info)
 {
 	struct fb_var_screeninfo *var = &info->var;
@@ -1410,7 +1075,7 @@ int decon_enable(struct decon_device *decon)
 #endif
 
 	if (state != DECON_STATE_LPD_EXIT_REQ)
-		decon_abd_enable_interrupt(decon, true);
+		decon_abd_enable(decon, 1);
 err:
 	exynos_ss_printk("%s:state %d: active %d:-\n", __func__,
 				decon->state, pm_runtime_active(decon->dev));
@@ -1425,6 +1090,8 @@ int decon_disable(struct decon_device *decon)
 	int ret = 0;
 	unsigned long irq_flags;
 	int state = decon->state;
+	struct dsim_device *dsim = NULL;
+
 #ifdef CONFIG_LCD_DOZE_MODE
 	int is_lcd_off = 0;
 
@@ -1439,11 +1106,9 @@ int decon_disable(struct decon_device *decon)
 	if (decon->out_type == DECON_OUT_TUI)
 		decon_tui_protection(decon, false);
 
-	if (decon->state != DECON_STATE_LPD_ENT_REQ) {
-		decon_abd_enable_interrupt(decon, false);
-		if (decon->abd.wq)
-			flush_workqueue(decon->abd.wq);
-	}
+	if (decon->state != DECON_STATE_LPD_ENT_REQ)
+		decon_abd_enable(decon, 0);
+
 
 	if (decon->state != DECON_STATE_LPD_ENT_REQ)
 		mutex_lock(&decon->output_lock);
@@ -1474,10 +1139,8 @@ int decon_disable(struct decon_device *decon)
 	}
 
 	if (decon->out_type == DECON_OUT_DSI && decon->pdata->psr_mode == DECON_VIDEO_MODE) {
-		/* stop output device (mipi-dsi) */
-		ret = v4l2_subdev_call(decon->output_sd, video, s_stream, 0);
-		if (ret)
-			decon_err("stopping stream failed for %s\n", decon->output_sd->name);
+		dsim = container_of(decon->output_sd, struct dsim_device, sd);
+		call_panel_ops(dsim, suspend, dsim);
 	}
 
 	decon_to_psr_info(decon, &psr);
@@ -1503,14 +1166,12 @@ int decon_disable(struct decon_device *decon)
 		}
 		decon->state = DECON_STATE_LPD;
 	} else if (decon->out_type == DECON_OUT_DSI) {
-		if (decon->pdata->psr_mode != DECON_VIDEO_MODE) {
-			/* stop output device (mipi-dsi) */
-			ret = v4l2_subdev_call(decon->output_sd, video, s_stream, 0);
-			if (ret) {
-				decon_err("stopping stream failed for %s\n",
-						decon->output_sd->name);
-				goto err;
-			}
+		/* stop output device (mipi-dsi) */
+		ret = v4l2_subdev_call(decon->output_sd, video, s_stream, 0);
+		if (ret) {
+			decon_err("stopping stream failed for %s\n",
+					decon->output_sd->name);
+			goto err;
 		}
 
 		pm_relax(decon->dev);
@@ -2573,15 +2234,14 @@ static void __decon_update_regs(struct decon_device *decon, struct decon_reg_dat
 #endif
 }
 
-static void decon_fence_wait(struct sync_fence *fence)
+int decon_fence_wait(struct sync_fence *fence)
 {
 	/* change the fence time-out for G3D performance */
 	int err = sync_fence_wait(fence, 3500);
-	if (err >= 0)
-		return;
-
 	if (err < 0)
 		decon_warn("error waiting on acquire fence: %d\n", err);
+
+	return err;
 }
 
 #ifdef CONFIG_DECON_DEVFREQ
@@ -2702,8 +2362,10 @@ static void decon_update_regs(struct decon_device *decon, struct decon_reg_data 
 		for (j = 0; j < MAX_BUF_PLANE_CNT; ++j)
 			old_dma_bufs[i][j] = decon->windows[i]->dma_buf_data[j];
 
-		if (regs->dma_buf_data[i][0].fence)
-			decon_fence_wait(regs->dma_buf_data[i][0].fence);
+		if (regs->dma_buf_data[i][0].fence) {
+			if (decon_fence_wait(regs->dma_buf_data[i][0].fence) < 0)
+				decon_abd_save_log_fto(&decon->abd, regs->dma_buf_data[i][0].fence);
+		}
 	}
 
 	decon->tracing_mark_write(decon->systrace_pid, 'E', "decon_fence_wait", 0);
@@ -3155,7 +2817,7 @@ int decon_doze_enable(struct decon_device *decon)
 	call_panel_ops(dsim, displayon, dsim);
 
 	if (state != DECON_STATE_LPD_ENT_REQ)
-		decon_abd_enable_interrupt(decon, true);
+		decon_abd_enable(decon, 1);
 
 err:
 	exynos_ss_printk("%s:state %d: active %d:-\n", __func__,
@@ -3175,9 +2837,7 @@ int decon_doze_suspend(struct decon_device *decon)
 	exynos_ss_printk("disable decon-%s, state(%d) cnt %d\n", "int",
 				decon->state, pm_runtime_active(decon->dev));
 
-	decon_abd_enable_interrupt(decon, false);
-	if (decon->abd.wq)
-		flush_workqueue(decon->abd.wq);
+	decon_abd_enable(decon, 0);
 
 	if (decon->state != DECON_STATE_LPD_ENT_REQ)
 		mutex_lock(&decon->output_lock);
@@ -4676,9 +4336,10 @@ decon_init_done:
 		decon_err("%s: decon does not found panel\n", __func__);
 		decon->ignore_vsync = true;
 	} else {
-		decon_abd_register_function(decon);
-		decon_abd_enable_interrupt(decon, true);
+		decon_abd_register(decon);
+		decon_abd_enable(decon, 1);
 	}
+
 	decon_info("%s: panel id: %x\n", __func__, lcdtype);
 
 #ifdef CONFIG_DECON_MIPI_DSI_PKTGO

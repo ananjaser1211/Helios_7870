@@ -54,6 +54,16 @@ struct lcd_seq_info {
 	unsigned int	sleep;
 };
 
+static unsigned char SEQ_POWER_SEQ[] = {
+	0xB1,
+	0x3C, 0x89, 0x00, 0x05, 0x33, 0x31, 0x14,
+};
+
+static unsigned char SEQ_AOR_MAX[] = {
+	0xB2,
+	0x00, 0x00, 0x05, 0x10,
+};
+
 static unsigned char SEQ_SLEEP_OUT[] = {
 	0x11
 };

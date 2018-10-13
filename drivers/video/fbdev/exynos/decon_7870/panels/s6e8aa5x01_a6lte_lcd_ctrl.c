@@ -11,6 +11,7 @@
 #include <linux/lcd.h>
 #include <linux/backlight.h>
 #include <linux/of_device.h>
+#include <linux/ctype.h>
 #include <video/mipi_display.h>
 #include "../dsim.h"
 #include "dsim_panel.h"
@@ -41,7 +42,7 @@
 #define smtd_dbg(format, arg...)
 #endif
 
-#define get_bit(value, shift, size)	((value >> shift) & (0xffffffff >> (32 - size)))
+#define get_bit(value, shift, width)	((value >> shift) & (GENMASK(width - 1, 0)))
 
 union aor_info {
 	u32 value;
@@ -128,7 +129,6 @@ struct lcd_info {
 	unsigned char			rddpm;
 	unsigned char			rddsm;
 
-	unsigned char			dump_info[3];
 	unsigned int			adaptive_control;
 	int				lux;
 	struct class			*mdnie_class;
@@ -211,23 +211,6 @@ static int dsim_write_set(struct lcd_info *lcd, struct lcd_seq_info *seq, u32 nu
 	return ret;
 }
 #endif
-
-static int dsim_read_hl_data_offset(struct lcd_info *lcd, u8 addr, u32 size, u8 *buf, u32 offset)
-{
-	unsigned char wbuf[] = {0xB0, 0};
-	int ret = 0;
-
-	wbuf[1] = offset;
-
-	if (offset)
-		DSI_WRITE(wbuf, ARRAY_SIZE(wbuf));
-
-	ret = dsim_read_hl_data(lcd, addr, size, buf);
-	if (ret < 0)
-		dev_err(&lcd->ld->dev, "%s: fail\n", __func__);
-
-	return ret;
-}
 
 static int dsim_panel_gamma_ctrl(struct lcd_info *lcd, u8 force)
 {
@@ -1085,6 +1068,13 @@ static int panel_dpui_notifier_callback(struct notifier_block *self,
 	struct dpui_info *dpui = data;
 	char tbuf[MAX_DPUI_VAL_LEN];
 	int size;
+	unsigned int site, rework, poc, i, invalid = 0;
+	unsigned char *m_info;
+
+	struct seq_file m = {
+		.buf = tbuf,
+		.size = sizeof(tbuf) - 1,
+	};
 
 	if (dpui == NULL) {
 		pr_err("%s: dpui is null\n", __func__);
@@ -1116,6 +1106,23 @@ static int panel_dpui_notifier_callback(struct notifier_block *self,
 		lcd->date[5], lcd->date[6], (lcd->coordinate[0] & 0xFF00) >> 8, lcd->coordinate[0] & 0x00FF,
 		(lcd->coordinate[1] & 0xFF00) >> 8, lcd->coordinate[1] & 0x00FF);
 	set_dpui_field(DPUI_KEY_CELLID, tbuf, size);
+
+	m_info = lcd->manufacture_info;
+	site = get_bit(m_info[1], 4, 4);
+	rework = get_bit(m_info[1], 0, 4);
+	poc = get_bit(m_info[2], 0, 4);
+	seq_printf(&m, "%d%d%d%02x%02x", site, rework, poc, m_info[3], m_info[4]);
+
+	for (i = 5; i < LDI_LEN_MANUFACTURE_INFO; i++) {
+		if (!isdigit(m_info[i]) && !isupper(m_info[i])) {
+			invalid = 1;
+			break;
+		}
+	}
+	for (i = 5; !invalid && i < LDI_LEN_MANUFACTURE_INFO; i++)
+		seq_printf(&m, "%c", m_info[i]);
+
+	set_dpui_field(DPUI_KEY_OCTAID, tbuf, m.count);
 
 	return NOTIFY_DONE;
 }
@@ -1360,76 +1367,6 @@ static ssize_t aid_log_show(struct device *dev,
 	return strlen(buf);
 }
 
-static ssize_t dump_register_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	struct lcd_info *lcd = dev_get_drvdata(dev);
-	char *pos = buf;
-	u8 reg, len, offset;
-	int ret = 0, i;
-	u8 *dump = NULL;
-
-	reg = lcd->dump_info[0];
-	len = lcd->dump_info[1];
-	offset = lcd->dump_info[2];
-
-	if (!reg || !len || reg > 0xff || len > 255 || offset > 255)
-		goto exit;
-
-	dump = kcalloc(len, sizeof(u8), GFP_KERNEL);
-
-	if (lcd->state == PANEL_STATE_RESUMED) {
-		DSI_WRITE(SEQ_TEST_KEY_ON_F0, ARRAY_SIZE(SEQ_TEST_KEY_ON_F0));
-
-		ret = dsim_read_hl_data_offset(lcd, reg, len, dump, offset);
-		if (ret < 0)
-			dev_err(&lcd->ld->dev, "%s: failed to read, %x, %d, %d\n", __func__, reg, len, offset);
-
-		DSI_WRITE(SEQ_TEST_KEY_OFF_F0, ARRAY_SIZE(SEQ_TEST_KEY_OFF_F0));
-	}
-
-	pos += sprintf(pos, "+ [%02X]\n", reg);
-	for (i = 0; i < len; i++)
-		pos += sprintf(pos, "%2d: %02x\n", i + offset + 1, dump[i]);
-	pos += sprintf(pos, "- [%02X]\n", reg);
-
-	dev_info(&lcd->ld->dev, "+ [%02X]\n", reg);
-	for (i = 0; i < len; i++)
-		dev_info(&lcd->ld->dev, "%2d: %02x\n", i + offset + 1, dump[i]);
-	dev_info(&lcd->ld->dev, "- [%02X]\n", reg);
-
-	kfree(dump);
-exit:
-	return pos - buf;
-}
-
-static ssize_t dump_register_store(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t size)
-{
-	struct lcd_info *lcd = dev_get_drvdata(dev);
-	unsigned int reg, len, offset;
-	int ret;
-
-	ret = sscanf(buf, "%8x %8d %8d", &reg, &len, &offset);
-
-	if (ret == 2)
-		offset = 0;
-
-	dev_info(&lcd->ld->dev, "%s: %x %d %d\n", __func__, reg, len, offset);
-
-	if (ret < 0)
-		return ret;
-
-	if (!reg || !len || reg > 0xff || len > 255 || offset > 255)
-		return -EINVAL;
-
-	lcd->dump_info[0] = reg;
-	lcd->dump_info[1] = len;
-	lcd->dump_info[2] = offset;
-
-	return size;
-}
-
 static ssize_t adaptive_control_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
@@ -1501,22 +1438,30 @@ static ssize_t octa_id_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
 	struct lcd_info *lcd = dev_get_drvdata(dev);
-	int site, rework, poc;
+	unsigned int site, rework, poc, i, invalid = 0;
 	unsigned char *m_info;
 
+	struct seq_file m = {
+		.buf = buf,
+		.size = PAGE_SIZE - 1,
+	};
+
 	m_info = lcd->manufacture_info;
+	site = get_bit(m_info[1], 4, 4);
+	rework = get_bit(m_info[1], 0, 4);
+	poc = get_bit(m_info[2], 0, 4);
+	seq_printf(&m, "%d%d%d%02x%02x", site, rework, poc, m_info[3], m_info[4]);
 
-	site = m_info[1] & 0xf0;
-	site >>= 4;
-	rework = m_info[1] & 0x0f;
-	poc = m_info[2] & 0x0f;
+	for (i = 5; i < LDI_LEN_MANUFACTURE_INFO; i++) {
+		if (!isdigit(m_info[i]) && !isupper(m_info[i])) {
+			invalid = 1;
+			break;
+		}
+	}
+	for (i = 5; !invalid && i < LDI_LEN_MANUFACTURE_INFO; i++)
+		seq_printf(&m, "%c", m_info[i]);
 
-	sprintf(buf, "%d%d%d%02x%02x%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n",
-		site, rework, poc, m_info[3], m_info[4],
-		m_info[5], m_info[6], m_info[7], m_info[8],
-		m_info[9], m_info[10], m_info[11], m_info[12],
-		m_info[13], m_info[14], m_info[15], m_info[16],
-		m_info[17], m_info[18], m_info[19], m_info[20]);
+	seq_puts(&m, "\n");
 
 	return strlen(buf);
 }
@@ -1526,14 +1471,28 @@ static ssize_t octa_id_show(struct device *dev,
  * HW PARAM LOGGING SYSFS NODE
  */
 static ssize_t dpui_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
+	struct device_attribute *attr, char *buf)
 {
-	update_dpui_log(DPUI_LOG_LEVEL_INFO);
-	get_dpui_log(buf, DPUI_LOG_LEVEL_INFO);
+	int ret;
 
-	dev_info(dev, "%s: %s\n", __func__, buf);
+	update_dpui_log(DPUI_LOG_LEVEL_INFO, DPUI_TYPE_PANEL);
+	ret = get_dpui_log(buf, DPUI_LOG_LEVEL_INFO, DPUI_TYPE_PANEL);
+	if (ret < 0) {
+		pr_err("%s failed to get log %d\n", __func__, ret);
+		return ret;
+	}
 
-	return strlen(buf);
+	pr_info("%s\n", buf);
+	return ret;
+}
+
+static ssize_t dpui_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t size)
+{
+	if (buf[0] == 'C' || buf[0] == 'c')
+		clear_dpui_log(DPUI_LOG_LEVEL_INFO, DPUI_TYPE_PANEL);
+
+	return size;
 }
 
 /*
@@ -1541,18 +1500,32 @@ static ssize_t dpui_show(struct device *dev,
  * HW PARAM LOGGING SYSFS NODE
  */
 static ssize_t dpui_dbg_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
+	struct device_attribute *attr, char *buf)
 {
-	update_dpui_log(DPUI_LOG_LEVEL_DEBUG);
-	get_dpui_log(buf, DPUI_LOG_LEVEL_DEBUG);
+	int ret;
 
-	dev_info(dev, "%s: %s\n", __func__, buf);
+	update_dpui_log(DPUI_LOG_LEVEL_DEBUG, DPUI_TYPE_PANEL);
+	ret = get_dpui_log(buf, DPUI_LOG_LEVEL_DEBUG, DPUI_TYPE_PANEL);
+	if (ret < 0) {
+		pr_err("%s failed to get log %d\n", __func__, ret);
+		return ret;
+	}
 
-	return strlen(buf);
+	pr_info("%s\n", buf);
+	return ret;
 }
 
-static DEVICE_ATTR(dpui, 0440, dpui_show, NULL);
-static DEVICE_ATTR(dpui_dbg, 0440, dpui_dbg_show, NULL);
+static ssize_t dpui_dbg_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t size)
+{
+	if (buf[0] == 'C' || buf[0] == 'c')
+		clear_dpui_log(DPUI_LOG_LEVEL_DEBUG, DPUI_TYPE_PANEL);
+
+	return size;
+}
+
+static DEVICE_ATTR(dpui, 0660, dpui_show, dpui_store);
+static DEVICE_ATTR(dpui_dbg, 0660, dpui_dbg_show, dpui_dbg_store);
 #endif
 
 static DEVICE_ATTR(lcd_type, 0444, lcd_type_show, NULL);
@@ -1564,7 +1537,6 @@ static DEVICE_ATTR(temperature, 0664, temperature_show, temperature_store);
 static DEVICE_ATTR(color_coordinate, 0444, color_coordinate_show, NULL);
 static DEVICE_ATTR(manufacture_date, 0444, manufacture_date_show, NULL);
 static DEVICE_ATTR(aid_log, 0444, aid_log_show, NULL);
-static DEVICE_ATTR(dump_register, 0644, dump_register_show, dump_register_store);
 static DEVICE_ATTR(adaptive_control, 0664, adaptive_control_show, adaptive_control_store);
 static DEVICE_ATTR(lux, 0644, lux_show, lux_store);
 static DEVICE_ATTR(octa_id, 0444, octa_id_show, NULL);
@@ -1580,7 +1552,6 @@ static struct attribute *lcd_sysfs_attributes[] = {
 	&dev_attr_color_coordinate.attr,
 	&dev_attr_manufacture_date.attr,
 	&dev_attr_aid_log.attr,
-	&dev_attr_dump_register.attr,
 	&dev_attr_brightness_table.attr,
 	&dev_attr_adaptive_control.attr,
 	&dev_attr_lux.attr,

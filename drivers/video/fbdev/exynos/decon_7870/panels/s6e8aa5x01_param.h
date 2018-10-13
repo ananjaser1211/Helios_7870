@@ -36,7 +36,6 @@ enum {
 #define NORMAL_TEMPERATURE	25	/* 25 degrees Celsius */
 #define EXTEND_BRIGHTNESS	355
 #define UI_MAX_BRIGHTNESS	255
-#define UI_MIN_BRIGHTNESS	0
 #define UI_DEFAULT_BRIGHTNESS	134
 
 // 0xC8h Info

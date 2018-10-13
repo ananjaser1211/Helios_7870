@@ -22,7 +22,7 @@
 #include "../decon_notify.h"
 
 #include "td4310_param.h"
-#include "backlight_tuning.h"
+#include "dd.h"
 
 #if defined(CONFIG_EXYNOS_DECON_MDNIE_LITE)
 #include "mdnie.h"
@@ -66,18 +66,12 @@ struct lcd_info {
 		};
 		u32			value;
 	} id_info;
-	unsigned char			dump_info[3];
-	unsigned int			data_type;
 
 	int						lux;
 	struct class			*mdnie_class;
 
 	struct dsim_device		*dsim;
 	struct mutex			lock;
-
-	struct kobject			*dsi_access;
-	struct kobj_attribute		dsi_access_r;
-	struct kobj_attribute		dsi_access_w;
 
 	struct notifier_block		fb_notif_panel;
 	struct i2c_client		*backlight_client;
@@ -210,6 +204,7 @@ try_write:
 	return ret;
 }
 
+#if defined(CONFIG_SEC_FACTORY) || defined(CONFIG_EXYNOS_DECON_MDNIE_LITE)
 static int dsim_read_hl_data(struct lcd_info *lcd, u8 addr, u32 size, u8 *buf)
 {
 	int ret = 0, rx_size = 0;
@@ -239,6 +234,7 @@ try_read:
 
 	return ret;
 }
+#endif
 
 static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 {
@@ -570,71 +566,9 @@ static ssize_t lux_store(struct device *dev,
 		lcd->lux = value;
 		mutex_unlock(&lcd->lock);
 
+#if defined(CONFIG_EXYNOS_DECON_MDNIE_LITE)
 		attr_store_for_each(lcd->mdnie_class, attr->attr.name, buf, size);
-	}
-
-	return size;
-}
-
-static ssize_t dump_register_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	struct lcd_info *lcd = dev_get_drvdata(dev);
-	char *pos = buf;
-	u8 reg, len, table;
-	int i;
-	u8 *dump = NULL;
-
-	reg = lcd->dump_info[0];
-	len = lcd->dump_info[1];
-	table = lcd->dump_info[2];
-
-	if (!reg || !len || reg > 0xff || len > 255 || table > 255)
-		goto exit;
-
-	dump = kcalloc(len, sizeof(u8), GFP_KERNEL);
-
-	if (lcd->state == PANEL_STATE_RESUMED)
-		dsim_read_hl_data(lcd, reg, len, dump);
-
-	pos += sprintf(pos, "+ [%02X]\n", reg);
-	for (i = 0; i < len; i++)
-		pos += sprintf(pos, "%2d: %02x\n", i + 1, dump[i]);
-	pos += sprintf(pos, "- [%02X]\n", reg);
-
-	dev_info(&lcd->ld->dev, "+ [%02X]\n", reg);
-	for (i = 0; i < len; i++)
-		dev_info(&lcd->ld->dev, "%2d: %02x\n", i + 1, dump[i]);
-	dev_info(&lcd->ld->dev, "- [%02X]\n", reg);
-
-	kfree(dump);
-exit:
-	return pos - buf;
-}
-
-static ssize_t dump_register_store(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t size)
-{
-	struct lcd_info *lcd = dev_get_drvdata(dev);
-	unsigned int reg, len, offset;
-	int ret;
-
-	ret = sscanf(buf, "%8x %8d %8d", &reg, &len, &offset);
-
-	if (ret == 2)
-		offset = 0;
-
-	dev_info(dev, "%s: %x %d %d\n", __func__, reg, len, offset);
-
-	if (ret < 0)
-		return ret;
-	else {
-		if (!reg || !len || reg > 0xff || len > 255 || offset > 255)
-			return -EINVAL;
-
-		lcd->dump_info[0] = reg;
-		lcd->dump_info[1] = len;
-		lcd->dump_info[2] = offset;
+#endif
 	}
 
 	return size;
@@ -642,13 +576,11 @@ static ssize_t dump_register_store(struct device *dev,
 
 static DEVICE_ATTR(lcd_type, 0444, lcd_type_show, NULL);
 static DEVICE_ATTR(window_type, 0444, window_type_show, NULL);
-static DEVICE_ATTR(dump_register, 0644, dump_register_show, dump_register_store);
 static DEVICE_ATTR(lux, 0644, lux_show, lux_store);
 
 static struct attribute *lcd_sysfs_attributes[] = {
 	&dev_attr_lcd_type.attr,
 	&dev_attr_window_type.attr,
-	&dev_attr_dump_register.attr,
 	&dev_attr_lux.attr,
 	NULL,
 };
@@ -656,143 +588,6 @@ static struct attribute *lcd_sysfs_attributes[] = {
 static const struct attribute_group lcd_sysfs_attr_group = {
 	.attrs = lcd_sysfs_attributes,
 };
-
-static ssize_t read_show(struct kobject *kobj,
-	struct kobj_attribute *attr, char *buf)
-{
-	struct lcd_info *lcd = container_of(attr, struct lcd_info, dsi_access_r);
-	char *pos = buf;
-	u8 reg, len, param;
-	int i;
-	u8 *dump = NULL;
-	unsigned int data_type;
-
-	reg = lcd->dump_info[0];
-	len = lcd->dump_info[1];
-	param = lcd->dump_info[2];
-	data_type = lcd->data_type;
-
-	if (!reg || !len || reg > 0xff || len > 255 || param > 0xff)
-		goto exit;
-
-	dump = kcalloc(len, sizeof(u8), GFP_KERNEL);
-
-	if (lcd->state == PANEL_STATE_RESUMED)
-		dsim_read_data(lcd->dsim, data_type, reg, len, dump);
-
-	for (i = 0; i < len; i++)
-		pos += sprintf(pos, "%02x ", dump[i]);
-	pos += sprintf(pos, "\n");
-
-	dev_info(&lcd->ld->dev, "+ [%02X]\n", reg);
-	for (i = 0; i < len; i++)
-		dev_info(&lcd->ld->dev, "%2d: %02x\n", i + 1, dump[i]);
-	dev_info(&lcd->ld->dev, "- [%02X]\n", reg);
-
-	kfree(dump);
-exit:
-	return pos - buf;
-}
-
-static ssize_t read_store(struct kobject *kobj,
-	struct kobj_attribute *attr, const char *buf, size_t size)
-{
-	struct lcd_info *lcd = container_of(attr, struct lcd_info, dsi_access_r);
-	unsigned int reg, len, param;
-	unsigned int data_type, return_packet_type;
-	int ret;
-
-	ret = sscanf(buf, "%8x %8x %8x %8x %8x", &data_type, &reg, &param, &return_packet_type, &len);
-	if (ret != 5)
-		return -EINVAL;
-
-	dev_info(&lcd->ld->dev, "%s: %x %x %x %x %x", __func__, data_type, reg, param, return_packet_type, len);
-
-	if (!reg || !len || reg > 0xff || len > 255 || param > 255)
-		return -EINVAL;
-
-	lcd->data_type = data_type;
-	lcd->dump_info[0] = reg;
-	lcd->dump_info[1] = len;
-	lcd->dump_info[2] = param;
-
-	return size;
-}
-
-static ssize_t write_store(struct kobject *kobj,
-	struct kobj_attribute *attr, const char *buf, size_t size)
-{
-	struct lcd_info *lcd = container_of(attr, struct lcd_info, dsi_access_w);
-	int ret, i, val, len = 0;
-	unsigned char seqbuf[255] = {0, };
-	unsigned char *printbuf = NULL;
-	char *pos, *token;
-
-	pos = (char *)buf;
-	while ((token = strsep(&pos, " ")) != NULL) {
-		ret = kstrtouint(token, 16, &val);
-		if (!ret) {
-			seqbuf[len] = val;
-			len++;
-		}
-		if (len == ARRAY_SIZE(seqbuf))
-			break;
-	}
-
-	pos = printbuf = kcalloc(size, sizeof(u8), GFP_KERNEL);
-	for (i = 0; i < len; i++)
-		pos += sprintf(pos, "%02x ", seqbuf[i]);
-	pos += sprintf(pos, "\n");
-
-	len--;
-	if (len < 1) {
-		dev_info(&lcd->ld->dev, "%s: invalid input, %s\n", __func__, printbuf);
-		goto exit;
-	} else
-		dev_info(&lcd->ld->dev, "%s: %d, %s\n", __func__, len, printbuf);
-
-	if (lcd->state == PANEL_STATE_RESUMED) {
-		if ((seqbuf[0] == 0x29) || (seqbuf[0] == 0x39))
-			ret = dsim_write_data(lcd->dsim, (unsigned int)seqbuf[0], (unsigned long)&seqbuf[1], len);
-		else if (len == 1)
-			ret = dsim_write_data(lcd->dsim, (unsigned int)seqbuf[0], seqbuf[1], len);
-		else if (len == 2)
-			ret = dsim_write_data(lcd->dsim, (unsigned int)seqbuf[0], seqbuf[1], seqbuf[2]);
-		else
-			ret = dsim_write_data(lcd->dsim, (unsigned int)seqbuf[0], (unsigned long)&seqbuf[1], len);
-	}
-
-exit:
-	kfree(printbuf);
-
-	return size;
-}
-
-static void lcd_init_dsi_access(struct lcd_info *lcd)
-{
-	int ret = 0;
-
-	lcd->dsi_access = kobject_create_and_add("dsi_access", NULL);
-	if (!lcd->dsi_access)
-		return;
-
-	sysfs_attr_init(&lcd->dsi_access_r.attr);
-	lcd->dsi_access_r.attr.name = "read";
-	lcd->dsi_access_r.attr.mode = 0644;
-	lcd->dsi_access_r.store = read_store;
-	lcd->dsi_access_r.show = read_show;
-	ret = sysfs_create_file(lcd->dsi_access, &lcd->dsi_access_r.attr);
-	if (ret < 0)
-		dev_err(&lcd->ld->dev, "failed to add kobj_attribute_r\n");
-
-	sysfs_attr_init(&lcd->dsi_access_w.attr);
-	lcd->dsi_access_w.attr.name = "write";
-	lcd->dsi_access_w.attr.mode = 0220;
-	lcd->dsi_access_w.store = write_store;
-	ret = sysfs_create_file(lcd->dsi_access, &lcd->dsi_access_w.attr);
-	if (ret < 0)
-		dev_err(&lcd->ld->dev, "failed to add kobj_attribute_w\n");
-}
 
 static void lcd_init_sysfs(struct lcd_info *lcd)
 {
@@ -803,8 +598,7 @@ static void lcd_init_sysfs(struct lcd_info *lcd)
 	if (ret < 0)
 		dev_err(&lcd->ld->dev, "failed to add lcd sysfs\n");
 
-	lcd_init_dsi_access(lcd);
-	init_bl_curve_debugfs(lcd->bd, NULL, clients);
+	init_debugfs_backlight(lcd->bd, NULL, clients);
 }
 
 #if defined(CONFIG_EXYNOS_DECON_MDNIE_LITE)

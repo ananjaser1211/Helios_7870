@@ -7,7 +7,6 @@
 
 #define EXTEND_BRIGHTNESS	355
 #define UI_MAX_BRIGHTNESS	255
-#define UI_MIN_BRIGHTNESS	0
 #define UI_DEFAULT_BRIGHTNESS	128
 #define NORMAL_TEMPERATURE	25	/* 25 degrees Celsius */
 
@@ -24,7 +23,7 @@
 #define LDI_REG_ELVSS		0xB6
 #define LDI_REG_COORDINATE	0xA1
 #define LDI_REG_ID		0x04
-#define LDI_REG_CHIP_ID		0xD6
+#define LDI_REG_CHIP_ID		0xD5
 #define LDI_REG_MTP		0xC8
 #define LDI_REG_DATE		LDI_REG_MTP
 #define LDI_REG_RDDPM		0x0A
@@ -91,16 +90,6 @@ static unsigned char SEQ_TEST_KEY_ON_F0[] = {
 
 static unsigned char SEQ_TEST_KEY_OFF_F0[] = {
 	0xF0,
-	0xA5, 0xA5
-};
-
-static unsigned char SEQ_TEST_KEY_ON_FC[] = {
-	0xFC,
-	0x5A, 0x5A
-};
-
-static unsigned char SEQ_TEST_KEY_OFF_FC[] = {
-	0xFC,
 	0xA5, 0xA5
 };
 
@@ -267,22 +256,14 @@ static const unsigned char SEQ_MTP_READ_HBM_GP_2[] = {
 
 #ifdef CONFIG_DISPLAY_USE_INFO
 
-#define ERR_READ_REG 0xed
+#define ERR_READ_REG 0xee
 #define ERR_RDNUMED_REG 0x05
 #define ERR_RDDSDR_REG 0x0f
 
 /* Write COMMAND before read */
-static const unsigned char SEQ_VLIN1_MONITOR_ON[] = {
-	ERR_READ_REG,
-	0x40,
-};
-static const unsigned char SEQ_ELVDD_MONITOR_ON[] = {
-	ERR_READ_REG,
-	0x08,
-};
-static const unsigned char SEQ_VLOUT3_MONITOR_ON[] = {
-	ERR_READ_REG,
-	0x04,
+static const unsigned char SEQ_ESD_MONITOR_ON[] = {
+	0xED,
+	0x4C,
 };
 
 #endif

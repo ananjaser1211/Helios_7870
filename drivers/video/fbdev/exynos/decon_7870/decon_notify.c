@@ -38,7 +38,12 @@ EXPORT_SYMBOL(decon_notifier_call_chain);
 static int decon_notifier_event(struct notifier_block *this,
 	unsigned long val, void *v)
 {
+	struct fb_event *evdata = v;
+
 	if (decon_notifier_list.head == NULL)
+		return NOTIFY_DONE;
+
+	if (evdata->info->node)
 		return NOTIFY_DONE;
 
 	switch (val) {
