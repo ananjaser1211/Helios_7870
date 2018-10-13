@@ -116,6 +116,7 @@ enum exynos_sensor_id {
 	SENSOR_NAME_VIRTUAL			= 207,
 
 	SENSOR_NAME_S5K5E6			= 254, // IRIS Camera Sensor
+	SENSOR_NAME_S5K5F1			= 306, // IRIS Camera Sensor
 
 	/* 256~: currently not used */
 	SENSOR_NAME_CUSTOM			= 301,

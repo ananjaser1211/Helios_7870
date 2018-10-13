@@ -207,7 +207,7 @@ int fimc_is_lib_vra_new_frame(struct fimc_is_lib_vra *lib_vra,
 	unsigned char *buffer, u32 instance);
 int fimc_is_lib_vra_handle_interrupt(struct fimc_is_lib_vra *lib_vra, u32 id);
 int fimc_is_lib_vra_get_meta(struct fimc_is_lib_vra *lib_vra,
-	struct camera2_shot *shot);
+	struct fimc_is_frame *frame);
 int fimc_is_lib_vra_test_image_load(struct fimc_is_lib_vra *lib_vra);
 
 #ifdef DEBUG_HW_SIZE

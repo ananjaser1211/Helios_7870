@@ -1,21 +1,21 @@
 /*
-*
-* File name: mtv319_port.c
-*
-* Description : User-supplied Routines for RAONTECH TV Services.
-*
-* Copyright (C) (2013, RAONTECH)
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation version 2.
-*
-* This program is distributed "as is" WITHOUT ANY WARRANTY of any
-* kind, whether express or implied; without even the implied warranty
-* of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-*/
+ *
+ * File name: mtv319_port.c
+ *
+ * Description : User-supplied Routines for RAONTECH TV Services.
+ *
+ * Copyright (C) (2013, RAONTECH)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation version 2.
+ *
+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+ * kind, whether express or implied; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ */
 
 #include <linux/spi/spi.h>
 #include <linux/i2c.h>
@@ -179,24 +179,23 @@ void mtv319_i2c_read_burst(unsigned char reg, unsigned char *buf, int size)
 	u8 wbuf[1] = {reg};
 
 	struct i2c_msg msg[2] = {
-		 {
+		{
 			.addr = RTV_CHIP_ADDR>>1,
 			.flags = 0,
 			.buf = wbuf,
 			.len = 1
-		 },
-		 {
+		},
+		{
 			.addr = RTV_CHIP_ADDR>>1,
 			.flags = I2C_M_RD,
 			.buf = buf,
 			.len = size
-		 }
+		}
 	};
 
 	ret = i2c_transfer(mtv_i2c->adapter, msg, 2);
-	if (ret != 2) {
-		 DPRINTK("error: %d\n", ret);
-	}
+	if (ret != 2)
+		DPRINTK("error: %d\n", ret);
 }
 
 unsigned char mtv319_i2c_read(unsigned char chipid, unsigned char reg)
@@ -212,25 +211,29 @@ unsigned char mtv319_i2c_read(unsigned char chipid, unsigned char reg)
 
 	ret = i2c_transfer(mtv_i2c->adapter, msg, 2);
 	if (ret != 2) {
-	     DPRINTK("error: %d\n", ret);
-	     return 0x00;
+		DPRINTK("error: %d\n", ret);
+		return 0x00;
 	}
 
 	return rbuf[0];
 }
 
-void mtv319_i2c_write(unsigned char chipid, unsigned char reg, unsigned char val)
+void mtv319_i2c_write(unsigned char chipid, unsigned char reg,
+			unsigned char val)
 {
 	int ret;
 	u8 wbuf[2] = {reg, val};
 
-	struct i2c_msg msg =
-		{.addr = chipid>>1, .flags = 0, .buf = wbuf, .len = 2};
+	struct i2c_msg msg = {
+		.addr = chipid>>1,
+		.flags = 0,
+		.buf = wbuf,
+		.len = 2
+	};
 
 	ret = i2c_transfer(mtv_i2c->adapter, &msg, 1);
-	if (ret != 1) {
-	     DPRINTK("error: %d\n", ret);
-	}
+	if (ret != 1)
+		DPRINTK("error: %d\n", ret);
 }
 #endif
 

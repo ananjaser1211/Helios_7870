@@ -83,6 +83,7 @@ struct sec_fg_info {
 	unsigned long fullcap_check_interval;
 	int full_check_flag;
 	bool is_first_check;
+	int data_ver;
 };
 
 #if defined(CONFIG_BATTERY_AGE_FORECAST)

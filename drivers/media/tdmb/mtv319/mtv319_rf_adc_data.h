@@ -1,21 +1,21 @@
 /*
-*
-* File name: mtv319_rf_adc_data.h
-*
-* Description : MTV319 T-DMB RF ADC data header file.
-*
-* Copyright (C) (2013, RAONTECH)
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation version 2.
-*
-* This program is distributed "as is" WITHOUT ANY WARRANTY of any
-* kind, whether express or implied; without even the implied warranty
-* of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-*/
+ *
+ * File name: mtv319_rf_adc_data.h
+ *
+ * Description : MTV319 T-DMB RF ADC data header file.
+ *
+ * Copyright (C) (2013, RAONTECH)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation version 2.
+ *
+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+ * kind, whether express or implied; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ */
 
 #if (RTV_SRC_CLK_FREQ_KHz == 19200)
 	static const struct RTV_ADC_CFG_INFO g_atAdcCfgTbl_TDMB[] = {

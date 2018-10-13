@@ -1691,7 +1691,7 @@ static ssize_t iris_camera_hw_param_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	struct cam_hw_param *ec_param = NULL;
-	fimc_is_sec_get_hw_param(&ec_param);
+	fimc_is_sec_get_iris_hw_param(&ec_param);
 
 	return sprintf(buf, "\"CAMII_ID\":\"MI_NO\",\"I2CI_AF\":\"%d\",\"I2CI_COM\":\"%d\",\"I2CI_OIS\":\"%d\","
 		"\"I2CI_SEN\":\"%d\",\"MIPII_COM\":\"%d\",\"MIPII_SEN\":\"%d\"\n",
@@ -1705,7 +1705,7 @@ static ssize_t iris_camera_hw_param_store(struct device *dev,
 	struct cam_hw_param *ec_param = NULL;
 
 	if (!strncmp(buf, "c", 1)) {
-		fimc_is_sec_get_hw_param(&ec_param);
+		fimc_is_sec_get_iris_hw_param(&ec_param);
 
 		if (ec_param)
 			fimc_is_sec_init_err_cnt_file(ec_param);

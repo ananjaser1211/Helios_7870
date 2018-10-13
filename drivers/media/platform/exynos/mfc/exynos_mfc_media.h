@@ -407,6 +407,8 @@ enum v4l2_mpeg_video_hevc_hierarchical_coding_type {
 					(V4L2_CID_MPEG_MFC_BASE + 190)
 #define V4L2_CID_MPEG_VIDEO_ROI_ENABLE				\
 					(V4L2_CID_MPEG_MFC_BASE + 191)
+#define V4L2_CID_MPEG_VIDEO_BLACK_BAR_DETECT			\
+					(V4L2_CID_MPEG_MFC_BASE + 194)
 
 /* QP BOUND interface */
 #define V4L2_CID_MPEG_VIDEO_H264_MAX_QP_P			\

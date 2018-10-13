@@ -1,28 +1,28 @@
 /*
-*
-* File name: mtv319_port.h
-*
-* Description : Configuration for RAONTECH MTV319 Services.
-*
-* Copyright (C) (2013, RAONTECH)
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation version 2.
-*
-* This program is distributed "as is" WITHOUT ANY WARRANTY of any
-* kind, whether express or implied; without even the implied warranty
-* of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-*/
+ *
+ * File name: mtv319_port.h
+ *
+ * Description : Configuration for RAONTECH MTV319 Services.
+ *
+ * Copyright (C) (2013, RAONTECH)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation version 2.
+ *
+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+ * kind, whether express or implied; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ */
 
 #ifndef __MTV319_PORT_H__
 #define __MTV319_PORT_H__
 
-/*=============================================================================
+/**
  * Includes the user header files if neccessry.
- *===========================================================================*/
+ */
 #if defined(__KERNEL__) /* Linux kernel */
 	#include <linux/io.h>
 	#include <linux/kernel.h>
@@ -50,19 +50,19 @@
 extern "C"{
 #endif
 
-/*############################################################################
-#
-# COMMON configurations
-#
-############################################################################*/
-/*============================================================================
-* The slave address for I2C and SPI.
-*===========================================================================*/
+/**
+ *
+ * COMMON configurations
+ */
+
+/**
+ * The slave address for I2C and SPI.
+ */
 #define RTV_CHIP_ADDR	0x86
 
-/*============================================================================
-* Modifies the basic data types if neccessry.
-*===========================================================================*/
+/**
+ * Modifies the basic data types if neccessry.
+ **/
 #define BOOL		int
 #define S8		s8
 #define U8		u8
@@ -78,38 +78,38 @@ extern "C"{
 
 #define INLINE		inline
 
-/*============================================================================
-* Defines the package type of chip to target product.
-*===========================================================================*/
+/**
+ * Defines the package type of chip to target product.
+ **/
 #define RTV_CHIP_PKG_CSP
 /* #define RTV_CHIP_PKG_QFN */
 
-/*============================================================================
-* Defines the external source freqenecy in KHz.
-* Ex> #define RTV_SRC_CLK_FREQ_KHz	36000 // 36MHz
-*===========================================================================*/
+/**
+ * Defines the external source freqenecy in KHz.
+ * Ex> #define RTV_SRC_CLK_FREQ_KHz	36000 // 36MHz
+ */
 #ifdef CONFIG_TDMB_XTAL_FREQ
 #define RTV_SRC_CLK_FREQ_KHz		24000
 #else
 #define RTV_SRC_CLK_FREQ_KHz		24576
 #endif
 
-/*============================================================================
-* Defines the Host interface.
-*===========================================================================*/
+/**
+ * Defines the Host interface.
+ */
 #define RTV_IF_SPI /* AP: SPI Master Mode */
 /*#define RTV_IF_TSIF*/ /* I2C + TSIF Master Mode*/
 /* #define RTV_IF_SPI_SLAVE */ /* AP: SPI Slave Mode*/
 
-/*============================================================================
-* Defines the polarity of interrupt if necessary.
-*===========================================================================*/
+/**
+ * Defines the polarity of interrupt if necessary.
+ */
 #define RTV_INTR_POLARITY_LOW_ACTIVE
 /* #define RTV_INTR_POLARITY_HIGH_ACTIVE */
 
-/*============================================================================
-* Defines the delay macro in milliseconds.
-*===========================================================================*/
+/**
+ * Defines the delay macro in milliseconds.
+ */
 #if defined(__KERNEL__) /* Linux kernel */
 	static INLINE void RTV_DELAY_MS(UINT ms)
 	{
@@ -122,7 +122,8 @@ extern "C"{
 		do {
 			end_jiffies = get_jiffies_64();
 
-			diff_time = jiffies_to_msecs(end_jiffies - start_jiffies);
+			diff_time
+				= jiffies_to_msecs(end_jiffies - start_jiffies);
 			if (diff_time >= ms)
 				break;
 
@@ -135,17 +136,19 @@ extern "C"{
 
 #else
 	extern void mtv_delay_ms(int ms);
-	#define RTV_DELAY_MS(ms)	mtv_delay_ms(ms) // TODO
+	#define RTV_DELAY_MS(ms)	mtv_delay_ms(ms) /* TODO */
 #endif
 
-/*============================================================================
-* Defines the debug message macro.
-*===========================================================================*/
+/**
+ * Defines the debug message macro.
+ */
 #if 1
-    #define RTV_DBGMSG0(fmt)                   printk(fmt)
-    #define RTV_DBGMSG1(fmt, arg1)             printk(fmt, arg1)
-    #define RTV_DBGMSG2(fmt, arg1, arg2)       printk(fmt, arg1, arg2)
-    #define RTV_DBGMSG3(fmt, arg1, arg2, arg3) printk(fmt, arg1, arg2, arg3)
+	#define RTV_DBGMSG(fmt, args...) pr_info("MTV319: %s(): " fmt, __func__, ## args)
+	#define RTV_DBGMSG0(fmt, args...) pr_info("MTV319: %s(): " fmt, __func__, ## args)
+	#define RTV_DBGMSG1(fmt, args...) pr_info("MTV319: %s(): " fmt, __func__, ## args)
+	#define RTV_DBGMSG2(fmt, args...) pr_info("MTV319: %s(): " fmt, __func__, ## args)
+	#define RTV_DBGMSG3(fmt, args...) pr_info("MTV319: %s(): " fmt, __func__, ## args)
+
 #else
     /* To eliminates the debug messages. */
     #define RTV_DBGMSG0(fmt)			do {} while (0)
@@ -156,11 +159,11 @@ extern "C"{
 /*#### End of Common ###########*/
 
 
-/*#############################################################################
-#
-# T-DMB specific configurations
-#
-#############################################################################*/
+/**
+ *
+ * T-DMB specific configurations
+ */
+
 /* Determine if the FIC is not handled by interrupt. */
 /* #define RTV_FIC_POLLING_MODE */
 
@@ -193,10 +196,10 @@ extern "C"{
 #define RTV_SCAN_FIC_HDR_ENABLED /* Scan state */
 #endif
 /* Determine whether or not FIC header generated by MTV319 is enabled. */
-//#define RTV_PLAY_FIC_HDR_ENABLED /* Play state */
+/*#define RTV_PLAY_FIC_HDR_ENABLED */ /* Play state */
 
 /* Determine whether or not MSC header generated by MTV319 is enabled. */
-//#define RTV_MSC_HDR_ENABLED
+/*#define RTV_MSC_HDR_ENABLED*/
 
 
 /* Determine if the output of error-tsp is disable. */
@@ -215,24 +218,26 @@ extern "C"{
 #define RTV_MCHDEC_IN_DRIVER
 
 #ifdef RTV_MCHDEC_IN_DRIVER
-	/* Select the copying method of MCH decoded data(FIC and MSC).
-	CIF decoder copy the decoded data into user space buffer direcly
-	to fast operation.
-	NOTE: Only applicable in RTV_MULTIPLE_CHANNEL_MODE defined. */
+	/*
+	 * Select the copying method of MCH decoded data(FIC and MSC).
+	 * CIF decoder copy the decoded data into user space buffer direcly
+	 * to fast operation.
+	 * NOTE: Only applicable in RTV_MULTIPLE_CHANNEL_MODE defined.
+	 */
 	/* #define RTV_MCHDEC_DIRECT_COPY_USER_SPACE */
 #endif
 
 
-/*############################################################################
-#
-# Host Interface specific configurations
-#
-############################################################################*/
+/**
+ *
+ * Host Interface specific configurations
+ *
+ */
 #if defined(RTV_IF_SPI)
-	/*=================================================================
-	* Defines the register I/O macros.
-	*================================================================*/
-	void mtv319_set_port_if(unsigned long interface);	
+	/**
+	 * Defines the register I/O macros.
+	 */
+	void mtv319_set_port_if(unsigned long interface);
 	U8 mtv319_spi_read(U8 page, U8 reg);
 	void mtv319_spi_read_burst(U8 page, U8 reg, U8 *buf, int size);
 	void mtv319_spi_write(U8 page, U8 reg, U8 val);
@@ -269,9 +274,9 @@ extern "C"{
 	#define RTV_TSP_XFER_SIZE	188
 
 #elif defined(RTV_IF_TSIF) || defined(RTV_IF_SPI_SLAVE)
-	/*=================================================================
-	* Defines the TS format.
-	*================================================================*/
+	/**
+	 * Defines the TS format.
+	 */
 	/* #define RTV_TSIF_FORMAT_0 */ /* EN_high, CLK_rising */
 	/* #define RTV_TSIF_FORMAT_1 */ /* EN_high, CLK_falling */
 	/* #define RTV_TSIF_FORMAT_2 */ /* EN_low, CLK_rising */
@@ -280,9 +285,9 @@ extern "C"{
 	/* #define RTV_TSIF_FORMAT_5 */ /* EN_high, CLK_falling + 1CLK add */
 	/* #define RTV_TSIF_FORMAT_6 */ /* Parallel: EN_high, CLK_falling */
 
-	/*=================================================================
-	* Defines the TSIF speed.
-	*================================================================*/
+	/**
+	 * Defines the TSIF speed.
+	 */
 	/* #define RTV_TSIF_SPEED_3_Mbps */ /* 2.41MHz */
 	#define RTV_TSIF_SPEED_4_Mbps   /* 3.62MHz */
 	/* #define RTV_TSIF_SPEED_5_Mbps */ /* 4.8MHz */
@@ -293,14 +298,14 @@ extern "C"{
 	/* #define RTV_TSIF_SPEED_30_Mbps */ /* 28.8MHz */
 	/* #define RTV_TSIF_SPEED_60_Mbps */ /* 58.5MHz */
 
-	/*=================================================================
-	* Defines the TSP size. 188 or 204
-	*================================================================*/
+	/**
+	 * Defines the TSP size. 188 or 204
+	 */
 	#define RTV_TSP_XFER_SIZE	188
 
-	/*=================================================================
-	* Defines the register I/O macros.
-	*================================================================*/
+	/**
+	 * Defines the register I/O macros.
+	 */
 	void mtv319_set_port_if(unsigned long interface);
 	U8 mtv319_i2c_read(U8 chipid, U8 reg);
 	void mtv319_i2c_read_burst(U8 reg, U8 *buf, int size);
@@ -329,8 +334,8 @@ extern "C"{
 		if (g_bRtvPage != 0xF)
 			mtv319_i2c_write(RTV_CHIP_ADDR, (U8)(reg), (U8)(val));
 		else {
-			   mtv319_i2c_write(RTV_CHIP_ADDR, 0x02, (0x62|0x80));
-			   mtv319_i2c_write((0x62<<1), (U8)(reg), (U8)(val));
+			mtv319_i2c_write(RTV_CHIP_ADDR, 0x02, (0x62|0x80));
+			mtv319_i2c_write((0x62<<1), (U8)(reg), (U8)(val));
 		}
 	}
 
@@ -343,9 +348,9 @@ extern "C"{
 		} while (0)
 
 #elif defined(RTV_IF_EBI2)
-	/*=================================================================
-	* Defines the register I/O macros.
-	*================================================================*/
+	/**
+	 * Defines the register I/O macros.
+	 */
 	U8 tdmb_ebi2_read(U8 page, U8 reg);
 	void tdmb_ebi2_read_burst(U8 page, U8 reg, U8 *buf, int size);
 	void tdmb_ebi2_write(U8 page, U8 reg, U8 val);
@@ -384,11 +389,11 @@ extern "C"{
 #endif
 
 
-/*############################################################################
-#
-# Pre-definintion by RAONTECH.
-#
-############################################################################*/
+/**
+ *
+ * Pre-definintion by RAONTECH.
+ *
+ */
 #if defined(RTV_IF_SPI) || defined(RTV_IF_EBI2)
 	#ifndef RTV_FIC_POLLING_MODE
 		#define RTV_FIC_SPI_INTR_ENABLED /* FIC SPI Interrupt use. */
@@ -419,11 +424,11 @@ extern "C"{
 	#define RTV_MCH_HEADER_SYNC_BYTE		0x47
 #endif
 
-/*############################################################################
-#
-# Defines the critical object and macros.
-#
-############################################################################*/
+/**
+ *
+ * Defines the critical object and macros.
+ *
+ */
 #if defined(__KERNEL__)
 extern struct mutex raontv_guard;
 #define RTV_GUARD_INIT		mutex_init(&raontv_guard)
@@ -447,11 +452,11 @@ extern CRITICAL_SECTION		raontv_guard;
 #endif
 
 
-/*############################################################################
-#
-# Check erros by user-configurations.
-#
-############################################################################*/
+/**
+ *
+ * Check erros by user-configurations.
+ *
+ */
 #if !defined(RTV_CHIP_PKG_CSP) && !defined(RTV_CHIP_PKG_QFN)
 	#error "Must define the package type !"
 #endif

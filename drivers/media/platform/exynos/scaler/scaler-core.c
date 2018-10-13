@@ -808,7 +808,7 @@ static int sc_v4l2_s_fmt_mplane(struct file *file, void *fh,
 			return -EINVAL;
 		}
 	}
-	
+
 	if (V4L2_TYPE_IS_OUTPUT(f->type) &&
 		((pixm->width > limitout->max_w) ||
 			 (pixm->height > limitout->max_h))) {

@@ -768,8 +768,10 @@ int fimc_is_lib_isp_convert_face_map(struct fimc_is_hardware *hardware,
 	device = group->device;
 	BUG_ON(!device);
 
-	if (shot->uctl.fdUd.faceDetectMode == FACEDETECT_MODE_OFF)
-		return 0;
+	if (shot->uctl.fdUd.faceDetectMode == FACEDETECT_MODE_OFF) {
+		if (frame->shot_ext->fd_bypass)
+			return 0;
+	}
 
 	/*
 	 * The face size which an algorithm uses is determined

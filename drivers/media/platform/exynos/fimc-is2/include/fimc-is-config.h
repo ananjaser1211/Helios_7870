@@ -388,6 +388,10 @@
 #undef ENABLE_FD_SW
 #endif
 #endif
+
+/* BUG_ON | FIMC_BUG Macro control */
+#define USE_FIMC_BUG
+
 /*
  * =================================================================================================
  * CONFIG - DEBUG OPTIONS
@@ -782,6 +786,19 @@
 	fimc_is_cont(fmt, ##args)
 #else
 #define dbg_fliteisr(fmt, args...)
+#endif
+
+#ifdef USE_FIMC_BUG
+#define FIMC_BUG(condition)									\
+	{											\
+		if (unlikely(condition)) {							\
+			info("[BUG][%s] %s:%d(%s)\n", __FILE__, __func__, __LINE__, #condition);\
+			return -EINVAL;								\
+		}										\
+	}
+#else
+#define FIMC_BUG(condition)									\
+	BUG_ON(condition);
 #endif
 
 /* Tasklet Msg log */

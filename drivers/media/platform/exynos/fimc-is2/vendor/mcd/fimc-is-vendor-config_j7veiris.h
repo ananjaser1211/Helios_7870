@@ -1,9 +1,8 @@
-#ifndef FIMC_IS_VENDOR_CONFIG_J6_H
-#define FIMC_IS_VENDOR_CONFIG_J6_H
+#ifndef FIMC_IS_VENDOR_CONFIG_J7VEIRIS_H
+#define FIMC_IS_VENDOR_CONFIG_J7VEIRIS_H
 
-#include "fimc-is-eeprom-rear-3l2_v002.h"
-#include "fimc-is-eeprom-front-4h5yc_v002.h"
-
+#include "fimc-is-eeprom-rear-4h5yc_v002.h"
+#include "fimc-is-otprom-front-5e3_v001.h"
 
 #define VENDER_PATH
 
@@ -23,4 +22,4 @@
 #define CSI_SCENARIO_SEN_FRONT	(1)
 #endif
 
-#endif /* FIMC_IS_VENDOR_CONFIG_J6_H */
+#endif /* FIMC_IS_VENDOR_CONFIG_J7VEIRIS_H */

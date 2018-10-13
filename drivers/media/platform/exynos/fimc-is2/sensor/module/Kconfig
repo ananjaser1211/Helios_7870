@@ -67,6 +67,12 @@ config CAMERA_SENSOR_5E6_OBJ
         default n
         help
           Use to build 5E6 camera sensor.
+config CAMERA_SENSOR_5F1_OBJ
+        bool "Use 5F1 camera sensor"
+        depends on CAMERA_MODULE_SELECT
+        default n
+        help
+          Use to build 5F1 camera sensor.
 config CAMERA_SENSOR_IMX135_OBJ
         bool "Use IMX135 camera sensor"
         depends on CAMERA_MODULE_SELECT

@@ -102,15 +102,15 @@ int sensor_dw9807_init(struct i2c_client *client, struct fimc_is_caldata_list_dw
 		if (ret < 0)
 			goto p_err;
 
-		/* wait 100us after power-on */
-		udelay(100);
-
 		/* PD disable(normal operation) */
 		i2c_data[0] = REG_CONTROL;
 		i2c_data[1] = 0x00;
 		ret = fimc_is_sensor_addr8_write8(client, i2c_data[0], i2c_data[1]);
 		if (ret < 0)
 			goto p_err;
+
+		/* wait 100us after power-on */
+		udelay(100);
 
 		/* Ring mode enable */
 		i2c_data[0] = REG_CONTROL;

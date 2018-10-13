@@ -801,7 +801,7 @@ int fimc_is_hw_vra_get_meta(struct fimc_is_hw_ip *hw_ip,
 		return -EINVAL;
 	}
 
-	ret = fimc_is_lib_vra_get_meta(&hw_vra->lib_vra, frame->shot);
+	ret = fimc_is_lib_vra_get_meta(&hw_vra->lib_vra, frame);
 	if (ret)
 		err_hw("[%d]lib_vra_get_meta is fail (%d)", frame->instance, ret);
 

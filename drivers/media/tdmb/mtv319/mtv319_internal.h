@@ -1,21 +1,21 @@
 /*
-*
-* File name: mtv319_internal.h
-*
-* Description : MTV319 internal header file.
-*
-* Copyright (C) (2013, RAONTECH)
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation version 2.
-*
-* This program is distributed "as is" WITHOUT ANY WARRANTY of any
-* kind, whether express or implied; without even the implied warranty
-* of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-*/
+ *
+ * File name: mtv319_internal.h
+ *
+ * Description : MTV319 internal header file.
+ *
+ * Copyright (C) (2013, RAONTECH)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation version 2.
+ *
+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+ * kind, whether express or implied; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ */
 
 #ifndef __MTV319_INTERNAL_H__
 #define __MTV319_INTERNAL_H__
@@ -211,7 +211,7 @@ struct RTV_ADC_CFG_INFO {
 #define MAP_SEL_VAL(page)		(DEMOD_OSC_DIV2|page)
 
 #if defined(RTV_IF_SPI) || defined(RTV_IF_EBI2)
-	#define RTV_REG_MAP_SEL(page)	g_bRtvPage = page
+	#define RTV_REG_MAP_SEL(page)	{ g_bRtvPage = page; }
 	#define RTV_REG_GET_MAP_SEL	g_bRtvPage
 #else
 	#define RTV_REG_MAP_SEL(page)\
@@ -253,11 +253,12 @@ extern enum E_RTV_FIC_OPENED_PATH_TYPE g_nRtvFicOpenedStatePath;
 
 extern U8 g_bRtvIntrMaskReg;
 
-/*==============================================================================
+/*
  *
  * Common inline functions.
  *
- *============================================================================*/
+ *
+ */
 
 /* Forward prototype. */
 
@@ -317,6 +318,7 @@ static INLINE void rtv_ConfigureTsifFormat(void)
 #ifdef RTV_NULL_PID_GENERATE
 {
 	U8 b0xA4 = RTV_REG_GET(0xA4);
+
 	RTV_REG_SET(0xA4, b0xA4|0x02);
 }
 #endif
@@ -324,6 +326,7 @@ static INLINE void rtv_ConfigureTsifFormat(void)
 #ifdef RTV_ERROR_TSP_OUTPUT_DISABLE
 {
 	U8 b0xA5 = RTV_REG_GET(0xA5);
+
 	RTV_REG_SET(0xA5, b0xA5|0x40);
 }
 #endif
@@ -412,11 +415,12 @@ static INLINE void rtv_SetupInterruptThreshold(UINT nThresholdSize)
 #endif
 }
 
-/*=============================================================================
-*
-* T-DMB inline functions.
-*
-*============================================================================*/
+/*
+ *
+ * T-DMB inline functions.
+ *
+ *
+ */
 static INLINE void rtv_Disable_FIC(void)
 {
 	RTV_REG_MAP_SEL(FEC_PAGE);
@@ -502,11 +506,11 @@ static INLINE void rtv_CloseFIC(UINT nOpenedSubChNum)
 	switch (g_nRtvFicOpenedStatePath) {
 	case FIC_OPENED_PATH_I2C_IN_SCAN: /* No sub channel */
 	case FIC_OPENED_PATH_I2C_IN_PLAY:
-	//#ifndef RTV_FIC_POLLING_MODE
+	/*#ifndef RTV_FIC_POLLING_MODE*/
 	RTV_REG_MAP_SEL(HOST_PAGE);
 	RTV_REG_SET(0x1A, 0x08); /* GPD3 PAD disable */
 	rtv_DisableFicInterrupt(nOpenedSubChNum); /* From I2C intr */
-	//#endif
+	/*#endif*/
 		break;
 
 	case FIC_OPENED_PATH_TSIF_IN_SCAN: /* No sub channel */
@@ -682,9 +686,10 @@ static INLINE INT rtv_OpenFIC(enum E_TDMB_STATE eTdmbState)
 	return RTV_SUCCESS;
 }
 
-/*=============================================================================
-* External functions for RAONTV driver core.
-*============================================================================*/ 
+/*
+ * External functions for RAONTV driver core.
+ *
+ */
 INT rtv_InitSystem(void);
 
 #ifdef __cplusplus

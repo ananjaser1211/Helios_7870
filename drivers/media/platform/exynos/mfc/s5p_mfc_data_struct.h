@@ -770,6 +770,10 @@ struct s5p_mfc_dec {
 	int internal_dpb;
 	int cr_left, cr_right, cr_top, cr_bot;
 
+	int detect_black_bar;
+	bool black_bar_updated;
+	struct v4l2_rect black_bar;
+
 	/* For 6.x */
 	int remained;
 
@@ -794,6 +798,11 @@ struct s5p_mfc_dec {
 	int is_10bit;
 
 	unsigned int err_reuse_flag;
+
+	/* for debugging about black bar detection */
+	void *frame_vaddr[3][30];
+	unsigned int frame_size[3][30];
+	unsigned char frame_cnt;
 };
 
 struct s5p_mfc_enc {

@@ -54,6 +54,8 @@ static u32 sensor_sr259_max_setfile_num;
 
 static const u32 *sensor_sr259_setfile_variable_fps;
 static u32 sensor_sr259_setfile_variable_fps_size;
+static const u32 *sensor_sr259_setfile_30_fixed_fps;
+static u32 sensor_sr259_setfile_30_fixed_fps_size;
 static const u32 *sensor_sr259_setfile_15_fixed_fps;
 static u32 sensor_sr259_setfile_15_fixed_fps_size;
 static const u32 *sensor_sr259_setfile_7_fixed_fps;
@@ -1042,6 +1044,14 @@ int sensor_sr259_cis_set_frame_rate(struct v4l2_subdev *subdev, u32 min_fps)
 				if (ret < 0)
 					err("sensor_sr259_set_registers fail!!");
 				break;
+			case SR259_30_FIXED_FPS :
+				is_fixed_fps = true;
+				dbg_sensor("[MOD:D:%d] %s, sensor_sr259_setfile_30_fixed_fps write\n", cis->id, __func__);
+				ret = sensor_cis_set_registers(subdev,
+						sensor_sr259_setfile_30_fixed_fps, sensor_sr259_setfile_30_fixed_fps_size);
+				if (ret < 0)
+					err("sensor_sr259_set_registers fail!!");
+				break;
 			default :
 				dbg_sensor("[MOD:D:%d] %s, need not additional setting for fixed FPS\n", cis->id, __func__);
 				break;
@@ -1768,6 +1778,8 @@ int cis_sr259_probe(struct i2c_client *client,
 		sensor_sr259_max_setfile_num = sizeof(sensor_sr259_setfiles_A) / sizeof(sensor_sr259_setfiles_A[0]);
 		sensor_sr259_setfile_variable_fps = sensor_sr259_setfile_A_variable_fps;
 		sensor_sr259_setfile_variable_fps_size = sensor_sr259_setfile_A_variable_fps_size;
+		sensor_sr259_setfile_30_fixed_fps = sensor_sr259_setfile_A_30_fixed_fps;
+		sensor_sr259_setfile_30_fixed_fps_size = sensor_sr259_setfile_A_30_fixed_fps_size;
 		sensor_sr259_setfile_15_fixed_fps = sensor_sr259_setfile_A_15_fixed_fps;
 		sensor_sr259_setfile_15_fixed_fps_size = sensor_sr259_setfile_A_15_fixed_fps_size;
 		sensor_sr259_setfile_7_fixed_fps = sensor_sr259_setfile_A_7_fixed_fps;
@@ -1780,6 +1792,8 @@ int cis_sr259_probe(struct i2c_client *client,
 		sensor_sr259_max_setfile_num = sizeof(sensor_sr259_setfiles_B) / sizeof(sensor_sr259_setfiles_B[0]);
 		sensor_sr259_setfile_variable_fps = sensor_sr259_setfile_B_variable_fps;
 		sensor_sr259_setfile_variable_fps_size = sensor_sr259_setfile_B_variable_fps_size;
+		sensor_sr259_setfile_30_fixed_fps = sensor_sr259_setfile_B_30_fixed_fps;
+		sensor_sr259_setfile_30_fixed_fps_size = sensor_sr259_setfile_B_30_fixed_fps_size;
 		sensor_sr259_setfile_15_fixed_fps = sensor_sr259_setfile_B_15_fixed_fps;
 		sensor_sr259_setfile_15_fixed_fps_size = sensor_sr259_setfile_B_15_fixed_fps_size;
 		sensor_sr259_setfile_7_fixed_fps = sensor_sr259_setfile_B_7_fixed_fps;
@@ -1792,6 +1806,8 @@ int cis_sr259_probe(struct i2c_client *client,
 		sensor_sr259_max_setfile_num = sizeof(sensor_sr259_setfiles_A) / sizeof(sensor_sr259_setfiles_A[0]);
 		sensor_sr259_setfile_variable_fps = sensor_sr259_setfile_A_variable_fps;
 		sensor_sr259_setfile_variable_fps_size = sensor_sr259_setfile_A_variable_fps_size;
+		sensor_sr259_setfile_30_fixed_fps = sensor_sr259_setfile_A_30_fixed_fps;
+		sensor_sr259_setfile_30_fixed_fps_size = sensor_sr259_setfile_A_30_fixed_fps_size;
 		sensor_sr259_setfile_15_fixed_fps = sensor_sr259_setfile_A_15_fixed_fps;
 		sensor_sr259_setfile_15_fixed_fps_size = sensor_sr259_setfile_A_15_fixed_fps_size;
 		sensor_sr259_setfile_7_fixed_fps = sensor_sr259_setfile_A_7_fixed_fps;

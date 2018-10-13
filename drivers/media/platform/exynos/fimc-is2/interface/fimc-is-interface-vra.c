@@ -820,14 +820,6 @@ int fimc_is_lib_vra_update_dm(struct fimc_is_lib_vra *lib_vra,
 		return -EINVAL;
 	}
 
-	if (*faceDetectMode == FACEDETECT_MODE_OFF) {
-		dm->faceDetectMode = FACEDETECT_MODE_OFF;
-		return 0;
-	}
-
-	/* TODO: FACEDETECT_MODE_FULL*/
-	dm->faceDetectMode = FACEDETECT_MODE_SIMPLE;
-
 	if (!lib_vra->all_face_num) {
 		memset(&dm->faceIds, 0, sizeof(dm->faceIds));
 		memset(&dm->faceRectangles, 0, sizeof(dm->faceRectangles));
@@ -887,22 +879,38 @@ int fimc_is_lib_vra_update_sm(struct fimc_is_lib_vra *lib_vra)
 }
 
 int fimc_is_lib_vra_get_meta(struct fimc_is_lib_vra *lib_vra,
-	struct camera2_shot *shot)
+	struct fimc_is_frame *frame)
 {
 	int ret = 0;
+	struct camera2_stats_ctl *stats_ctl;
+	struct camera2_stats_dm *stats_dm;
 
 	if (unlikely(!lib_vra)) {
 		err_lib("lib_vra is NULL");
 		return -EINVAL;
 	}
 
-	if (unlikely(!shot)) {
-		err_lib("camera2_shot is NULL");
+	if (unlikely(!frame)) {
+		err_lib("frame is NULL");
 		return -EINVAL;
 	}
 
+	stats_ctl = &frame->shot->ctl.stats;
+	stats_dm = &frame->shot->dm.stats;
+
+	if (stats_ctl->faceDetectMode == FACEDETECT_MODE_OFF) {
+		stats_dm->faceDetectMode = FACEDETECT_MODE_OFF;
+		if(frame->shot_ext->fd_bypass) {
+			info_lib("fimc_is_lib_vra_get_meta : fd_bypass is enabled\n");
+			return 0;
+		}
+	} else {
+		/* TODO: FACEDETECT_MODE_FULL*/
+		stats_dm->faceDetectMode = FACEDETECT_MODE_SIMPLE;
+	}
+
 	ret = fimc_is_lib_vra_update_dm(lib_vra,
-			&shot->ctl.stats.faceDetectMode, &shot->dm.stats);
+			&frame->shot->ctl.stats.faceDetectMode, &frame->shot->dm.stats);
 	if (ret) {
 		err_lib("lib_vra_update_dm is fail (%#x)", ret);
 		return -EINVAL;

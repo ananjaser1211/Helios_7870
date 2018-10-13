@@ -244,3 +244,15 @@ config CAMERA_A6
         default n
         help
           This camera is a6 project.
+config CAMERA_J7VEIRIS
+        bool "This camera is J7veiris project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is J7veiris project.
+config CAMERA_5E6_USE_1P2_POWER
+        bool "5E6 sensor use 1p2 power pin"
+        depends on VENDER_MCD
+        default n
+        help
+          5E6 sensor use 1p2 power pin.

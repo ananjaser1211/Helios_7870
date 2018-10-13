@@ -714,6 +714,15 @@ const u32 sensor_sr259_setfile_A_variable_fps[] = {
 	0x27, 0xff, 0x0,
 };
 
+const u32 sensor_sr259_setfile_A_30_fixed_fps[] = {
+	0x03, 0x00, 0x0,
+	0x4e, 0x05, 0x0,
+	0x4f, 0x20, 0x0, /* frame_length_line 2600 */
+	0x13, 0xe0, 0x0,
+	0x03, 0x20, 0x0,
+	0x10, 0x10, 0x0,
+};
+
 const u32 sensor_sr259_setfile_A_15_fixed_fps[] = {
 	0x03, 0x00, 0x0,
 	0x4e, 0x0a, 0x0,
@@ -746,6 +755,9 @@ static const struct sensor_pll_info *sensor_sr259_pllinfos_A[] = {
 
 const u32 sensor_sr259_setfile_A_variable_fps_size =
 	sizeof(sensor_sr259_setfile_A_variable_fps) / sizeof(sensor_sr259_setfile_A_variable_fps[0]);
+
+const u32 sensor_sr259_setfile_A_30_fixed_fps_size =
+	sizeof(sensor_sr259_setfile_A_30_fixed_fps) / sizeof(sensor_sr259_setfile_A_30_fixed_fps[0]);
 
 const u32 sensor_sr259_setfile_A_15_fixed_fps_size =
 	sizeof(sensor_sr259_setfile_A_15_fixed_fps) / sizeof(sensor_sr259_setfile_A_15_fixed_fps[0]);

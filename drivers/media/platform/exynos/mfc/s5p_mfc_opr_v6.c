@@ -167,6 +167,7 @@ static int s5p_mfc_decode_one_frame(struct s5p_mfc_ctx *ctx, int last_frame)
 {
 	struct s5p_mfc_dev *dev;
 	struct s5p_mfc_dec *dec;
+	u32 reg = 0;
 
 	if (!ctx) {
 		mfc_err("no mfc context to run\n");
@@ -185,6 +186,13 @@ static int s5p_mfc_decode_one_frame(struct s5p_mfc_ctx *ctx, int last_frame)
 	mfc_debug(2, "Setting flags to %08lx (free:%d WTF:%d)\n",
 				dec->dpb_status, ctx->dst_queue_cnt,
 						dec->dpb_queue_cnt);
+
+	reg = MFC_READL(S5P_FIMV_D_NAL_START_OPTIONS);
+	reg &= ~(0x1 << S5P_FIMV_D_NAL_START_OPT_BLACK_BAR_SHIFT);
+	reg |= ((dec->detect_black_bar & 0x1) << S5P_FIMV_D_NAL_START_OPT_BLACK_BAR_SHIFT);
+	MFC_WRITEL(reg, S5P_FIMV_D_NAL_START_OPTIONS);
+	mfc_debug(3, "black bar detect set: %#x\n", reg);
+
 	if (dec->is_dynamic_dpb) {
 		mfc_debug(2, "Dynamic:0x%08x, Available:0x%08lx\n",
 					dec->dynamic_set, dec->dpb_status);
@@ -413,6 +421,17 @@ static int mfc_set_dynamic_dpb(struct s5p_mfc_ctx *ctx, struct s5p_mfc_buf *dst_
 	mfc_debug(2, "ADDING Flag after: %lx\n", dec->dpb_status);
 	mfc_debug(2, "Dst addr [%d] = 0x%llx\n", dst_index,
 			(unsigned long long)dst_vb->planes.raw[0]);
+
+	/* for debugging about black bar detection */
+	if (FW_HAS_BLACK_BAR_DETECT(dev) && dec->detect_black_bar) {
+		for (i = 0; i < raw->num_planes; i++) {
+			dec->frame_vaddr[i][dec->frame_cnt] = vb2_plane_vaddr(&dst_vb->vb, i);
+			dec->frame_size[i][dec->frame_cnt] = raw->plane_size[i];
+		}
+		dec->frame_cnt++;
+		if (dec->frame_cnt >= 30)
+			dec->frame_cnt = 0;
+	}
 
 	/* decoder dst buffer CFW PROT */
 	if (ctx->is_drm) {

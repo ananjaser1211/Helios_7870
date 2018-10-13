@@ -32,7 +32,7 @@
 enum sr259_fixed_framerate {
 	SR259_7_FIXED_FPS = 7,
 	SR259_15_FIXED_FPS = 15,
-	SR259_24_FIXED_FPS = 24,
+	SR259_30_FIXED_FPS = 30,
 };
 
 #endif

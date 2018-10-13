@@ -445,13 +445,56 @@ static inline enum s5p_mfc_node_type s5p_mfc_get_node_type(struct file *file)
 
 }
 
+static void mfc_handle_black_bar_info(struct s5p_mfc_dev *dev, struct s5p_mfc_ctx *ctx)
+{
+	struct v4l2_rect new_black_bar;
+	int black_bar_info;
+	struct s5p_mfc_dec *dec = ctx->dec_priv;
+
+	black_bar_info = s5p_mfc_get_black_bar_detection();
+	mfc_debug(3, "black bar type: %#x\n", black_bar_info);
+
+	if (black_bar_info == S5P_FIMV_DISP_STATUS_BLACK_BAR) {
+		new_black_bar.left = s5p_mfc_get_black_bar_pos_x();
+		new_black_bar.top = s5p_mfc_get_black_bar_pos_y();
+		new_black_bar.width = s5p_mfc_get_black_bar_image_w();
+		new_black_bar.height = s5p_mfc_get_black_bar_image_h();
+	} else if (black_bar_info == S5P_FIMV_DISP_STATUS_BLACK_SCREEN) {
+		new_black_bar.left = -1;
+		new_black_bar.top = -1;
+		new_black_bar.width = ctx->img_width;
+		new_black_bar.height = ctx->img_height;
+	} else if (black_bar_info == S5P_FIMV_DISP_STATUS_NOT_DETECTED) {
+		new_black_bar.left = 0;
+		new_black_bar.top = 0;
+		new_black_bar.width = ctx->img_width;
+		new_black_bar.height = ctx->img_height;
+	} else {
+		mfc_err_ctx("Not supported black bar type: %#x\n", black_bar_info);
+		dec->black_bar_updated = 0;
+		return;
+	}
+
+	if ((new_black_bar.left == dec->black_bar.left) &&
+			(new_black_bar.top == dec->black_bar.top) &&
+			(new_black_bar.width == dec->black_bar.width) &&
+			(new_black_bar.height == dec->black_bar.height)) {
+		mfc_debug(3, "black bar info was not changed\n");
+		dec->black_bar_updated = 0;
+		return;
+	}
+
+	dec->black_bar = new_black_bar;
+	dec->black_bar_updated = 1;
+}
+
 static void s5p_mfc_handle_frame_all_extracted(struct s5p_mfc_ctx *ctx)
 {
 	struct s5p_mfc_dec *dec;
 	struct s5p_mfc_dev *dev;
 	struct s5p_mfc_buf *dst_buf;
 	int index, i, is_first = 1;
-	unsigned int interlace_type = 0, is_interlace = 0;
+	unsigned int interlace_type = 0, is_interlace = 0, is_mbaff = 0;
 
 	if (!ctx) {
 		mfc_err("no mfc context to run\n");
@@ -479,6 +522,9 @@ static void s5p_mfc_handle_frame_all_extracted(struct s5p_mfc_ctx *ctx)
 					  dst_buf->vb.v4l2_buf.index);
 		if (interlaced_cond(ctx))
 			is_interlace = s5p_mfc_is_interlace_picture();
+		if (CODEC_MBAFF(ctx))
+			is_mbaff = s5p_mfc_is_mbaff_picture();
+
 		for (i = 0; i < ctx->dst_fmt->mem_planes; i++)
 			vb2_set_plane_payload(&dst_buf->vb, i, 0);
 		list_del(&dst_buf->list);
@@ -490,9 +536,11 @@ static void s5p_mfc_handle_frame_all_extracted(struct s5p_mfc_ctx *ctx)
 				dst_buf->vb.v4l2_buf.field = V4L2_FIELD_INTERLACED_TB;
 			else
 				dst_buf->vb.v4l2_buf.field = V4L2_FIELD_INTERLACED_BT;
-		}
-		else
+		} else if (is_mbaff) {
+			dst_buf->vb.v4l2_buf.field = V4L2_FIELD_INTERLACED_TB;
+		} else {
 			dst_buf->vb.v4l2_buf.field = V4L2_FIELD_NONE;
+		}
 		clear_bit(dst_buf->vb.v4l2_buf.index, &dec->dpb_status);
 
 		index = dst_buf->vb.v4l2_buf.index;
@@ -667,7 +715,7 @@ static void s5p_mfc_handle_frame_new(struct s5p_mfc_ctx *ctx, unsigned int err)
 	dma_addr_t dspl_y_addr;
 	unsigned int index;
 	unsigned int frame_type;
-	unsigned int interlace_type = 0, is_interlace = 0;
+	unsigned int interlace_type = 0, is_interlace = 0, is_mbaff = 0;
 	int mvc_view_id;
 	unsigned int dst_frame_status, last_frame_status;
 	struct list_head *dst_queue_addr;
@@ -724,6 +772,14 @@ static void s5p_mfc_handle_frame_new(struct s5p_mfc_ctx *ctx, unsigned int err)
 	}
 	if (interlaced_cond(ctx))
 		is_interlace = s5p_mfc_is_interlace_picture();
+	if (CODEC_MBAFF(ctx))
+		is_mbaff = s5p_mfc_is_mbaff_picture();
+
+	if (FW_HAS_BLACK_BAR_DETECT(dev) && dec->detect_black_bar)
+		mfc_handle_black_bar_info(dev, ctx);
+	else
+		dec->black_bar_updated = 0;
+
 	if (dec->is_dynamic_dpb) {
 		prev_flag = dec->dynamic_used;
 		dec->dynamic_used = mfc_get_dec_used_flag();
@@ -795,6 +851,7 @@ static void s5p_mfc_handle_frame_new(struct s5p_mfc_ctx *ctx, unsigned int err)
 				ctx->dst_queue_cnt--;
 
 			dst_buf->vb.v4l2_buf.sequence = ctx->sequence;
+			dst_buf->vb.v4l2_buf.reserved2 = 0;
 
 			if (is_interlace) {
 				interlace_type = s5p_mfc_get_interlace_type();
@@ -802,11 +859,18 @@ static void s5p_mfc_handle_frame_new(struct s5p_mfc_ctx *ctx, unsigned int err)
 					dst_buf->vb.v4l2_buf.field = V4L2_FIELD_INTERLACED_TB;
 				else
 					dst_buf->vb.v4l2_buf.field = V4L2_FIELD_INTERLACED_BT;
-			}
-			else
+			} else if (is_mbaff) {
+				dst_buf->vb.v4l2_buf.field = V4L2_FIELD_INTERLACED_TB;
+			} else {
 				dst_buf->vb.v4l2_buf.field = V4L2_FIELD_NONE;
-			mfc_debug(2, "is_interlace : %d interlace_type : %d\n",
-				is_interlace, interlace_type);
+			}
+			mfc_debug(2, "is_interlace : %d interlace_type : %d, is_mbaff: %d, field: 0x%#x\n",
+					is_interlace, interlace_type, is_mbaff, dst_buf->vb.v4l2_buf.field);
+
+			if (dec->black_bar_updated) {
+				dst_buf->vb.v4l2_buf.reserved2 |= (1 << 5);
+				mfc_debug(3, "black bar detected\n");
+			}
 
 			if (ctx->src_fmt->mem_planes == 1) {
 				vb2_set_plane_payload(&dst_buf->vb, 0,
@@ -1450,6 +1514,7 @@ static irqreturn_t s5p_mfc_irq(int irq, void *priv)
 	unsigned int err;
 	unsigned long flags;
 	int new_ctx;
+	int is_interlace, is_mbaff;
 #ifdef NAL_Q_ENABLE
 	nal_queue_handle *nal_q_handle = dev->nal_q_handle;
 	EncoderOutputStr *pOutStr;
@@ -1619,9 +1684,13 @@ static irqreturn_t s5p_mfc_irq(int irq, void *priv)
 			else
 				s5p_mfc_change_state(ctx, MFCINST_HEAD_PARSED);
 
-			if (ctx->state == MFCINST_HEAD_PARSED)
-				dec->is_interlaced =
-					s5p_mfc_is_interlace_picture();
+			if (ctx->state == MFCINST_HEAD_PARSED) {
+				is_interlace = s5p_mfc_is_interlace_picture();
+				is_mbaff = s5p_mfc_is_mbaff_picture();
+				if (is_interlace || is_mbaff)
+					dec->is_interlaced = 1;
+				mfc_debug(3, "interlace: %d, mbaff: %d\n", is_interlace, is_mbaff);
+			}
 
 			if ((ctx->codec_mode == S5P_FIMV_CODEC_H264_DEC ||
 				ctx->codec_mode == S5P_FIMV_CODEC_H264_MVC_DEC ||

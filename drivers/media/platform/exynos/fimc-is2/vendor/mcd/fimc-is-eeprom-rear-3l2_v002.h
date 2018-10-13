@@ -1,5 +1,5 @@
-#ifndef FIMC_IS_EEPROM_REAR_3L2_V001_H
-#define FIMC_IS_EEPROM_REAR_3L2_V001_H
+#ifndef FIMC_IS_EEPROM_REAR_3L2_V002_H
+#define FIMC_IS_EEPROM_REAR_3L2_V002_H
 
 /* EEPROM I2C Addr Section */
 #define EEP_I2C_HEADER_VERSION_START_ADDR      0x20
@@ -78,7 +78,7 @@
 #define FIMC_IS_MAX_FW_SIZE                (8 * 1024)
 #endif
 #define FIMC_IS_MAX_SETFILE_SIZE           (1120 * 1024)
-#define HEADER_CRC32_LEN                   (80)
+#define HEADER_CRC32_LEN                   (216)
 #define EEPROM_AF_CAL_PAN_ADDR             0x0100
 #define EEPROM_AF_CAL_MACRO_ADDR           0x0108
 

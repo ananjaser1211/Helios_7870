@@ -875,7 +875,9 @@ static int sensor_5e6_power_setpin(struct device *dev,
 	int gpio_mclk = 0;
 	int gpio_iris_1p8_en = 0;
 	int gpio_iris_2p8_en = 0;
-
+#if defined(CONFIG_CAMERA_5E6_USE_1P2_POWER)
+	int gpio_iris_1p2_en = 0;
+#endif
 	BUG_ON(!dev);
 
 	dnode = dev->of_node;
@@ -918,6 +920,15 @@ static int sensor_5e6_power_setpin(struct device *dev,
 		gpio_free(gpio_iris_2p8_en);
 	}
 
+#if defined(CONFIG_CAMERA_5E6_USE_1P2_POWER)
+	gpio_iris_1p2_en = of_get_named_gpio(dnode, "gpio_iris_1p2_en", 0);
+	if (!gpio_is_valid(gpio_iris_1p2_en)) {
+		dev_err(dev, "%s: failed to get gpio_iris_1p2_en\n", __func__);
+	} else {
+		gpio_request_one(gpio_iris_1p2_en, GPIOF_OUT_INIT_LOW, "CAM_GPIO_OUTPUT_LOW");
+		gpio_free(gpio_iris_1p2_en);
+	}
+#endif
 	SET_PIN_INIT(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_ON);
 	SET_PIN_INIT(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_OFF);
 
@@ -925,14 +936,24 @@ static int sensor_5e6_power_setpin(struct device *dev,
 	SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_ON, gpio_reset, "rst_low", PIN_OUTPUT, 0, 0);
 	SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_ON, gpio_iris_2p8_en, "gpio_iris_2p8_en_high", PIN_OUTPUT, 1, 0);
 	SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_ON, gpio_iris_1p8_en, "gpio_iris_1p8_en_high", PIN_OUTPUT, 1, 1000);
-//	SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_ON, gpio_none, "VDD_IRIS_1P2", PIN_REGULATOR, 1, 1000);
+
+#if defined(CONFIG_CAMERA_5E6_USE_1P2_POWER)
+	SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_ON, gpio_iris_1p2_en, "gpio_iris_1p2_en_high", PIN_OUTPUT, 1, 1000);
+#else
+	//SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_ON, gpio_none, "VDD_IRIS_1P2", PIN_REGULATOR, 1, 1000);
+#endif
 	SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_ON, gpio_reset, "rst_high", PIN_OUTPUT, 1, 1000);
 	SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_ON, gpio_none, "pin", PIN_FUNCTION, 1, 200);
 
 	/* IRIS CAMERA  - POWER OFF */
 	SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_OFF, gpio_none, "pin", PIN_FUNCTION, 0, 70);
 	SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_OFF, gpio_reset, "rst_low", PIN_OUTPUT, 0, 2000);
-//	SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_OFF, gpio_none, "VDD_IRIS_1P2", PIN_REGULATOR, 0, 2000);
+
+#if defined(CONFIG_CAMERA_5E6_USE_1P2_POWER)
+	SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_OFF, gpio_iris_1p2_en, "gpio_iris_1p2_en_low", PIN_OUTPUT, 0, 1000);
+#else
+	//SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_OFF, gpio_none, "VDD_IRIS_1P2", PIN_REGULATOR, 0, 2000);
+#endif
 	SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_OFF, gpio_iris_1p8_en, "gpio_iris_1p8_en_low", PIN_OUTPUT, 0, 2000);
 	SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_OFF, gpio_iris_2p8_en, "gpio_iris_2p8_en_low", PIN_OUTPUT, 0, 2000);
 

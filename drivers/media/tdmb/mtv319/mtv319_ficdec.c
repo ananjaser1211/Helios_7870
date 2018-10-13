@@ -1,20 +1,20 @@
 /*
-*
-* File name: mtv319_ficdec.c
-*
-* Description : RAONTECH FIC Decoder driver.
-*
-* Copyright (C) (2013, RAONTECH)
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation version 2.
-*
-* This program is distributed "as is" WITHOUT ANY WARRANTY of any
-* kind, whether express or implied; without even the implied warranty
-* of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*/
+ *
+ * File name: mtv319_ficdec.c
+ *
+ * Description : RAONTECH FIC Decoder driver.
+ *
+ * Copyright (C) (2013, RAONTECH)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation version 2.
+ *
+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+ * kind, whether express or implied; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
 
 #include <linux/string.h>
 #include "mtv319_ficdec_internal.h"
@@ -229,8 +229,9 @@ S32 RESERVED3(U8 fic_cmd)
 }
 
 /*
-* FIG TYPE 0 Extension Function
-* Ensemble Information */
+ * FIG TYPE 0 Extension Function
+ * Ensemble Information
+ */
 S32 Get_FIG0_EXT0(U8 fic_cmd, U8 P_D, U8 C_N)
 {
 	U8 temp1, temp2;
@@ -323,16 +324,16 @@ while (fig_data.byte_cnt < fig_data.length) {
 				; cnt < ENS_DESC.svr_comp_num
 				; cnt++) {
 				/*Old SId & New SId matching */
-			if (ENS_DESC.svr_comp[cnt].SubChid
+				if (ENS_DESC.svr_comp[cnt].SubChid
 				== type0_ext1.SubChid) {
-				ENS_DESC.svr_comp[cnt].START_Addr
-					= type0_ext1.StartAdd;
-				ENS_DESC.svr_comp[cnt].SUB_CH_Size
-					= sub_ch_size;
-				ENS_DESC.svr_comp[cnt].P_L
-					= p_l;
-				ENS_DESC.svr_comp[cnt].BIT_RATE
-					= bit_rate;
+					ENS_DESC.svr_comp[cnt].START_Addr
+						= type0_ext1.StartAdd;
+					ENS_DESC.svr_comp[cnt].SUB_CH_Size
+						= sub_ch_size;
+					ENS_DESC.svr_comp[cnt].P_L
+						= p_l;
+					ENS_DESC.svr_comp[cnt].BIT_RATE
+						= bit_rate;
 				}
 			}
 		}
@@ -466,7 +467,7 @@ static INLINE void update_current_ens_desc_type0_ext2(
 			cur->svr_comp[cur->svr_comp_num].SubChid
 				= type0_ext2->svr_comp_des[l].SubChid;
 			cur->svr_comp[cur->svr_comp_num].P_S
-				= type0_ext2->svr_comp_des[l].P_S ;
+				= type0_ext2->svr_comp_des[l].P_S;
 			cur->svr_comp[cur->svr_comp_num].CA_flag
 				= type0_ext2->svr_comp_des[l].CA_flag;
 			break;
@@ -914,9 +915,9 @@ S32 Get_FIG0_EXT6(U8 fic_cmd, U8 P_D, U8 C_N)
 		}
 
 		if (fic_cmd) {
-			/* Not yet implementation
-			 *
-			 * */
+			/**
+			 * Not yet implementation
+			 */
 		}
 	}
 
@@ -1064,8 +1065,8 @@ S32 Get_FIG0_EXT9(U8 fic_cmd, U8 P_D, U8 C_N)
 	U8 temp1, temp2, temp3, temp4;
 	U8 k = 0;
 	U8 NumOfService = 0;
-
 	struct FIG_TYPE0_Ext9 type0_ext9;
+
 	memset(&type0_ext9, 0x0, sizeof(struct FIG_TYPE0_Ext9));
 
 	while (fig_data.byte_cnt < fig_data.length) {
@@ -1077,22 +1078,22 @@ S32 Get_FIG0_EXT9(U8 fic_cmd, U8 P_D, U8 C_N)
 		Get_Bytes(1, &type0_ext9.Inter_Table_ID);
 
 		if (type0_ext9.Ext_flag) {
-	while (k < fig_data.length) {
-		Get_Bits(2,
-		&type0_ext9.Num_Ser[type0_ext9.NumOfSubField]);
-		Get_Bits(6,
-		&type0_ext9.LTO[type0_ext9.NumOfSubField]);
-		k++;
+			while (k < fig_data.length) {
+				Get_Bits(2,
+				&type0_ext9.Num_Ser[type0_ext9.NumOfSubField]);
+				Get_Bits(6,
+				&type0_ext9.LTO[type0_ext9.NumOfSubField]);
+				k++;
 
 		if (P_D) {
 			for (NumOfService = 0;
-		NumOfService < type0_ext9.Num_Ser[type0_ext9.NumOfSubField];
-		NumOfService++) {
-					Get_Bytes(1, &temp1);
-					Get_Bytes(1, &temp2);
-					Get_Bytes(1, &temp3);
-					Get_Bytes(1, &temp4);
-			type0_ext9.Sid[type0_ext9.NumOfSubField][NumOfService]
+				NumOfService < type0_ext9.Num_Ser[type0_ext9.NumOfSubField];
+				NumOfService++) {
+				Get_Bytes(1, &temp1);
+				Get_Bytes(1, &temp2);
+				Get_Bytes(1, &temp3);
+				Get_Bytes(1, &temp4);
+				type0_ext9.Sid[type0_ext9.NumOfSubField][NumOfService]
 					= (temp1 << 24)
 						| (temp2 << 16)
 						| (temp3 << 8)
@@ -1101,18 +1102,18 @@ S32 Get_FIG0_EXT9(U8 fic_cmd, U8 P_D, U8 C_N)
 				k += 4;
 				}
 			} else {
-			if (type0_ext9.Num_Ser[type0_ext9.NumOfSubField] != 0) {
-				Get_Bytes(1,
-				&type0_ext9.ECC[type0_ext9.NumOfSubField]);
-				k++;
-			}
+				if (type0_ext9.Num_Ser[type0_ext9.NumOfSubField] != 0) {
+					Get_Bytes(1,
+					&type0_ext9.ECC[type0_ext9.NumOfSubField]);
+					k++;
+				}
 
 			for (NumOfService = 0;
-		NumOfService < type0_ext9.Num_Ser[type0_ext9.NumOfSubField];
-		NumOfService++) {
-					Get_Bytes(1, &temp1);
-					Get_Bytes(1, &temp2);
-			type0_ext9.Sid[type0_ext9.NumOfSubField][NumOfService]
+			NumOfService < type0_ext9.Num_Ser[type0_ext9.NumOfSubField];
+			NumOfService++) {
+				Get_Bytes(1, &temp1);
+				Get_Bytes(1, &temp2);
+				type0_ext9.Sid[type0_ext9.NumOfSubField][NumOfService]
 						= (temp1 << 8) | temp2;
 
 				k += 2;
@@ -1215,7 +1216,7 @@ for (i = 0; i < ENS_DESC.svr_num; i++) {
 				for (p = 0;
 				p < type0_ext13->User_APP_data_length[k]; p++)
 					ENS_DESC.svr_comp[j].User_APP_data[k][p]
-					= type0_ext13->User_APP_data[k][p] ;
+					= type0_ext13->User_APP_data[k][p];
 			}
 		}
 	}
@@ -1254,8 +1255,9 @@ S32 Get_FIG0_EXT13(U8 fic_cmd, U8 P_D, U8 C_N)
 			type0_ext13.User_APP_Type[k] = (temp1 << 3) | temp2;
 
 			Get_Bits(5, &type0_ext13.User_APP_data_length[k]);
-/*
-			if (type0_ext13.User_APP_data_length[k]> 2) {
+
+#if 0
+			if (type0_ext13.User_APP_data_length[k] > 2) {
 				Get_Bits(1, &type0_ext13.CA_flag);
 				Get_Bits(1, &type0_ext13.CA_Org_flag);
 				Get_Bits(1, &temp1);
@@ -1271,7 +1273,7 @@ S32 Get_FIG0_EXT13(U8 fic_cmd, U8 P_D, U8 C_N)
 						= (temp1 << 8) | temp2;
 				}
 			}
-*/
+#endif
 			for (p = 0; p < type0_ext13.User_APP_data_length[k]
 				; p++)
 				Get_Bytes(1, &type0_ext13.User_APP_data[k][p]);
@@ -1352,10 +1354,11 @@ S32 Get_FIG0_EXT16(U8 fic_cmd, U8 P_D, U8 C_N)
 #if 0
 		if (fic_cmd) {
 			for (cnt = 0; cnt < ENS_DESC.svr_num; cnt++) {
-				if (type0_ext16.Sid
-					== ENS_DESC.svr_desc[cnt].Sid)
-					/* Not yet implementation */
-
+				if (type0_ext16.Sid == ENS_DESC.svr_desc[cnt].Sid) {
+					/**
+					 * Not yet implementation
+					 */
+				}
 			}
 		}
 #endif
@@ -1439,8 +1442,11 @@ S32 Get_FIG0_EXT18(U8 fic_cmd, U8 P_D, U8 C_N)
 		if (fic_cmd) {
 			for (cnt = 0; cnt < ENS_DESC.svr_num; cnt++) {
 				if (type0_ext18.Sid
-					== ENS_DESC.svr_desc[cnt].Sid)
-					/* Not yet implementation */
+					== ENS_DESC.svr_desc[cnt].Sid) {
+					/*
+					 * Not yet implementation
+					 */
+				}
 			}
 		}
 #endif
@@ -1472,8 +1478,11 @@ S32 Get_FIG0_EXT19(U8 fic_cmd, U8 P_D, U8 C_N)
 			Get_Bits(6, &type0_ext19.Regionid_Lower_Part);
 		}
 #if 0
-		if (fic_cmd)
-			/* Not yet implementation */
+		if (fic_cmd) {
+			/*
+			 * Not yet implementation
+			 */
+		}
 #endif
 	}
 
@@ -1530,8 +1539,11 @@ S32 Get_FIG0_EXT22(U8 fic_cmd, U8 P_D, U8 C_N)
 			Get_Bits(4, &type0_ext22.Longitude_fine);
 		}
 #if 0
-		if (fic_cmd)
-			/* Not yet implementation */
+		if (fic_cmd) {
+			/*
+			 * Not yet implementation
+			 */
+		}
 #endif
 	}
 
@@ -1578,10 +1590,11 @@ S32 Get_FIG0_EXT24(U8 fic_cmd, U8 P_D, U8 C_N)
 #if 0
 		if (fic_cmd) {
 			for (cnt = 0; cnt < ENS_DESC.svr_num; cnt++) {
-				if (type0_ext24.Sid
-					== ENS_DESC.svr_desc[cnt].Sid)
-					/* Not yet implementation*/
-
+				if (type0_ext24.Sid == ENS_DESC.svr_desc[cnt].Sid) {
+					/*
+					 * Not yet implementation
+					 */
+				}
 			}
 		}
 #endif
@@ -1661,13 +1674,25 @@ S32 Get_FIG1_EXT0(U8 fic_cmd, U8 Char_Set)
 	return RTV_OK;
 }
 
+static void fill_label(U8 *label)
+{
+	S8 i;
+
+	for (i = 15; i >= 0; i--) {
+		if (label[i] != 0x20) {
+			label[i+1] = '\0';
+			break;
+		}
+	}
+	label[16] = '\0';
+}
+
 /* Program Service Label */
 S32 Get_FIG1_EXT1(U8 fic_cmd, U8 Char_Set)
 {
 	U32 sid;
 	U8 label[17];
 	U8 cnt;
-	S8 i;
 	U8 temp1, temp2;
 
 while (fig_data.byte_cnt < fig_data.length) {
@@ -1681,13 +1706,7 @@ while (fig_data.byte_cnt < fig_data.length) {
 		for (cnt = 0; cnt < ENS_DESC.svr_num; cnt++) {
 			if (sid == ENS_DESC.svr_desc[cnt].Sid) {
 				if (!ENS_DESC.svr_desc[cnt].label_flag) {
-					for (i = 15; i >= 0; i--) {
-						if (label[i] != 0x20) {
-							label[i+1] = '\0';
-							break;
-						}
-					}
-					label[16] = '\0';
+					fill_label(label);
 
 					ENS_DESC.svr_desc[cnt].charset
 						= Char_Set;
@@ -1734,7 +1753,7 @@ S32 Get_FIG1_EXT4(U8 fic_cmd, U8 Char_Set)
 	U8 SCidS;
 	U32 sid;
 	U8 label[17];
-	S8 i = 0, k = 0;
+	S8 k = 0;
 	U8 temp1, temp2, temp3, temp4;
 
 	while (fig_data.byte_cnt < fig_data.length) {
@@ -1762,13 +1781,7 @@ S32 Get_FIG1_EXT4(U8 fic_cmd, U8 Char_Set)
 				if ((ENS_DESC.svr_comp[k].Sid == sid)
 					&& (ENS_DESC.svr_comp[k].SCidS
 						== SCidS)) {
-					for (i = 15; i >= 0; i--) {
-						if (label[i] != 0x20) {
-							label[i+1] = '\0';
-							break;
-						}
-					}
-					label[16] = '\0';
+					fill_label(label);
 
 					ENS_DESC.svr_comp[k].charset
 						= Char_Set;
@@ -1789,7 +1802,6 @@ S32 Get_FIG1_EXT5(U8 fic_cmd, U8 Char_Set)
 	U32 sid;
 	U8 label[17];
 	U8 cnt;
-	S8 i;
 	U8 temp1, temp2, temp3, temp4;
 
 while (fig_data.byte_cnt < fig_data.length) {
@@ -1805,13 +1817,7 @@ while (fig_data.byte_cnt < fig_data.length) {
 		for (cnt = 0; cnt < ENS_DESC.svr_num; cnt++) {
 			if (sid == ENS_DESC.svr_desc[cnt].Sid) {
 				if (!ENS_DESC.svr_desc[cnt].label_flag) {
-					for (i = 15; i >= 0; i--) {
-						if (label[i] != 0x20) {
-							label[i+1] = '\0';
-							break;
-						}
-					}
-					label[16] = '\0';
+					fill_label(label);
 
 					ENS_DESC.svr_desc[cnt].charset
 						= Char_Set;
@@ -1933,7 +1939,7 @@ S32 Get_FIG5_EXT0(U8 D1, U8 D2, U8 fic_cmd, U8 TCid)
 
 	if (fic_cmd) {
 		for (cnt = 0; cnt < ENS_DESC.svr_comp_num; cnt++) {
-			if (FIDC_ID == ENS_DESC.svr_comp[cnt].FIDCid) {
+			if (ENS_DESC.svr_comp[cnt].FIDCid == FIDC_ID) {
 				ENS_DESC.svr_comp[cnt].TCid = TCid;
 				ENS_DESC.svr_comp[cnt].Ext = 0;
 			}
@@ -1953,7 +1959,7 @@ S32 Get_FIG5_EXT1(U8 D1, U8 D2, U8 fic_cmd, U8 TCid)
 
 	if (fic_cmd) {
 		for (cnt = 0; cnt < ENS_DESC.svr_comp_num; cnt++) {
-			if (FIDC_ID == ENS_DESC.svr_comp[cnt].FIDCid) {
+			if (ENS_DESC.svr_comp[cnt].FIDCid == FIDC_ID) {
 				ENS_DESC.svr_comp[cnt].TCid = TCid;
 				ENS_DESC.svr_comp[cnt].Ext = 1;
 			}
@@ -1973,7 +1979,7 @@ S32 Get_FIG5_EXT2(U8 D1, U8 D2, U8 fic_cmd, U8 TCid)
 
 	if (fic_cmd) {
 		for (cnt = 0; cnt < ENS_DESC.svr_comp_num; cnt++) {
-			if (FIDC_ID == ENS_DESC.svr_comp[cnt].FIDCid) {
+			if (ENS_DESC.svr_comp[cnt].FIDCid == FIDC_ID) {
 				ENS_DESC.svr_comp[cnt].TCid = TCid;
 				ENS_DESC.svr_comp[cnt].Ext = 2;
 			}
@@ -2290,8 +2296,9 @@ char *MONTH_TABLE[12] = {
 char *WEEK_TABLE[8] = {
 	"SAT",	"SUN",	"MON",	"TUE",	"WED",	"THU",	"FRI", "SAT"
 };
-/*
-int MJD_TABLE[][] ={
+
+#if 0
+int MJD_TABLE[][] = {
 	{53370, 1, 2005},	{53735, 1, 2006},
 	{54100, 1, 2007},	{54465, 1, 2008},
 	{53401, 2, 2005},	{53766, 2, 2006},
@@ -2317,7 +2324,7 @@ int MJD_TABLE[][] ={
 	{53704, 12, 2005},	{54069, 12, 2006},
 	{54434, 12, 2007},	{54800, 12, 2008},
 };
-*/
+#endif
 
 char *EWS_PRIORITY_TABLE[4] = {
 	"Unknown", "보통", "긴급", "매우긴급"
@@ -2480,7 +2487,6 @@ static S32 CRC_CHECK(U8 *data, U16 data_len)
 struct ENSEMBLE_DESC ENS_DESC, NEXT_ENS_DESC;
 static U32 FIC_CONUT;
 
-
 static UINT fib_crc_err_cnt;
 S32 FIC_Init_Dec(U8 *fic, U8 fib_num, U8 CN)
 {
@@ -2488,6 +2494,7 @@ S32 FIC_Init_Dec(U8 *fic, U8 fib_num, U8 CN)
 	S32 ret;
 	UINT fib_crc_pos = 0;
 	UINT fib_crc_err_sum = 0;
+	U32 semi = 0;
 
 	FIC_CONUT++;
 
@@ -2497,18 +2504,23 @@ S32 FIC_Init_Dec(U8 *fic, U8 fib_num, U8 CN)
 			fib_crc_err_sum++;
 			if (fib_crc_err_sum >= 12)
 				return FIC_CRC_ERR;
-			else
-				continue;
+
+			continue;
 		}
 
 		ret = FIB_INIT_DEC(fic+fib_crc_pos);
 		if (ret == RTV_OK) {
 			if (ENS_DESC.svr_num) {
-				if ((ENS_DESC.svr_num == ENS_DESC.label_num)
-					&& (ENS_DESC.label_flag == 1)
-					&& (FIC_CONUT > 5)) {
-					FIC_CONUT = 0;
-					return FIC_DONE;
+				if ((ENS_DESC.label_flag == 1)
+						&& (FIC_CONUT > 5)) {
+					if (ENS_DESC.svr_num
+						== ENS_DESC.label_num) {
+						FIC_CONUT = 0;
+						return FIC_DONE;
+					}
+
+					if (ENS_DESC.label_num > 0)
+						semi = 1;
 				}
 			}
 		}
@@ -2516,9 +2528,11 @@ S32 FIC_Init_Dec(U8 *fic, U8 fib_num, U8 CN)
 		fib_crc_pos += 32;
 	}
 
-	return FIC_GOING;
+	if (semi)
+		return FIC_SEMI_DONE;
+	else
+		return FIC_GOING;
 }
-
 
 
 static BOOL fic_decode_run;
@@ -2552,8 +2566,9 @@ enum E_RTV_FIC_DEC_RET_TYPE rtvFICDEC_Decode(unsigned char *fic_buf,
 		fib_crc_err_cnt++;
 		if (fib_crc_err_cnt >= 7)
 			return RTV_FIC_RET_CRC_ERR;
-	}
-
+	} else if (ret == FIC_SEMI_DONE)
+		return RTV_FIC_RET_SEMI_DONE;
+	
 	return RTV_FIC_RET_GOING;
 }
 
@@ -2571,6 +2586,8 @@ void rtvFICDEC_GetEnsembleInfo(struct ensemble_info_type *ensble,
 	UINT comp_idx = 0;
 	UINT subch_idx = 0;
 	struct ENSEMBLE_DESC *desc = &ENS_DESC;
+	struct sub_ch_info_type *sub_ch_ptr;
+	struct SVR_COM_DESP *svr_comp_ptr;
 
 	ensble->ensem_freq = freq_khz;
 	ensble->ensem_id = desc->id;
@@ -2581,118 +2598,130 @@ void rtvFICDEC_GetEnsembleInfo(struct ensemble_info_type *ensble,
 	for (i = 0; i < desc->svr_num; i++) {
 		for (j = 0; j < desc->svr_desc[i].Num_ser_comp; j++) {
 			comp_idx = desc->svr_desc[i].ser_comp_num[j];
-			switch (desc->svr_comp[comp_idx].TMID) {
+
+			svr_comp_ptr = &desc->svr_comp[comp_idx];
+			sub_ch_ptr = &ensble->sub_ch[subch_idx];
+
+			switch (svr_comp_ptr->TMID) {
 			case MSC_STREAM_AUDIO:
-				ensble->sub_ch[subch_idx].sub_ch_id
-					= desc->svr_comp[comp_idx].SubChid;
-				ensble->sub_ch[subch_idx].start_addr
-					= desc->svr_comp[comp_idx].START_Addr;
-				ensble->sub_ch[subch_idx].tmid
-					= desc->svr_comp[comp_idx].TMID;
-				ensble->sub_ch[subch_idx].svc_type
-					= desc->svr_comp[comp_idx].ASCTy;
-				ensble->sub_ch[subch_idx].svc_id
-					= desc->svr_desc[i].Sid;
-				memcpy(ensble->sub_ch[subch_idx].svc_label,
-					desc->svr_desc[i].Label,
-					RTV_MAX_ENSEMBLE_LABEL_SIZE);
-				ensble->sub_ch[subch_idx].scids
-					= desc->svr_comp[comp_idx].SCidS;
-				ensble->sub_ch[subch_idx].ecc = Ensemble_ECC;
-				subch_idx++;
+				if (strcmp(desc->svr_desc[i].Label, "")) {
+					sub_ch_ptr->sub_ch_id
+						= svr_comp_ptr->SubChid;
+					sub_ch_ptr->start_addr
+						= svr_comp_ptr->START_Addr;
+					sub_ch_ptr->tmid
+						= svr_comp_ptr->TMID;
+					sub_ch_ptr->svc_type
+						= svr_comp_ptr->ASCTy;
+					sub_ch_ptr->svc_id
+						= desc->svr_desc[i].Sid;
+					memcpy(sub_ch_ptr->svc_label,
+						desc->svr_desc[i].Label,
+						RTV_MAX_ENSEMBLE_LABEL_SIZE);
+					sub_ch_ptr->scids
+						= svr_comp_ptr->SCidS;
+					sub_ch_ptr->ecc = Ensemble_ECC;
+					subch_idx++;
+				}
 				break;
 
 			case MSC_STREAM_DATA:
-				ensble->sub_ch[subch_idx].sub_ch_id
-					= desc->svr_comp[comp_idx].SubChid;
-				ensble->sub_ch[subch_idx].start_addr
-					= desc->svr_comp[comp_idx].START_Addr;
-				ensble->sub_ch[subch_idx].tmid
-					= desc->svr_comp[comp_idx].TMID;
-				ensble->sub_ch[subch_idx].svc_type
-					= desc->svr_comp[comp_idx].DSCTy;
-				ensble->sub_ch[subch_idx].svc_id
-					= desc->svr_desc[i].Sid;
-				memcpy(ensble->sub_ch[subch_idx].svc_label,
-					desc->svr_desc[i].Label,
-					RTV_MAX_ENSEMBLE_LABEL_SIZE);
-				ensble->sub_ch[subch_idx].scids
-					= desc->svr_comp[comp_idx].SCidS;
-				ensble->sub_ch[subch_idx].ecc = Ensemble_ECC;
+				if (strcmp(desc->svr_desc[i].Label, "")) {
+					sub_ch_ptr->sub_ch_id
+						= svr_comp_ptr->SubChid;
+					sub_ch_ptr->start_addr
+						= svr_comp_ptr->START_Addr;
+					sub_ch_ptr->tmid
+						= svr_comp_ptr->TMID;
+					sub_ch_ptr->svc_type
+						= svr_comp_ptr->DSCTy;
+					sub_ch_ptr->svc_id
+						= desc->svr_desc[i].Sid;
+					memcpy(sub_ch_ptr->svc_label,
+						desc->svr_desc[i].Label,
+						RTV_MAX_ENSEMBLE_LABEL_SIZE);
+					sub_ch_ptr->scids
+						= svr_comp_ptr->SCidS;
+					sub_ch_ptr->ecc = Ensemble_ECC;
 
-				ensble->sub_ch[subch_idx].ca_flags
-						= desc->svr_comp[comp_idx].CA_flag;
-				subch_idx++;
+					sub_ch_ptr->ca_flags
+						= svr_comp_ptr->CA_flag;
+					subch_idx++;
+				}
 				break;
 
 			case FIDC: /* No service */
-/*
-				ensble.sub_ch[subch_idx].tmid
-					= desc->svr_comp[comp_idx].TMID;
-				ensble.sub_ch[subch_idx].svc_id
-					= desc->svr_desc[i].Sid;
-				memcpy(ensble.sub_ch[subch_idx].svc_label,
-					desc->svr_desc[i].Label,
-					RTV_MAX_ENSEMBLE_LABEL_SIZE);
-				ensble->sub_ch[subch_idx].scids
-					= desc->svr_comp[comp_idx].SCidS;
-				ensble->sub_ch[subch_idx].ecc = Ensemble_ECC;
-				subch_idx++;
-*/
+	#if 0
+				if (strcmp(desc->svr_desc[i].Label, "")) {
+					sub_ch_ptr->tmid
+						= svr_comp_ptr->TMID;
+					sub_ch_ptr->svc_id
+						= desc->svr_desc[i].Sid;
+					memcpy(sub_ch_ptr->svc_label,
+						desc->svr_desc[i].Label,
+						RTV_MAX_ENSEMBLE_LABEL_SIZE);
+					sub_ch_ptr->scids
+						= svr_comp_ptr->SCidS;
+					sub_ch_ptr->ecc = Ensemble_ECC;
+					subch_idx++;
+				}
+	#endif
 				break;
 
 			case MSC_PACKET_DATA:
-/*
-				ensble->sub_ch[subch_idx].sub_ch_id
-				= desc->svr_comp[comp_idx].SubChid;
-				ensble->sub_ch[subch_idx].start_addr
-					= desc->svr_comp[comp_idx].START_Addr;
-				ensble->sub_ch[subch_idx].tmid
-					= desc->svr_comp[comp_idx].TMID;
-				ensble->sub_ch[subch_idx].svc_type
-					= desc->svr_comp[comp_idx].DSCTy;
-				ensble->sub_ch[subch_idx].svc_id
-					= desc->svr_desc[i].Sid;
-				memcpy(ensble->sub_ch[subch_idx].svc_label,
-					desc->svr_desc[i].Label,
-					RTV_MAX_ENSEMBLE_LABEL_SIZE);
-				ensble->sub_ch[subch_idx].scids
-					= desc->svr_comp[comp_idx].SCidS;
-				ensble->sub_ch[subch_idx].ecc = Ensemble_ECC;
-				subch_idx++;
-*/
+	#if 0
+				if (strcmp(desc->svr_desc[i].Label, "")) {
+					sub_ch_ptr->sub_ch_id
+					= svr_comp_ptr->SubChid;
+					sub_ch_ptr->start_addr
+						= svr_comp_ptr->START_Addr;
+					sub_ch_ptr->tmid
+						= svr_comp_ptr->TMID;
+					sub_ch_ptr->svc_type
+						= svr_comp_ptr->DSCTy;
+					sub_ch_ptr->svc_id
+						= desc->svr_desc[i].Sid;
+					memcpy(sub_ch_ptr->svc_label,
+						desc->svr_desc[i].Label,
+						RTV_MAX_ENSEMBLE_LABEL_SIZE);
+					sub_ch_ptr->scids
+						= svr_comp_ptr->SCidS;
+					sub_ch_ptr->ecc = Ensemble_ECC;
+					subch_idx++;
+				}
+	#endif
 				break;
 			default:
 				/*RTV_DBGMSG0("NO TMID\n");*/
 				DPRINTK("NO TMID\n");
 				break;
 			}
-		if (desc->svr_comp[comp_idx].CA_flag)
-			DPRINTK("%s: sub_channel_id(%d), ca_flag detected\n", __func__,
-					(subch_idx - 1));
+		if (svr_comp_ptr->CA_flag)
+			DPRINTK("%s: sub_channel_id(%d), ca_flag detected\n",
+				__func__, (subch_idx - 1));
 
-/*
+	#if 0
 		RTV_DBGMSG2("ensble->sub_ch[%d].sub_ch_id: %d\n",
-		subch_idx, ensble->sub_ch[subch_idx].sub_ch_id);
+		subch_idx, sub_ch_ptr->sub_ch_id);
 		RTV_DBGMSG2("ensble->sub_ch[%d].start_addr: %d\n",
-		subch_idx, ensble->sub_ch[subch_idx].start_addr);
+		subch_idx, sub_ch_ptr->start_addr);
 		RTV_DBGMSG2("ensble->sub_ch[%d].tmid: %d\n",
-			subch_idx, ensble->sub_ch[subch_idx].tmid);
+			subch_idx, sub_ch_ptr->tmid);
 		RTV_DBGMSG2("ensble->sub_ch[%d].svc_type: %d\n",
-			subch_idx, ensble->sub_ch[subch_idx].svc_type);
+			subch_idx, sub_ch_ptr->svc_type);
 		RTV_DBGMSG2("ensble->sub_ch[%d].svc_id: 0x%lX\n",
-			subch_idx, ensble->sub_ch[subch_idx].svc_id);
+			subch_idx, sub_ch_ptr->svc_id);
 
 		desc->svr_desc[i].Label[RTV_MAX_ENSEMBLE_LABEL_SIZE] = '\0';
 		RTV_DBGMSG2("ensble->sub_ch[%d].ServiceLabel: %s\n\n",
 			subch_idx, desc->svr_desc[i].Label);
-*/
+	#endif
 		}
 	}
 
 	ensble->tot_sub_ch = subch_idx;
-/*
+#if 0
 	RTV_DBGMSG1("ensble->tot_sub_ch: %d\n\n", ensble->tot_sub_ch);
-*/
+#endif
 }
 
