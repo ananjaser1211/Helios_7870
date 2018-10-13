@@ -1643,38 +1643,39 @@ static void sec_ts_print_frame(struct sec_ts_data *ts, short *min, short *max)
 	int j = 0;
 	unsigned char *pStr = NULL;
 	unsigned char pTmp[16] = { 0 };
+	int lsize = 7 * (ts->tx_count + 1);
 
 	input_raw_info(true, &ts->client->dev, "%s\n", __func__);
 
-	pStr = kzalloc(6 * (ts->tx_count + 1), GFP_KERNEL);
+	pStr = kzalloc(lsize, GFP_KERNEL);
 	if (pStr == NULL)
 		return;
 
-	memset(pStr, 0x0, 6 * (ts->tx_count + 1));
+	memset(pStr, 0x0, lsize);
 	snprintf(pTmp, sizeof(pTmp), "      TX");
-	strncat(pStr, pTmp, 6 * ts->tx_count);
+	strncat(pStr, pTmp, lsize);
 
 	for (i = 0; i < ts->tx_count; i++) {
 		snprintf(pTmp, sizeof(pTmp), " %02d ", i);
-		strncat(pStr, pTmp, 6 * ts->tx_count);
+		strncat(pStr, pTmp, lsize);
 	}
 
 	input_raw_info(true, &ts->client->dev, "%s\n", pStr);
-	memset(pStr, 0x0, 6 * (ts->tx_count + 1));
+	memset(pStr, 0x0, lsize);
 	snprintf(pTmp, sizeof(pTmp), " +");
-	strncat(pStr, pTmp, 6 * ts->tx_count);
+	strncat(pStr, pTmp, lsize);
 
 	for (i = 0; i < ts->tx_count; i++) {
 		snprintf(pTmp, sizeof(pTmp), "----");
-		strncat(pStr, pTmp, 6 * ts->rx_count);
+		strncat(pStr, pTmp, lsize);
 	}
 
 	input_raw_info(true, &ts->client->dev, "%s\n", pStr);
 
 	for (i = 0; i < ts->rx_count; i++) {
-		memset(pStr, 0x0, 6 * (ts->tx_count + 1));
+		memset(pStr, 0x0, lsize);
 		snprintf(pTmp, sizeof(pTmp), "Rx%02d | ", i);
-		strncat(pStr, pTmp, 6 * ts->tx_count);
+		strncat(pStr, pTmp, lsize);
 
 		for (j = 0; j < ts->tx_count; j++) {
 			snprintf(pTmp, sizeof(pTmp), " %3d", ts->pFrame[(j * ts->rx_count) + i]);
@@ -1686,7 +1687,7 @@ static void sec_ts_print_frame(struct sec_ts_data *ts, short *min, short *max)
 				if (ts->pFrame[(j * ts->rx_count) + i] > *max)
 					*max = ts->pFrame[(j * ts->rx_count) + i];
 			}
-			strncat(pStr, pTmp, 6 * ts->rx_count);
+			strncat(pStr, pTmp, lsize);
 		}
 		input_raw_info(true, &ts->client->dev, "%s\n", pStr);
 	}
@@ -1977,16 +1978,24 @@ static int get_gap_data(void *device_data)
 				tx_min = tx_max = node_gap_tx;
 			tx_min = min(tx_min, node_gap_tx);
 			tx_max = max(tx_max, node_gap_tx);
+
+			input_dbg(false, &ts->client->dev,
+				"%s: GAP_DATA_X ii[%d] [%d] = [%d]%d -[%d]%d\n",
+				__func__, ii, ts->pFrame[ii] - ts->pFrame[ii + 1],
+				ii, ts->pFrame[ii], ii + 1,ts->pFrame[ii + 1]);
 		}
 
 		if (ii < (ts->rx_count - 1) * ts->tx_count) {
-			if (ii / ts->tx_count == 15)
-				continue;
 			node_gap_rx = ts->pFrame[ii] - ts->pFrame[ii + ts->tx_count];
 			if (ii == 0)
 				rx_min = rx_max = node_gap_rx;
 			rx_min = min(rx_min, node_gap_rx);
 			rx_max = max(rx_max, node_gap_rx);
+
+			input_dbg(false, &ts->client->dev,
+				"%s: GAP_DATA_Y ii[%d] [%d] = [%d]%d -[%d]%d\n",
+				__func__, ii, ts->pFrame[ii] - ts->pFrame[ii + ts->tx_count],
+				ii, ts->pFrame[ii] , ii + ts->tx_count, ts->pFrame[ii + ts->tx_count]);
 		}
 	}
 
@@ -4620,9 +4629,11 @@ static void sec_ts_swap(u8 *a, u8 *b)
 
 static void rearrange_sft_result(u8 *data, int length)
 {
-	int i;
+	int i, nlength;
 
-	for (i = 0; i < length; i += 4) {
+	nlength = length - (length % 4);
+
+	for (i = 0; i < nlength; i += 4) {
 		sec_ts_swap(&data[i], &data[i + 3]);
 		sec_ts_swap(&data[i + 1], &data[i + 2]);
 	}
@@ -4681,7 +4692,7 @@ static int execute_selftest(struct sec_ts_data *ts, bool save_result)
 		input_err(true, &ts->client->dev, "%s: Selftest execution time out!\n", __func__);
 		goto err_exit;
 	}
-	rearrange_sft_result(rBuff, result_size);
+	rearrange_sft_result(rBuff, SEC_TS_SELFTEST_REPORT_SIZE);
 
 	for (i = 0; i < 80; i += 4) {
 		if (i / 4 == 0)
@@ -4759,10 +4770,10 @@ err_set_level:
 	return rc;
 }
 
-/* STAR
- * bit		| [0]	[1]	..	[8]	[9]	..	[16]	[17]	..	[24]	..	[31]
- * byte[0]	| TX0	TX1	..	TX8	TX9	..	RX0	RX1	..	RX8	..	RX15
- * byte[1]	| RX16	RX17	..	RX24	RX25	..	RX32	F0	..		..
+/* Daimler
+ * bit		| [0]	..	[7]	[8]	..	[15]	 [16]	..			   [23][24]	..	[31]
+ * byte[0]	| TX0	..	TX7	TX8	..	TX15 TX16 .. TX19	RX0	.. RX3 RX4	..	RX11
+ * byte[1]	| RX12	..	RX19RX20..	RX27 RX28..RX31 TSK1 TSK2
  */
 #define OPEN_SHORT_TEST		1
 #define CRACK_TEST		2
@@ -4774,6 +4785,7 @@ static void run_trx_short_test(void *device_data)
 	struct sec_ts_data *ts = container_of(sec, struct sec_ts_data, sec);
 	/* fix length: if all channel failed, can occur overflow */
 	char buff[SEC_CMD_STR_LEN + 10] = {0};
+	char buff_result[SEC_CMD_STR_LEN] = {0};
 	char tempn[40] = {0};
 	char tempv[25] = {0};
 	int rc;
@@ -4811,6 +4823,8 @@ static void run_trx_short_test(void *device_data)
 
 	disable_irq(ts->client->irq);
 
+	/* only support parm #1 func on daimler*/
+#if 0
 	/*
 	 * old version remaining
 	 * old version is not send parameter
@@ -4834,6 +4848,7 @@ static void run_trx_short_test(void *device_data)
 		kfree(rBuff);
 		return;
 	}
+#endif
 
 	input_info(true, &ts->client->dev, "%s: set power mode to test mode\n", __func__);
 	data[0] = 0x02;
@@ -4850,6 +4865,8 @@ static void run_trx_short_test(void *device_data)
 		goto err_trx_short;
 	}
 
+/* only support parm #1 func on daimler*/
+#if 0
 	if (sec->cmd_param[0] == OPEN_SHORT_TEST) {
 		data[0] = 0xB7;
 		len = 1;
@@ -4868,6 +4885,13 @@ static void run_trx_short_test(void *device_data)
 		delay = 1000;
 		checklen = 8;
 	}
+#else
+	/* parm #1 : OPEN_SHORT_TEST */
+	data[0] = 0xB7;
+	len = 1;
+	delay = 600;
+	checklen = 8 * 4;
+#endif
 
 	input_info(true, &ts->client->dev, "%s: self test start\n", __func__);
 	rc = ts->sec_ts_i2c_write(ts, SEC_TS_CMD_SELFTEST, data, len);
@@ -4926,8 +4950,12 @@ static void run_trx_short_test(void *device_data)
 	for (ii = 0; ii < 32; ii++)
 		sum += data[ii];
 
-	if (!sum)
+	if (!sum) {
+		buff_result[0] = '0';
 		goto test_ok;
+	} else {
+		buff_result[0] = '1';
+	}
 
 	for (ii = 0; ii < checklen; ii += 8) {
 		int jj;
@@ -4977,22 +5005,35 @@ static void run_trx_short_test(void *device_data)
 				} else if (jj == 1) {
 					snprintf(tempv, 20, "TX%d,", lshift + 8);
 				} else if (jj == 2) {
-					snprintf(tempv, 20, "RX%d,", lshift);
+					if (lshift == 0)
+						snprintf(tempv, 20, "TX16,");
+					else if (lshift == 1)
+						snprintf(tempv, 20, "TX17,");
+					else if (lshift == 2)
+						snprintf(tempv, 20, "TX18,");
+					else if (lshift == 3)
+						snprintf(tempv, 20, "TX19,");
+					else
+						snprintf(tempv, 20, "RX%d,", lshift - 4);
 				} else if (jj == 3) {
-					snprintf(tempv, 20, "RX%d,", lshift + 8);
+					snprintf(tempv, 20, "RX%d,", lshift + 8 - 4);
 				} else if (jj == 4) {
-					snprintf(tempv, 20, "RX%d,", lshift + 16);
+					snprintf(tempv, 20, "RX%d,", lshift + 16 - 4);
 				} else if (jj == 5) {
-					snprintf(tempv, 20, "RX%d,", lshift + 24);
+					snprintf(tempv, 20, "RX%d,", lshift + 24 - 4);
 				} else if (jj == 6) {
 					if (lshift == 0)
-						snprintf(tempv, 20, "RX32,");
+						snprintf(tempv, 20, "RX28,");
 					else if (lshift == 1)
-						snprintf(tempv, 20, "F0,");
+						snprintf(tempv, 20, "RX29,");
 					else if (lshift == 2)
-						snprintf(tempv, 20, "F1,");
+						snprintf(tempv, 20, "RX30,");
 					else if (lshift == 3)
-						snprintf(tempv, 20, "F2,");
+						snprintf(tempv, 20, "RX31,");
+					else if (lshift == 4)
+						snprintf(tempv, 20, "TSK1,");
+					else if (lshift == 5)
+						snprintf(tempv, 20, "TSK2,");
 					else
 						snprintf(tempv, 20, "N,");
 				} else {
@@ -5009,6 +5050,9 @@ static void run_trx_short_test(void *device_data)
 	sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
 	sec->cmd_state = SEC_CMD_STATUS_FAIL;
 
+	if (sec->cmd_all_factory_state == SEC_CMD_STATUS_RUNNING)
+		sec_cmd_set_cmd_result_all(sec, buff_result, strnlen(buff_result, sizeof(buff_result)), "CH_OPEN/SHORT_TEST");
+
 	input_info(true, &ts->client->dev, "%s: %s\n", __func__, buff);
 
 	kfree(rBuff);
@@ -5019,6 +5063,9 @@ test_ok:
 	snprintf(buff, sizeof(buff), "%s", "OK");
 	sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
 	sec->cmd_state = SEC_CMD_STATUS_OK;
+
+	if (sec->cmd_all_factory_state == SEC_CMD_STATUS_RUNNING)
+		sec_cmd_set_cmd_result_all(sec, buff_result, strnlen(buff_result, sizeof(buff_result)), "CH_OPEN/SHORT_TEST");
 
 	input_info(true, &ts->client->dev, "%s: %s\n", __func__, buff);
 
@@ -5035,6 +5082,9 @@ err_trx_short:
 	sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
 	sec->cmd_state = SEC_CMD_STATUS_FAIL;
 
+	if (sec->cmd_all_factory_state == SEC_CMD_STATUS_RUNNING)
+		sec_cmd_set_cmd_result_all(sec, buff_result, strnlen(buff_result, sizeof(buff_result)), "CH_OPEN/SHORT_TEST");
+
 	kfree(rBuff);
 	input_info(true, &ts->client->dev, "%s: %s\n", __func__, buff);
 	return;
@@ -5050,11 +5100,12 @@ static void get_cmoffset_hf(struct sec_ts_data *ts,
 	char para = TO_TOUCH_MODE;
 	u8 *rBuff = NULL;
 	char temp[SEC_CMD_STR_LEN] = { 0 };
-	int ii;
+	int ii, jj;
 	u8 data[32] = { 0 };
 	int len = 0;
 	int sum = 0;
 	short min = 9999, max = 0;
+	short *temp_val = NULL;
 
 	if (ts->power_status == SEC_TS_STATE_POWER_OFF) {
 		input_err(true, &ts->client->dev, "%s: Touch is stopped!\n", __func__);
@@ -5064,7 +5115,7 @@ static void get_cmoffset_hf(struct sec_ts_data *ts,
 		return;
 	}
 
-	buff = kzalloc(ts->tx_count * ts->rx_count * CMD_RESULT_WORD_LEN, GFP_KERNEL);
+	buff = kzalloc(size, GFP_KERNEL);
 	if (!buff)
 		goto out;
 
@@ -5134,6 +5185,21 @@ static void get_cmoffset_hf(struct sec_ts_data *ts,
 	}
 
 	sec_ts_print_frame(ts, &min, &max);
+
+
+	temp_val = kzalloc(size, GFP_KERNEL);
+	if (!temp_val)
+		goto err_cmoffset_hf;
+
+	memcpy(temp_val, ts->pFrame, ts->tx_count * ts->rx_count * 2);
+	memset(ts->pFrame, 0x00, ts->tx_count * ts->rx_count * 2);
+
+	for (ii = 0; ii < ts->tx_count; ii++) {
+		for (jj = 0; jj < ts->rx_count; jj++)
+			ts->pFrame[(jj * ts->tx_count) + ii] = temp_val[(ii * ts->rx_count) + jj];
+	}
+
+	kfree(temp_val);
 
 	if (mode->allnode) {
 		for (ii = 0; ii < (ts->rx_count * ts->tx_count); ii++) {
@@ -5327,6 +5393,14 @@ static void run_force_calibration(void *device_data)
 
 	if (ts->touch_count > 0) {
 		snprintf(buff, sizeof(buff), "%s", "NG_FINGER_ON");
+		sec->cmd_state = SEC_CMD_STATUS_FAIL;
+		goto out_force_cal_before_irq_ctrl;
+	}
+
+	/* for COB */
+	if (gpio_is_valid(ts->plat_data->tsp_connect) && gpio_get_value(ts->plat_data->tsp_connect)) {
+		input_info(true, &ts->client->dev, "%s: skip calibration (not connected)\n", __func__);
+		snprintf(buff, sizeof(buff), "%s", "NG_TSP_CONNECTION_CHECK_FAIL");
 		sec->cmd_state = SEC_CMD_STATUS_FAIL;
 		goto out_force_cal_before_irq_ctrl;
 	}
@@ -6566,12 +6640,14 @@ static void factory_cmd_result_all(void *device_data)
 	run_self_rawcap_read(sec);
 	get_self_channel_data(sec, TYPE_OFFSET_DATA_SDC);
 
-	run_raw_p2p_read_all(sec);
+	/* Add & remove at daimler model */
+//	run_raw_p2p_read_all(sec);
 
 	/* TSK items */
 	if (ts->plat_data->support_tsk)
 		run_cmoffset_key_read(sec);
 
+	run_trx_short_test(sec);
 	get_mis_cal_info(sec);
 
 	sec->cmd_all_factory_state = SEC_CMD_STATUS_OK;

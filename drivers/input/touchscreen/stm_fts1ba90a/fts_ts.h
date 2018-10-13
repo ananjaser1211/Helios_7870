@@ -347,6 +347,17 @@ enum fts_system_information_address {
 enum fts_ito_test_mode {
 	OPEN_TEST = 0,
 	OPEN_SHORT_CRACK_TEST,
+	SAVE_MISCAL_REF_RAW,
+};
+
+enum fts_ito_test_result {
+	ITO_PASS = 0,
+	ITO_FAIL,
+};
+
+enum fts_miscal_test_result {
+	MISCAL_PASS = 0,
+	MISCAL_FAIL,
 };
 
 /* ----------------------------------------
@@ -404,6 +415,28 @@ enum offset_fw_position {
 	OFFSET_FW_MAIN			= 3,
 	OFFSET_FW_SVC			= 4,
 };
+
+#define FTS_ITO_RESULT_PRINT_SIZE	1024
+
+struct fts_sec_panel_test_result {
+	u8 flag;
+	u8 num_of_test;
+	u16 max_of_tx_gap;
+	u16 max_of_rx_gap;
+	u8 tx_of_txmax_gap;
+	u8 rx_of_txmax_gap;
+	u8 tx_of_rxmax_gap;
+	u8 rx_of_rxmax_gap;
+} __packed;
+
+struct fts_sdc_panel_test_result {
+	u16 max_of_tx_gap;
+	u16 max_of_rx_gap;
+	u8 tx_of_txmax_gap;
+	u8 rx_of_txmax_gap;
+	u8 tx_of_rxmax_gap;
+	u8 rx_of_rxmax_gap;
+} __packed;
 
 /* 8 byte */
 struct fts_event_coordinate {
@@ -516,6 +549,7 @@ struct fts_i2c_platform_data {
 	int bringup;
 
 	int item_version;
+	bool chip_on_board;
 };
 
 struct fts_ts_info {
@@ -539,7 +573,10 @@ struct fts_ts_info {
 	int SenseChannelLength;
 	int ForceChannelLength;
 	short *pFrame;
+	short *miscal_ref_raw;
+	u8 miscal_result;
 	u8 *cx_data;
+	u8 *ito_result;
 #endif
 	struct fts_ts_test_result test_result;
 	u8 disassemble_count;
@@ -692,6 +729,8 @@ struct fts_ts_info {
 	char *cmoffset_sdc_proc;
 	char *cmoffset_sub_proc;
 	char *cmoffset_main_proc;
+
+	int prox_power_off;
 
 	int (*stop_device)(struct fts_ts_info *info, bool lpmode);
 	int (*start_device)(struct fts_ts_info *info);

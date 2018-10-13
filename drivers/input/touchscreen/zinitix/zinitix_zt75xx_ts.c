@@ -2004,7 +2004,7 @@ static bool ts_hw_calibration(struct bt532_ts_info *info)
 		BT532_SAVE_CALIBRATION_CMD) != I2C_SUCCESS)
 		return false;
 
-	msleep(700);
+	msleep(1100);
 	write_reg(client, 0xc003, 0x0000);
 	write_reg(client, 0xc104, 0x0000);
 
@@ -2085,9 +2085,9 @@ static int fw_update_work(struct bt532_ts_info *info, bool force_update)
 
 	if (need_update == true || force_update == true) {
 #ifdef TCLM_CONCEPT
-		ret = info->tdata->tclm_read(info->tdata->client, SEC_TCLM_NVM_ALL_DATA);
+		ret = sec_tclm_get_nvm_all(info->tdata);
 		if (ret < 0) {
-			input_info(true, &info->client->dev, "%s: SEC_TCLM_NVM_ALL_DATA i2c read fail", __func__);
+			input_info(true, &info->client->dev, "%s: sec_tclm_get_nvm_all error \n", __func__);
 		}
 		input_info(true, &info->client->dev, "%s: tune_fix_ver [%04X] afe_base [%04X]\n",
 			__func__, info->tdata->nvdata.tune_fix_ver, info->tdata->afe_base);
@@ -6057,8 +6057,8 @@ int bt532_tclm_data_read(struct i2c_client *client, int address)
 		for (i = BT532_TS_NVM_OFFSET_HISTORY_QUEUE_ZERO; i < BT532_TS_NVM_OFFSET_LENGTH; i++)
 			info->tdata->nvdata.cal_pos_hist_queue[i - BT532_TS_NVM_OFFSET_HISTORY_QUEUE_ZERO] = nbuff[i];
 
-		input_err(true, &info->client->dev, "%s:	%d %X %d %d\n", __func__,
-			info->tdata->nvdata.cal_count, info->tdata->nvdata.tune_fix_ver,
+		input_err(true, &info->client->dev, "%s: %d %X %x %d %d\n", __func__,
+			info->tdata->nvdata.cal_count, info->tdata->nvdata.tune_fix_ver, info->tdata->nvdata.cal_position,
 			info->tdata->nvdata.cal_pos_hist_cnt, info->tdata->nvdata.cal_pos_hist_lastp);
 
 		return ret;
@@ -6997,9 +6997,10 @@ static ssize_t read_module_id_show(struct device *dev,
 
 	input_info(true, &info->client->dev, "%s\n", __func__);
 
-	return snprintf(buf, SEC_CMD_BUF_SIZE, "ZI%02X%02x%02X%04X\n",
-					info->cap_info.reg_data_version, info->test_result.data[0],
-					info->tdata->nvdata.cal_count, info->tdata->nvdata.tune_fix_ver);
+	return snprintf(buf, SEC_CMD_BUF_SIZE, "ZI%02X%02x%c%01X%04X\n",
+			info->cap_info.reg_data_version, info->test_result.data[0],
+			info->tdata->tclm_string[info->tdata->nvdata.cal_position].s_name,
+			info->tdata->nvdata.cal_count & 0xF, info->tdata->nvdata.tune_fix_ver);
 }
 
 static ssize_t set_ta_mode_store(struct device *dev,

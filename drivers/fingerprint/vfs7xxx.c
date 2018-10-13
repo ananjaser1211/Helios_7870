@@ -1121,10 +1121,10 @@ static long vfsspi_ioctl(struct file *filp, unsigned int cmd,
 			mutex_unlock(&vfsspi_device->buffer_mutex);
 			return -EFAULT;
 		}
-		if ((int)type_check >= SENSOR_UNKNOWN && (int)type_check < (SENSOR_STATUS_SIZE - 1)) {
+		if ((int)type_check >= SENSOR_OOO && (int)type_check < SENSOR_MAXIMUM) {
 			vfsspi_device->sensortype = (int)type_check;
 			pr_info("%s VFSSPI_IOCTL_SET_SENSOR_TYPE :%s\n",
-					__func__, sensor_status[g_data->sensortype + 1]);
+					__func__, sensor_status[g_data->sensortype + 2]);
 		} else {
 			pr_err("%sVFSSPI_IOCTL_SET_SENSOR_TYPE : invalid value %d\n",
 					__func__, (int)type_check);
@@ -1682,7 +1682,7 @@ static void vfsspi_work_func_debug(struct work_struct *work)
 		ldo_value, gpio_get_value(g_data->sleep_pin),
 		gpio_get_value(g_data->drdy_pin),
 		g_data->tz_mode,
-		sensor_status[g_data->sensortype + 1],
+		sensor_status[g_data->sensortype + 2],
 		cnt_irq, g_data->detect_mode);
 }
 

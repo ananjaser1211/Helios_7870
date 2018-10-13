@@ -89,7 +89,7 @@ int sec_ts_sw_reset(struct sec_ts_data *ts, int mode)
 		}
 	}
 
-	sec_ts_delay(200);
+	sec_ts_delay(300);
 	input_info(true, &ts->client->dev, "%s: sw_reset\n", __func__);
 
 	return 1;

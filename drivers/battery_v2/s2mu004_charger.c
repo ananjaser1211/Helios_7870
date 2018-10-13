@@ -146,6 +146,7 @@ static void s2mu004_analog_ivr_switch(
 #endif
 		(is_hv_wire_type(cable_type)) ||
 		(cable_type == POWER_SUPPLY_TYPE_PDIC) ||
+		(cable_type == POWER_SUPPLY_TYPE_UARTOFF) ||
 		(cable_type == POWER_SUPPLY_TYPE_HV_PREPARE_MAINS)) {
 			pr_info("[DEBUG]%s(%d): digital IVR \n", __func__, __LINE__);
 			enable = 0;

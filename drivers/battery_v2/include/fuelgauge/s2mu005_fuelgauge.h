@@ -135,6 +135,7 @@ struct s2mu005_fuelgauge_data {
 	bool is_charging;
 	int mode;
 	int revision;
+	int change_step;
 
 	/* HW-dedicated fuel guage info structure
 	 * used in individual fuel gauge file only
@@ -157,6 +158,7 @@ struct s2mu005_fuelgauge_data {
 	bool initial_update_of_soc;
 	bool sleep_initial_update_of_soc;
 	struct mutex fg_lock;
+	bool wa_flag;	/*Prevent WA_0_issue_at_init1 overlap*/
 	struct delayed_work isr_work;
 
 	/* register programming */

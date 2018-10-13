@@ -1479,10 +1479,10 @@ static bool sec_bat_check_recharge(struct sec_battery_info *battery)
 			battery->charging_mode == SEC_BATTERY_CHARGING_NONE) {
 		int recharging_voltage = battery->pdata->recharge_condition_vcell;
 		if (battery->current_event & SEC_BAT_CURRENT_EVENT_LOW_TEMP) {
-			/* float voltage - 150mV */
+			/* float voltage - 150mV(B2B CL : - 200) */
 			recharging_voltage =\
 				(battery->pdata->chg_float_voltage /\
-				battery->pdata->chg_float_voltage_conv) - 150;
+				battery->pdata->chg_float_voltage_conv) - battery->pdata->swelling_low_rechg_thr;
 			dev_info(battery->dev, "%s: recharging voltage changed by low temp(%d)\n",
 					__func__, recharging_voltage);
 		}
@@ -3478,6 +3478,7 @@ static void sec_bat_calculate_safety_time(struct sec_battery_info *battery)
 	int input_power = battery->current_max * battery->input_voltage * 1000;
 	int charging_power = battery->charging_current * (battery->pdata->chg_float_voltage / battery->pdata->chg_float_voltage_conv);
 	static int discharging_cnt = 0;
+	int standard_curr = battery->pdata->standard_curr;
 
 	if (battery->current_avg < 0) {
 		discharging_cnt++;
@@ -3520,13 +3521,18 @@ static void sec_bat_calculate_safety_time(struct sec_battery_info *battery)
 		battery->stop_timer = false;
 	}
 
+	standard_curr = (battery->current_event &
+			(SEC_BAT_CURRENT_EVENT_LOW_TEMP_SWELLING | SEC_BAT_CURRENT_EVENT_LOW_TEMP)) ?
+			battery->pdata->swelling_standard_curr :
+			battery->pdata->standard_curr;
+
 	pr_info("%s : EXPIRED_TIME(%llu), IP(%d), CP(%d), CURR(%d), STANDARD(%d)\n",
-		__func__, expired_time, input_power, charging_power, curr, battery->pdata->standard_curr);
+		__func__, expired_time, input_power, charging_power, curr, standard_curr);
 
 	if (curr == 0)
 		return;
 
-	expired_time = (expired_time * battery->pdata->standard_curr) / curr;
+	expired_time = (expired_time * standard_curr) / curr;
 
 	pr_info("%s : CAL_EXPIRED_TIME(%llu) TIME NOW(%ld) TIME PREV(%ld)\n",
 		__func__, expired_time, ts.tv_sec, battery->prev_safety_time);
@@ -3537,7 +3543,7 @@ static void sec_bat_calculate_safety_time(struct sec_battery_info *battery)
 		expired_time -= ((ts.tv_sec - battery->prev_safety_time) * 1000);
 
 	battery->cal_safety_time = expired_time;
-	expired_time = (expired_time * curr) / battery->pdata->standard_curr;
+	expired_time = (expired_time * curr) / standard_curr;
 
 	battery->expired_time = expired_time;
 	battery->prev_safety_time = ts.tv_sec;
@@ -3553,6 +3559,7 @@ static void sec_bat_calculate_safety_time_by_single(struct sec_battery_info *bat
 	int curr = 0;
 	int input_power = battery->current_max * battery->input_voltage * 1000;
 	int charging_power = battery->charging_current * battery->pdata->swelling_normal_float_voltage;
+	int standard_curr = battery->pdata->standard_curr;
 
 	if (battery->lcd_status && battery->stop_timer) {
 		battery->prev_safety_time = 0;
@@ -3573,13 +3580,18 @@ static void sec_bat_calculate_safety_time_by_single(struct sec_battery_info *bat
 		battery->stop_timer = false;
 	}
 
+	standard_curr = (battery->current_event &
+			(SEC_BAT_CURRENT_EVENT_LOW_TEMP_SWELLING | SEC_BAT_CURRENT_EVENT_LOW_TEMP)) ?
+			battery->pdata->swelling_standard_curr :
+			battery->pdata->standard_curr;
+
 	pr_info("%s : EXPIRED_TIME(%ld), IP(%d), CP(%d), CURR(%d), STANDARD(%d)\n",
-		__func__, expired_time, input_power, charging_power, curr, battery->pdata->standard_curr);
+		__func__, expired_time, input_power, charging_power, curr, standard_curr);
 
 	if (curr == 0)
 		return;
 
-	expired_time = (expired_time * battery->pdata->standard_curr) / curr;
+	expired_time = (expired_time * standard_curr) / curr;
 
 	pr_info("%s : CAL_EXPIRED_TIME(%ld) SLEEP_CHARGING_TIME(%ld)\n", __func__, expired_time, battery->sleep_passed_time);
 
@@ -3590,7 +3602,7 @@ static void sec_bat_calculate_safety_time_by_single(struct sec_battery_info *bat
 
 	battery->cal_safety_time = expired_time;
         battery->sleep_passed_time = 0;
-	expired_time = (expired_time * curr) / battery->pdata->standard_curr;
+	expired_time = (expired_time * curr) / standard_curr;
 
 	battery->expired_time = expired_time;
 	pr_info("%s : REMAIN_TIME(%ld) CAL_REMAIN_TIME(%ld)\n", __func__, battery->expired_time, battery->cal_safety_time);
@@ -7461,7 +7473,8 @@ static void sec_bat_set_rp_current(struct sec_battery_info *battery, int cable_t
 {
 	if (battery->pdic_info.sink_status.rp_currentlvl == RP_CURRENT_LEVEL3)
 		sec_bat_change_default_current(battery, cable_type,
-			RP_CURRENT_RP3, battery->pdata->max_charging_current);
+			RP_CURRENT_RP3 > battery->pdata->max_input_current ?
+			battery->pdata->max_input_current : RP_CURRENT_RP3, battery->pdata->max_charging_current);
 	else if (battery->pdic_info.sink_status.rp_currentlvl == RP_CURRENT_LEVEL2)
 		sec_bat_change_default_current(battery, cable_type,
 			RP_CURRENT_RP2, RP_CURRENT_RP2);
@@ -8253,6 +8266,13 @@ static int sec_bat_parse_dt(struct device *dev,
 	if (ret) {
 		pr_info("standard_curr is empty\n");
 		pdata->standard_curr = 2150;
+	}
+
+	ret = of_property_read_u32(np,
+			"battery,swelling_standard_curr", &pdata->swelling_standard_curr);
+	if (ret) {
+		pr_info("low temp swelling standard_curr is empty\n");
+		pdata->swelling_standard_curr = pdata->standard_curr;
 	}
 
 	ret = of_property_read_string(np,
@@ -9184,17 +9204,26 @@ static int sec_bat_parse_dt(struct device *dev,
 				pdata->swelling_low_rechg_voltage = 4000;
 	}
 
+	ret = of_property_read_u32(np, "battery,swelling_low_rechg_thr",
+			(unsigned int *)&pdata->swelling_low_rechg_thr);
+	if (ret) {
+		pr_info("%s: swelling_low_rechg_voltage_threshold is Empty\n", __func__);
+		pdata->swelling_low_rechg_thr = 150;
+	}
+
 	pr_info("%s : SWELLING_HIGH_TEMP(%d) SWELLING_HIGH_TEMP_RECOVERY(%d)\n"
 		"SWELLING_LOW_TEMP_1st(%d) SWELLING_LOW_TEMP_RECOVERY_1st(%d) "
 		"SWELLING_LOW_TEMP_2nd(%d) SWELLING_LOW_TEMP_RECOVERY_2nd(%d) "
 		"SWELLING_LOW_CURRENT(%d, %d), SWELLING_HIGH_CURRENT(%d, %d)\n"
-		"SWELLING_LOW_RCHG_VOL(%d), SWELLING_HIGH_RCHG_VOL(%d)\n",
+		"SWELLING_LOW_RCHG_VOL(%d), SWELLING_HIGH_RCHG_VOL(%d)\n"
+		"SWELLING_LOW_TEMP_RECHARGE_VOL_THRESHOLD(%d)\n",
 		__func__, pdata->swelling_high_temp_block, pdata->swelling_high_temp_recov,
 		pdata->swelling_low_temp_block_1st, pdata->swelling_low_temp_recov_1st,
 		pdata->swelling_low_temp_block_2nd, pdata->swelling_low_temp_recov_2nd,
 		pdata->swelling_low_temp_current, pdata->swelling_low_temp_topoff,
 		pdata->swelling_high_temp_current, pdata->swelling_high_temp_topoff,
-		pdata->swelling_low_rechg_voltage, pdata->swelling_high_rechg_voltage);
+		pdata->swelling_low_rechg_voltage, pdata->swelling_high_rechg_voltage,
+		pdata->swelling_low_rechg_thr);
 #endif
 
 #if defined(CONFIG_CALC_TIME_TO_FULL)
@@ -9648,7 +9677,7 @@ static int sec_battery_probe(struct platform_device *pdev)
 #if defined(CONFIG_BATTERY_SWELLING)
 	battery->swelling_mode = SWELLING_MODE_NONE;
 #endif
-	battery->charging_block = false;
+	battery->charging_block = true;
 	battery->chg_limit = false;
 	battery->mix_limit = false;
 	battery->usb_temp = 0;

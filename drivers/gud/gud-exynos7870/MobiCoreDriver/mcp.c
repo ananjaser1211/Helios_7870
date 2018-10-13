@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015 TRUSTONIC LIMITED
+ * Copyright (c) 2013-2017 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -26,6 +26,10 @@
 #include <linux/of_irq.h>
 #include <linux/freezer.h>
 #include <asm/barrier.h>
+#include <linux/version.h>
+#if KERNEL_VERSION(4, 11, 0) <= LINUX_VERSION_CODE
+#include <linux/sched/clock.h>	/* local_clock */
+#endif
 
 #include "public/mc_user.h"
 #include "public/mc_admin.h"
@@ -483,9 +487,9 @@ static inline int wait_mcp_notification(void)
 		int ret;
 
 		/*
-		* Wait non-interruptible to keep MCP synchronised even if caller
-		* is interrupted by signal.
-		*/
+		 * Wait non-interruptible to keep MCP synchronised even if
+		 * caller is interrupted by signal.
+		 */
 		ret = wait_for_completion_timeout(&mcp_ctx.complete, timeout);
 		if (ret > 0)
 			return 0;
@@ -1119,15 +1123,15 @@ static int irq_bh_worker(void *arg)
 				rx->hdr.read_cnt % rx->hdr.queue_size];
 
 			/*
-			* Ensure read_cnt writing happens after buffer read
-			* We want a ARM dmb() / ARM64 dmb(sy) here
-			*/
+			 * Ensure read_cnt writing happens after buffer read
+			 * We want a ARM dmb() / ARM64 dmb(sy) here
+			 */
 		smp_mb();
 		rx->hdr.read_cnt++;
 			/*
-			* Ensure read_cnt writing finishes before reader
-			* We want a ARM dsb() / ARM64 dsb(sy) here
-			*/
+			 * Ensure read_cnt writing finishes before reader
+			 * We want a ARM dsb() / ARM64 dsb(sy) here
+			 */
 		rmb();
 
 		if (nf.session_id == SID_MCP)
@@ -1136,16 +1140,16 @@ static int irq_bh_worker(void *arg)
 			handle_session_notif(nf.session_id, nf.payload);
 	}
 
-	/*
-	 * Finished processing notifications. It does not matter whether
-	 * there actually were any notification or not.  S-SIQs can also
-	 * be triggered by an SWd driver which was waiting for a FIQ.
-	 * In this case the S-SIQ tells NWd that SWd is no longer idle
-	 * an will need scheduling again.
-	 */
-	if (mcp_ctx.scheduler_cb)
-		mcp_ctx.scheduler_cb(MCP_NSIQ);
-}
+		/*
+		 * Finished processing notifications. It does not matter whether
+		 * there actually were any notification or not.  S-SIQs can also
+		 * be triggered by an SWd driver which was waiting for a FIQ.
+		 * In this case the S-SIQ tells NWd that SWd is no longer idle
+		 * an will need scheduling again.
+		 */
+		if (mcp_ctx.scheduler_cb)
+			mcp_ctx.scheduler_cb(MCP_NSIQ);
+	}
 	return 0;
 }
 

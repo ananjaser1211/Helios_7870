@@ -26,7 +26,7 @@ source "drivers/ifpmic/muic/Kconfig"
 config PDIC
 	tristate "Support for CC & PD driver"
 	depends on I2C
-	default y
+	default n
 	---help---
 	  PDIC driver is a specification of Type C USB CC & PD
 

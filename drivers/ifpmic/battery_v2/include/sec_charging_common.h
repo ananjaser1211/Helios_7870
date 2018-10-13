@@ -694,6 +694,7 @@ struct sec_battery_platform_data {
 	unsigned int swelling_low_rechg_voltage;
 	unsigned int swelling_drop_voltage_condition;
 	unsigned int wa_fl_check_count;
+	unsigned int swelling_low_rechg_thr;
 
 	unsigned int wa_volt_recov;
 	unsigned int wa_volt_thr;
@@ -943,6 +944,7 @@ struct sec_battery_platform_data {
 	unsigned int expired_time;
 	unsigned int recharging_expired_time;
 	int standard_curr;
+	int swelling_standard_curr;
 
 	/* ADC type for each channel */
 	unsigned int adc_type[];

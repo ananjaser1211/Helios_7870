@@ -1066,12 +1066,10 @@ static int fts_wait_for_ready(struct fts_ts_info *info)
 				break;
 			}
 
-			if ((data[1] >= 0x22) && (data[1] <= 0x23)) {
-				input_err(true, &info->client->dev,
-						"%s: LP Timer Err OR CX Tune ERR :%02X,%02X,%02X\n",
-						__func__, data[0], data[1], data[2]);
-				break;
-			}
+			input_err(true, &info->client->dev,
+					"%s: Err detected %02X, %02X, %02X, %02X, %02X, %02X, %02X, %02X\n",
+					__func__, data[0], data[1], data[2], data[3],
+					data[4], data[5], data[6], data[7]);
 
 			if (err_cnt++ > 32) {
 				rc = -FTS_ERROR_EVENT_ID;
@@ -1414,10 +1412,29 @@ static int fts_init(struct fts_ts_info *info)
 	}
 
 	info->pFrame = kzalloc(info->SenseChannelLength * info->ForceChannelLength * 2 + 1, GFP_KERNEL);
-	if (info->pFrame == NULL)
+	if (!info->pFrame)
 		return 1;
 
+	info->miscal_ref_raw = kzalloc(info->SenseChannelLength * info->ForceChannelLength * 2 + 1, GFP_KERNEL);
+	if (!info->miscal_ref_raw) {
+		kfree(info->pFrame);
+		return 1;
+	}
+
 	info->cx_data = kzalloc(info->SenseChannelLength * info->ForceChannelLength + 1, GFP_KERNEL);
+	if (!info->cx_data) {
+		kfree(info->miscal_ref_raw);
+		kfree(info->pFrame);
+		return 1;
+	}
+
+	info->ito_result = kzalloc(FTS_ITO_RESULT_PRINT_SIZE, GFP_KERNEL);
+	if (!info->ito_result) {
+		kfree(info->cx_data);
+		kfree(info->miscal_ref_raw);
+		kfree(info->pFrame);
+		return 1;
+	}
 
 #if defined(FTS_SUPPORT_SPONGELIB) && defined(CONFIG_SEC_FACTORY)
 	fts_disable_sponge(info);
@@ -2095,11 +2112,10 @@ static int fts_parse_dt(struct i2c_client *client)
 	u32 ic_match_value;
 	int retval = 0;
 	int lcdtype = 0;
-/* temp
-#if defined(CONFIG_EXYNOS_DECON_FB)
+#if 0 //defined(CONFIG_EXYNOS_DECON_FB)
 	int connected;
 #endif
-*/
+
 	pdata->tsp_icid = of_get_named_gpio(np, "stm,tsp-icid_gpio", 0);
 	if (gpio_is_valid(pdata->tsp_icid)) {
 		input_info(true, dev, "%s: TSP_ICID : %d\n", __func__, gpio_get_value(pdata->tsp_icid));
@@ -2233,25 +2249,29 @@ static int fts_parse_dt(struct i2c_client *client)
 	if (of_property_read_u32(np, "stm,device_num", &pdata->device_num))
 		input_err(true, dev, "%s: Failed to get device_num property\n", __func__);
 
+	pdata->chip_on_board = of_property_read_bool(np, "stm,chip_on_board");
+
 #if defined(CONFIG_FB_MSM_MDSS_SAMSUNG)
 	lcdtype = get_lcd_attached("GET");
 	if (lcdtype == 0xFFFFFF) {
 		input_err(true, &client->dev, "%s: lcd is not attached\n", __func__);
-		return -ENODEV;
+		if (!pdata->chip_on_board)
+			return -ENODEV;
 	}
 #endif
 
-/* temp
-#if defined(CONFIG_EXYNOS_DECON_FB)
+#if 0 //defined(CONFIG_EXYNOS_DECON_FB)
 	connected = get_lcd_info("connected");
 	if (connected < 0) {
 		input_err(true, dev, "%s: Failed to get lcd info\n", __func__);
-		return -EINVAL;
+		if (!pdata->chip_on_board)
+			return -EINVAL;
 	}
 
 	if (!connected) {
 		input_err(true, &client->dev, "%s: lcd is disconnected\n", __func__);
-		return -ENODEV;
+		if (!pdata->chip_on_board)
+			return -ENODEV;
 	}
 
 	input_info(true, &client->dev, "%s: lcd is connected\n", __func__);
@@ -2259,20 +2279,21 @@ static int fts_parse_dt(struct i2c_client *client)
 	lcdtype = get_lcd_info("id");
 	if (lcdtype < 0) {
 		input_err(true, dev, "%s: Failed to get lcd info\n", __func__);
-		return -EINVAL;
+		if (!pdata->chip_on_board)
+			return -EINVAL;
 	}
 #endif
-*/
 	input_info(true, &client->dev, "%s: lcdtype 0x%08X\n", __func__, lcdtype);
 
 	pdata->panel_revision = ((lcdtype >> 8) & 0xFF) >> 4;
 
 	input_err(true, dev,
 			"%s: irq :%d, irq_type: 0x%04x, max[x,y]: [%d,%d], project/model_name: %s/%s, "
-			"panel_revision: %d, gesture: %d, device_num: %d, dex: %d, aot: %d\n",
+			"panel_revision: %d, gesture: %d, device_num: %d, dex: %d, aot: %d%s\n",
 			__func__, pdata->irq_gpio, pdata->irq_type, pdata->max_x, pdata->max_y,
 			pdata->project_name, pdata->model_name, pdata->panel_revision,
-			pdata->support_sidegesture, pdata->device_num, pdata->support_dex, pdata->support_aot);
+			pdata->support_sidegesture, pdata->device_num, pdata->support_dex, pdata->support_aot,
+			pdata->chip_on_board ? ", COB type" : "");
 
 	return retval;
 }
@@ -2733,7 +2754,9 @@ err_register_input:
 	wake_lock_destroy(&info->wakelock);
 
 #ifdef SEC_TSP_FACTORY_TEST
+	kfree(info->ito_result);
 	kfree(info->cx_data);
+	kfree(info->miscal_ref_raw);
 	kfree(info->pFrame);
 #endif
 err_fts_init:
@@ -2814,7 +2837,9 @@ static int fts_remove(struct i2c_client *client)
 			&sec_touch_factory_attr_group);
 	sec_cmd_exit(&info->sec, SEC_CLASS_DEVT_TSP);
 
+	kfree(info->ito_result);
 	kfree(info->cx_data);
+	kfree(info->miscal_ref_raw);
 	kfree(info->pFrame);
 #endif
 
@@ -2914,7 +2939,11 @@ static void fts_input_close(struct input_dev *dev)
 	if (info->board->use_pressure)
 		info->lowpower_flag |= FTS_MODE_PRESSURE;
 #endif
-	fts_stop_device(info, info->lowpower_flag);
+	if (info->prox_power_off)
+		fts_stop_device(info, 0);
+	else
+		fts_stop_device(info, info->lowpower_flag);
+	info->prox_power_off = 0;
 
 }
 #endif

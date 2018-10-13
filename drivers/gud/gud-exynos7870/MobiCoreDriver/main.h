@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015 TRUSTONIC LIMITED
+ * Copyright (c) 2013-2017 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -18,9 +18,10 @@
 #include <linux/slab.h>		/* gfp_t */
 #include <linux/fs.h>		/* struct inode and struct file */
 #include <linux/mutex.h>
+#include <linux/version.h>
 
 #define MC_VERSION(major, minor) \
-		(((major & 0x0000ffff) << 16) | (minor & 0x0000ffff))
+		((((major) & 0x0000ffff) << 16) | ((minor) & 0x0000ffff))
 #define MC_VERSION_MAJOR(x) ((x) >> 16)
 #define MC_VERSION_MINOR(x) ((x) & 0xffff)
 
@@ -36,6 +37,8 @@
 #else /* DEBUG */
 #define mc_dev_devel(...)		do {} while (0)
 #endif /* !DEBUG */
+
+#define TEE_START_NOT_TRIGGERED 1
 
 /* MobiCore Driver Kernel Module context data. */
 struct mc_device_ctx {
@@ -79,6 +82,9 @@ struct kasnprintf_buf {
 	int off;
 };
 
+/* Wait for TEE to start and get status */
+int mc_wait_tee_start(void);
+
 extern __printf(2, 3)
 int kasnprintf(struct kasnprintf_buf *buf, const char *fmt, ...);
 ssize_t debug_generic_read(struct file *file, char __user *user_buf,
@@ -87,9 +93,11 @@ ssize_t debug_generic_read(struct file *file, char __user *user_buf,
 int debug_generic_open(struct inode *inode, struct file *file);
 int debug_generic_release(struct inode *inode, struct file *file);
 
-static inline int kref_read(struct kref *kref)
+#if KERNEL_VERSION(4, 11, 0) > LINUX_VERSION_CODE
+static inline unsigned int kref_read(struct kref *kref)
 {
 	return atomic_read(&kref->refcount);
 }
+#endif
 
 #endif /* _MC_MAIN_H_ */

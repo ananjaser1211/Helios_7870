@@ -167,7 +167,8 @@ static bool sec_tclm_check_condition_valid(struct sec_tclm_data *data)
 			return true;
 		} else if ((data->root_of_calibration == CALPOSITION_TESTMODE)
 			&& ((data->nvdata.cal_position == CALPOSITION_TESTMODE)
-			|| (data->nvdata.cal_position == CALPOSITION_TUNEUP))) {
+			|| (data->nvdata.cal_position == CALPOSITION_TUNEUP)
+			|| (data->nvdata.cal_position == CALPOSITION_FIRMUP))) {
 			return true;
 		}
 		break;

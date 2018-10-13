@@ -61,6 +61,7 @@
 #define SEC_BAT_CURRENT_EVENT_LOW_TEMP		0x0080
 #define SEC_BAT_CURRENT_EVENT_VBAT_OVP			0x1000
 #define SEC_BAT_CURRENT_EVENT_VSYS_OVP			0x2000
+#define SEC_BAT_CURRENT_EVENT_HV_DISABLE		0x10000
 
 #define SIOP_EVENT_NONE 	0x0000
 #define SIOP_EVENT_WPC_CALL 	0x0001
@@ -309,6 +310,7 @@ struct sec_battery_info {
 	struct wake_lock batt_data_wake_lock;
 	char *data_path;
 #endif
+	struct delayed_work init_chg_work;
 
 	char batt_type[48];
 	unsigned int full_check_cnt;

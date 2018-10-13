@@ -54,7 +54,7 @@ static void cmd_exit_work(struct work_struct *work)
 void sec_cmd_set_default_result(struct sec_cmd_data *data)
 {
 	char delim = ':';
-	memset(data->cmd_result, 0x00, SEC_CMD_RESULT_STR_LEN);
+	memset(data->cmd_result, 0x00, SEC_CMD_RESULT_STR_LEN_EXPAND);
 	memcpy(data->cmd_result, data->cmd, SEC_CMD_STR_LEN);
 	strncat(data->cmd_result, &delim, 1);
 }
@@ -63,12 +63,12 @@ void sec_cmd_set_cmd_result_all(struct sec_cmd_data *data, char *buff, int len, 
 {
 	char delim1 = ' ';
 	char delim2 = ':';
-	int cmd_result_len;
+	size_t cmd_result_len;
 
-	cmd_result_len = (int)strlen(data->cmd_result_all) + len + 2 + (int)strlen(item);
+	cmd_result_len = strlen(data->cmd_result_all) + len + 2 + strlen(item);
 
-	if (cmd_result_len >= SEC_CMD_RESULT_STR_LEN) {
-		pr_err("%s %s: cmd length is over (%d)!!", SECLOG, __func__, cmd_result_len);
+	if (cmd_result_len >= (unsigned int)SEC_CMD_RESULT_STR_LEN) {
+		pr_err("%s %s: cmd length is over (%d)!!", SECLOG, __func__, (int)cmd_result_len);
 		return;
 	}
 
@@ -81,6 +81,12 @@ void sec_cmd_set_cmd_result_all(struct sec_cmd_data *data, char *buff, int len, 
 
 void sec_cmd_set_cmd_result(struct sec_cmd_data *data, char *buff, int len)
 {
+	if (strlen(buff) >= (unsigned int)SEC_CMD_RESULT_STR_LEN_EXPAND) {
+		pr_err("%s %s: cmd length is over (%d)!!", SECLOG, __func__, (int)strlen(buff));
+		strncat(data->cmd_result, "NG", 2);
+		return;
+	}
+
 	strncat(data->cmd_result, buff, len);
 }
 
@@ -449,10 +455,28 @@ static ssize_t sec_cmd_show_result(struct device *dev,
 	}
 
 	data->cmd_state = SEC_CMD_STATUS_WAITING;
-	pr_info("%s %s: %s\n", SECLOG, __func__, data->cmd_result);
+
 	size = snprintf(buf, SEC_CMD_RESULT_STR_LEN, "%s\n", data->cmd_result);
+	pr_info("%s %s: %s\n", SECLOG, __func__, buf);
 
 	sec_cmd_set_cmd_exit(data);
+
+	return size;
+}
+
+static ssize_t sec_cmd_show_result_expand(struct device *dev,
+				 struct device_attribute *devattr, char *buf)
+{
+	struct sec_cmd_data *data = dev_get_drvdata(dev);
+	int size;
+
+	if (!data) {
+		pr_err("%s %s: No platform data found\n", SECLOG, __func__);
+		return -EINVAL;
+	}
+
+	size = snprintf(buf, SEC_CMD_RESULT_STR_LEN, "%s\n", data->cmd_result + SEC_CMD_RESULT_STR_LEN - 1);
+	pr_info("%s %s: %s\n", SECLOG, __func__, buf);
 
 	return size;
 }
@@ -504,6 +528,7 @@ static DEVICE_ATTR(cmd, 0220, NULL, sec_cmd_store);
 static DEVICE_ATTR(cmd_status, 0444, sec_cmd_show_status, NULL);
 static DEVICE_ATTR(cmd_status_all, 0444, sec_cmd_show_status_all, NULL);
 static DEVICE_ATTR(cmd_result, 0444, sec_cmd_show_result, NULL);
+static DEVICE_ATTR(cmd_result_expand, 0444, sec_cmd_show_result_expand, NULL);
 static DEVICE_ATTR(cmd_result_all, 0444, sec_cmd_show_result_all, NULL);
 static DEVICE_ATTR(cmd_list, 0444, sec_cmd_list_show, NULL);
 
@@ -512,6 +537,7 @@ static struct attribute *sec_fac_attrs[] = {
 	&dev_attr_cmd_status.attr,
 	&dev_attr_cmd_status_all.attr,
 	&dev_attr_cmd_result.attr,
+	&dev_attr_cmd_result_expand.attr,
 	&dev_attr_cmd_result_all.attr,
 	&dev_attr_cmd_list.attr,
 	NULL,
@@ -542,6 +568,10 @@ int sec_cmd_init(struct sec_cmd_data *data, struct sec_cmd *cmds,
 	mutex_lock(&data->cmd_lock);
 	data->cmd_is_running = false;
 	mutex_unlock(&data->cmd_lock);
+
+	data->cmd_result = kzalloc(SEC_CMD_RESULT_STR_LEN_EXPAND, GFP_KERNEL);
+	if (!data->cmd_result)
+		goto err_alloc_cmd_result;
 
 #ifdef USE_SEC_CMD_QUEUE
 	if (kfifo_alloc(&data->cmd_queue,
@@ -602,6 +632,8 @@ err_get_dev_name:
 	kfifo_free(&data->cmd_queue);
 err_alloc_queue:
 #endif
+	kfree(data->cmd_result);
+err_alloc_cmd_result:
 	mutex_destroy(&data->cmd_lock);
 	list_del(&data->cmd_list_head);
 	return -ENODEV;
@@ -638,6 +670,7 @@ void sec_cmd_exit(struct sec_cmd_data *data, int devt)
 	cancel_delayed_work_sync(&data->cmd_work);
 	flush_delayed_work(&data->cmd_work);
 #endif
+	kfree(data->cmd_result);
 	mutex_destroy(&data->cmd_lock);
 	list_del(&data->cmd_list_head);
 }

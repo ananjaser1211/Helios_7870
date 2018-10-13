@@ -39,6 +39,8 @@
 #include <linux/sec_incell.h>
 #endif
 
+#define TD4300_ID_LEN	3
+
 #ifdef CONFIG_FB
 #define FB_READY_RESET
 #define FB_READY_WAIT_MS 100
@@ -49,6 +51,9 @@
 static int synaptics_rmi4_fb_notifier_cb(struct notifier_block *self,
 		unsigned long event, void *data);
 #endif
+
+static void Octa_id_read_info(void);
+
 static int synaptics_rmi4_check_status(struct synaptics_rmi4_data *rmi4_data);
 
 static int synaptics_rmi4_i2c_read(struct synaptics_rmi4_data *rmi4_data,
@@ -135,6 +140,40 @@ static struct attribute_group attr_group = {
 	.name = "rmii2c",
 	.attrs = attrs,
 };
+
+union lcd_id_info
+{
+		unsigned char		id[TD4300_ID_LEN];
+} lcd_id;
+
+extern unsigned int lcdtype;
+
+/**
+* Octa_id_read_info()
+* 
+* This function read OCTA/LCD ID,
+* that help in TSP dualization TD4300 & TD4310(0x4D1120).
+*/
+
+static void Octa_id_read_info()
+{
+	int i = 0;
+
+	printk("%s was called with lcdtype :  %08x\n", __func__,lcdtype);
+
+	if (lcdtype == 0) {
+		return;
+	}
+
+	lcd_id.id[0] = (lcdtype & 0xFF0000) >> 16;
+	lcd_id.id[1] = (lcdtype & 0x00FF00) >> 8;
+	lcd_id.id[2] = (lcdtype & 0x0000FF) >> 0;
+	
+	printk("LCD ID Info :  ");
+	for (i = 0; i < TD4300_ID_LEN; i++)
+		printk("%02x, ", lcd_id.id[i]);
+	printk("\n");
+}
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static ssize_t synaptics_rmi4_full_pm_cycle_show(struct device *dev,
@@ -2581,6 +2620,8 @@ static void	synaptics_init_product_info_v7(struct synaptics_rmi4_data *rmi4_data
 		rmi4_data->product_id = SYNAPTICS_PRODUCT_ID_TD4100;
 	} else if (strncmp(rmi4_data->rmi4_mod_info.product_id_string, "TD4300", 6) == 0) {
 		rmi4_data->product_id = SYNAPTICS_PRODUCT_ID_TD4300;
+	} else if (strncmp(rmi4_data->rmi4_mod_info.product_id_string, "TD4310", 6) == 0) {
+		rmi4_data->product_id = SYNAPTICS_PRODUCT_ID_TD4310;
 	} else {
 		rmi4_data->product_id = SYNAPTICS_PRODUCT_ID_NONE;
 		input_err(true, &rmi4_data->i2c_client->dev, "%s, Undefined product id: %s\n",
@@ -2658,6 +2699,9 @@ static int synaptics_rmi4_query_device(struct synaptics_rmi4_data *rmi4_data)
 				(rmi_fd.intr_src_count & 0xF0) >> 4, rmi_fd.intr_src_count & MASK_3BIT,
 				rmi_fd.data_base_addr, rmi_fd.ctrl_base_addr,
 				rmi_fd.cmd_base_addr, rmi_fd.query_base_addr);
+				
+			input_info(true, &rmi4_data->i2c_client->dev, "%s: Fn_number[%02x],f01_query_base_addr[%d],rmi_fd.query_base_addr[%02x], Line[%d]\n",
+		           __func__,rmi_fd.fn_number,rmi4_data->f01_query_base_addr,rmi_fd.query_base_addr,__LINE__);
 
 			switch (rmi_fd.fn_number) {
 			case SYNAPTICS_RMI4_F01:
@@ -3542,6 +3586,42 @@ static int synaptics_power_ctrl(void *data, bool on)
 	return retval;
 }
 
+const char* get_product_id_name(enum synaptics_product_ids product_id) 
+{
+   switch (product_id) 
+   {
+      case SYNAPTICS_PRODUCT_ID_NONE: return "NONE";
+      case SYNAPTICS_PRODUCT_ID_S5806: return "S5806";
+      case SYNAPTICS_PRODUCT_ID_S5807: return "S5807";
+      case SYNAPTICS_PRODUCT_ID_TD4100: return "TD4100";
+      case SYNAPTICS_PRODUCT_ID_TD4300: return "TD4300";
+      case SYNAPTICS_PRODUCT_ID_TD4310: return "TD4310";
+      case SYNAPTICS_PRODUCT_ID_MAX: return "MAX";
+      default: return "Default";
+   }
+}
+
+static void synaptics_parse_dt_fw(struct synaptics_rmi4_data *rmi4_data, 
+					struct i2c_client *client)
+{
+	struct device *dev = &client->dev;
+	struct synaptics_rmi4_platform_data *pdata = dev->platform_data;
+	struct device_node *np = dev->of_node;
+	struct device_node *cnp;
+
+	input_info(true, &rmi4_data->i2c_client->dev, "%s: %s : LCDTYPE[%08x]\n",
+		                __func__,get_product_id_name(rmi4_data->product_id),lcdtype);
+
+	if(lcd_id.id[0] == 0x4D && lcd_id.id[1] == 0x11)
+		cnp = of_find_node_by_name(np, "td4310");
+	else
+		cnp = of_find_node_by_name(np, "td4300");
+
+	of_property_read_string(cnp, "synaptics,firmware_name", &pdata->firmware_name);
+	of_property_read_string(cnp, "synaptics,firmware_name_bl", &pdata->firmware_name_bl);
+	printk("%s:%s%s%d",__func__,pdata->firmware_name,pdata->firmware_name_bl,__LINE__);
+}
+
 static int synaptics_parse_dt(struct i2c_client *client)
 {
 	struct device *dev = &client->dev;
@@ -3615,8 +3695,6 @@ static int synaptics_parse_dt(struct i2c_client *client)
 	/* Optional parmeters(those values are not mandatory)
 	 * do not return error value even if fail to get the value
 	 */
-	of_property_read_string(np, "synaptics,firmware_name", &pdata->firmware_name);
-	of_property_read_string(np, "synaptics,firmware_name_bl", &pdata->firmware_name_bl);
 
 	if (of_property_read_string_index(np, "synaptics,project_name", 0, &pdata->project_name))
 		input_err(true, dev, "Failed to get project_name property\n");
@@ -3785,6 +3863,8 @@ static int synaptics_rmi4_probe(struct i2c_client *client,
 		return -EIO;
 	}
 
+	Octa_id_read_info();
+
 	/* Build up driver data */
 	retval = synaptics_rmi4_setup_drv_data(client);
 	if (retval < 0) {
@@ -3836,6 +3916,10 @@ err_tsp_reboot:
 		}
 	}
 
+	
+	/* Parse firmware info */
+	synaptics_parse_dt_fw(rmi4_data, client);
+	
 	/* Set up input device */
 	retval = synaptics_rmi4_set_input_device(rmi4_data);
 	if (retval < 0) {

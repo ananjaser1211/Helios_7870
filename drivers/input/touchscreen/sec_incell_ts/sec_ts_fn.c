@@ -46,6 +46,8 @@ static void get_rawcap(void *device_data);
 static void run_delta_read(void *device_data);
 static void run_delta_read_all(void *device_data);
 static void get_delta(void *device_data);
+static void run_decoded_raw_read_all(void *device_data);
+static void run_delta_cm_read_all(void *device_data);
 static void run_rawdata_read_all(void *device_data);
 static void run_force_calibration(void *device_data);
 static void get_force_calibration(void *device_data);
@@ -109,6 +111,8 @@ static struct sec_cmd sec_cmds[] = {
 	{SEC_CMD("run_high_resistance_read", run_high_resistance_read),},
 	{SEC_CMD("run_high_resistance_read_all", run_high_resistance_read_all),},
 	{SEC_CMD("get_delta", get_delta),},
+	{SEC_CMD("run_cs_raw_read_all", run_decoded_raw_read_all),},
+	{SEC_CMD("run_cs_delta_read_all", run_delta_cm_read_all),},
 	{SEC_CMD("run_delta_read", run_delta_read),},
 	{SEC_CMD("run_delta_read_all", run_delta_read_all),},
 	{SEC_CMD("run_rawdata_read_all", run_rawdata_read_all),},
@@ -2228,6 +2232,37 @@ static void get_delta(void *device_data)
 	input_info(true, &ts->client->dev, "%s: %s\n", __func__, buff);
 }
 
+static void run_decoded_raw_read_all(void *device_data)
+{
+	struct sec_cmd_data *sec = (struct sec_cmd_data *)device_data;
+	struct sec_ts_data *ts = container_of(sec, struct sec_ts_data, sec);
+	struct sec_ts_test_mode mode;
+
+	sec_cmd_set_default_result(sec);
+
+	memset(&mode, 0x00, sizeof(struct sec_ts_test_mode));
+	mode.type = TYPE_DECODED_DATA;
+	mode.allnode = TEST_MODE_ALL_NODE;
+
+	sec_ts_read_raw_data(ts, sec, &mode);
+}
+
+static void run_delta_cm_read_all(void *device_data)
+{
+	struct sec_cmd_data *sec = (struct sec_cmd_data *)device_data;
+	struct sec_ts_data *ts = container_of(sec, struct sec_ts_data, sec);
+	struct sec_ts_test_mode mode;
+
+	sec_cmd_set_default_result(sec);
+
+	memset(&mode, 0x00, sizeof(struct sec_ts_test_mode));
+	mode.type = TYPE_REMV_AMB_DATA;
+	mode.allnode = TEST_MODE_ALL_NODE;
+
+	sec_ts_read_raw_data(ts, sec, &mode);
+}
+
+
 /*
  * sec_ts_run_rawdata_all : read all raw data
  *
@@ -3322,6 +3357,8 @@ static void run_force_calibration(void *device_data)
 					"%s: mis_cal_check error[1] ret: %d\n", __func__, rc);
 		}
 
+		sec_ts_delay(100);
+
 		buff[0] = 0x2;
 		buff[1] = 0x2;
 		rc = ts->sec_ts_i2c_write(ts, SEC_TS_CMD_CHG_SYSMODE, buff, 2);
@@ -3329,6 +3366,8 @@ static void run_force_calibration(void *device_data)
 			input_err(true, &ts->client->dev,
 					"%s: mis_cal_check error[2] ret: %d\n", __func__, rc);
 		}
+
+		sec_ts_delay(100);
 
 		input_err(true, &ts->client->dev, "%s: try mis Cal. check\n", __func__);
 		rc = ts->sec_ts_i2c_write(ts, SEC_TS_CMD_MIS_CAL_CHECK, NULL, 0);
@@ -3424,6 +3463,9 @@ static void get_force_calibration(void *device_data)
 		snprintf(buff, sizeof(buff), "%s", "FAIL");
 		sec->cmd_state = SEC_CMD_STATUS_FAIL;
 	} else if (rc == SEC_TS_STATUS_CALIBRATION_SEC) {
+		snprintf(buff, sizeof(buff), "%s", "OK");
+		sec->cmd_state = SEC_CMD_STATUS_OK;
+	} else if (rc == SEC_TS_STATUS_CALIBRATION_SDC) {
 		snprintf(buff, sizeof(buff), "%s", "OK");
 		sec->cmd_state = SEC_CMD_STATUS_OK;
 	} else {

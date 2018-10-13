@@ -3414,7 +3414,15 @@ static int abov_tk_probe(struct i2c_client *client,
 		info->light_table_crc += tkey_light_reg_table[i].led_reg;
 		snprintf(tmp, 2, "%X", tkey_light_reg_table[i].octa_id);
 		strncat(info->light_version_full_bin, tmp, 1);
+
+		if (tkey_light_reg_table[i].octa_id == (lcdtype & 0x0f))
+			info->light_reg = tkey_light_reg_table[i].led_reg;
 	}
+	
+	if (info->light_reg == 0)
+		info->light_reg = tkey_light_reg_table[0].led_reg;
+	input_info(true, &client->dev, "%s: octa_id %d light_reg 0x%02x\n",
+			__func__, (lcdtype & 0x0f), info->light_reg);
 	input_info(true, &client->dev, "%s: light version of kernel : %s\n",
 			__func__, info->light_version_full_bin);
 

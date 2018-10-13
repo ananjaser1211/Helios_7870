@@ -717,5 +717,11 @@ config KEYBOARD_ABOV_TOUCH
 	help
 	  Say Y here if you want to use ABOV MC96FT16XX chip as touchkey.
 
+config VOLUME_SWAP
+	tristate "volume key swap for lanscape model"
+	depends on I2C
+	help
+	  Say Y here if you want to use volume key swap.
+
 source "drivers/input/keyboard/melfas_mip4/Kconfig"
 endif

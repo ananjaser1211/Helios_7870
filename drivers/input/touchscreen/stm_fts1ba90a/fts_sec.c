@@ -198,6 +198,8 @@ struct sec_cmd ft_commands[] = {
 	{SEC_CMD("get_rawcap", get_rawcap),},
 	{SEC_CMD("run_delta_read", run_delta_read),},
 	{SEC_CMD("get_delta", get_delta),},
+	{SEC_CMD("run_cs_raw_read_all", run_rawcap_read_all),},
+	{SEC_CMD("run_cs_delta_read_all", get_strength_all_data),},
 #ifdef TCLM_CONCEPT
 	{SEC_CMD("get_pat_information", get_pat_information),},
 	{SEC_CMD("set_external_factory", set_external_factory),},
@@ -760,6 +762,37 @@ out:
 }
 #endif
 
+static ssize_t prox_power_off_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct sec_cmd_data *sec = dev_get_drvdata(dev);
+	struct fts_ts_info *info = container_of(sec, struct fts_ts_info, sec);
+
+	input_info(true, &info->client->dev, "%s: %d\n", __func__,
+			info->prox_power_off);
+
+	return snprintf(buf, SEC_CMD_BUF_SIZE, "%d", info->prox_power_off);
+}
+
+static ssize_t prox_power_off_store(struct device *dev,
+		struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	struct sec_cmd_data *sec = dev_get_drvdata(dev);
+	struct fts_ts_info *info = container_of(sec, struct fts_ts_info, sec);
+	int ret, data;
+
+	ret = kstrtoint(buf, 10, &data);
+	if (ret < 0)
+		return ret;
+
+	input_info(true, &info->client->dev, "%s: %d\n", __func__, data);
+
+	info->prox_power_off = data;
+
+	return count;
+}
+
 static DEVICE_ATTR(ito_check, 0444, read_ito_check_show, NULL);
 static DEVICE_ATTR(raw_check, 0444, read_raw_check_show, NULL);
 static DEVICE_ATTR(multi_count, 0644, read_multi_count_show, clear_multi_count_store);
@@ -781,6 +814,7 @@ static DEVICE_ATTR(support_feature, 0444, read_support_feature, NULL);
 #ifdef FTS_SUPPORT_SPONGELIB
 static DEVICE_ATTR(get_lp_dump, 0444, get_lp_dump, NULL);
 #endif
+static DEVICE_ATTR(prox_power_off, 0664, prox_power_off_show, prox_power_off_store);
 
 static struct attribute *sec_touch_facotry_attributes[] = {
 	&dev_attr_scrub_pos.attr,
@@ -803,6 +837,7 @@ static struct attribute *sec_touch_facotry_attributes[] = {
 #ifdef FTS_SUPPORT_SPONGELIB
 	&dev_attr_get_lp_dump.attr,
 #endif
+	&dev_attr_prox_power_off.attr,
 	NULL,
 };
 
@@ -833,9 +868,10 @@ static ssize_t fts_get_cmoffset_dump(struct fts_ts_info *info, char *buf, u8 pos
 		return snprintf(buf, info->proc_size, "NG, mem alloc failed");
 	}
 
+	info->fts_command(info, FTS_CMD_CLEAR_ALL_EVENT, true);
+
 	fts_interrupt_set(info, INT_DISABLE);
 
-	info->fts_command(info, FTS_CMD_CLEAR_ALL_EVENT, true);
 	fts_release_all_finger(info);
 #ifdef FTS_SUPPORT_TOUCH_KEY
 	if (info->board->support_mskey)
@@ -1206,8 +1242,232 @@ ErrorExit:
 	return rc;
 }
 
+void fts_get_sec_ito_test_result(struct fts_ts_info *info)
+{
+	struct sec_cmd_data *sec = &info->sec;
+	struct fts_sec_panel_test_result result[10];
+	u8 regAdd[3] = { 0 };
+	u8 data[sizeof(struct fts_sec_panel_test_result) * 10 + 2] = { 0 };
+	int ret, i, max_count = 0;
+	u8 length = sizeof(data);
+	u8 buff[100] = { 0 };
+	u8 pos_buf[6] = { 0 };
+
+	regAdd[0] = 0xA4;
+	regAdd[1] = 0x06;
+	regAdd[2] = 0x94;
+	ret = info->fts_write_reg(info, regAdd, 3);
+	if (ret < 0) {
+		input_err(true, &info->client->dev, "%s: failed to write request cmd, %d\n", __func__, ret);
+		goto done;
+	}
+
+	ret = fts_fw_wait_for_echo_event(info, regAdd, 3);
+	if (ret < 0) {
+		input_err(true, &info->client->dev, "%s: failed to get echo, %d\n", __func__, ret);
+		goto done;
+	}
+
+	regAdd[0] = 0xA6;
+	regAdd[1] = 0x00;
+	regAdd[2] = 0x00;
+	ret = info->fts_read_reg(info, regAdd, 3, data, length);
+	if (ret < 0) {
+		input_err(true, &info->client->dev, "%s: failed to read data, %d\n", __func__, ret);
+		goto done;
+	}
+
+	memcpy(result, &data[2], length - 2);
+	memset(info->ito_result, 0x00, FTS_ITO_RESULT_PRINT_SIZE);
+
+	snprintf(buff, sizeof(buff), "%s: test count - sub:%d, main:%d\n", __func__, data[0], data[1]);
+	input_info(true, &info->client->dev, "%s", buff);
+	strncat(info->ito_result, buff, sizeof(buff));
+
+	snprintf(buff, sizeof(buff), "ITO:              /   TX_GAP_MAX   /   RX_GAP_MAX\n");
+	input_info(true, &info->client->dev, "%s", buff);
+	strncat(info->ito_result, buff, sizeof(buff));
+
+	for (i = 0; i < 10; i++) {
+		switch (result[i].flag) {
+		case OFFSET_FAC_SUB:
+			snprintf(pos_buf, sizeof(pos_buf), "SUB ");
+			break;
+		case OFFSET_FAC_MAIN:
+			snprintf(pos_buf, sizeof(pos_buf), "MAIN");
+			break;
+		case OFFSET_FAC_NOSAVE:
+		default:
+			snprintf(pos_buf, sizeof(pos_buf), "NONE");
+			break;
+		}
+
+		snprintf(buff, sizeof(buff), "ITO: [%3d] %d-%s / Tx%02d,Rx%02d: %3d / Tx%02d,Rx%02d: %3d\n",
+				result[i].num_of_test, result[i].flag, pos_buf,
+				result[i].tx_of_txmax_gap, result[i].rx_of_txmax_gap,
+				result[i].max_of_tx_gap,
+				result[i].tx_of_rxmax_gap, result[i].rx_of_rxmax_gap,
+				result[i].max_of_rx_gap);
+		input_info(true, &info->client->dev, "%s", buff);
+		strncat(info->ito_result, buff, sizeof(buff));
+
+		/* when count is over 200, it restart from 1 */
+		if (result[i].num_of_test > result[max_count].num_of_test + 100)
+			continue;
+		if (result[i].num_of_test > result[max_count].num_of_test)
+			max_count = i;
+		if (result[i].num_of_test == 1 && result[max_count].num_of_test == 200)
+			max_count = i;
+	}
+
+	input_info(true, &info->client->dev, "%s: latest test is %d\n",
+			__func__, result[max_count].num_of_test);
+
+done:
+	if (sec->cmd_all_factory_state != SEC_CMD_STATUS_RUNNING)
+		return;
+
+	if (ret < 0) {
+		snprintf(buff, sizeof(buff), "NG");
+		sec_cmd_set_cmd_result_all(sec, buff, strnlen(buff, sizeof(buff)), "CH_OPEN/SHORT_TEST_X");
+		sec_cmd_set_cmd_result_all(sec, buff, strnlen(buff, sizeof(buff)), "CH_OPEN/SHORT_TEST_Y");
+	} else {
+		snprintf(buff, sizeof(buff), "0,%d", result[max_count].max_of_rx_gap);
+		sec_cmd_set_cmd_result_all(sec, buff, strnlen(buff, sizeof(buff)), "CH_OPEN/SHORT_TEST_X");
+		snprintf(buff, sizeof(buff), "0,%d", result[max_count].max_of_tx_gap);
+		sec_cmd_set_cmd_result_all(sec, buff, strnlen(buff, sizeof(buff)), "CH_OPEN/SHORT_TEST_Y");
+	}
+}
+
+int fts_set_sec_ito_test_result(struct fts_ts_info *info)
+{
+	struct sec_cmd_data *sec = &info->sec;
+	u8 regAdd[3] = { 0 };
+	int ret = -EINVAL;
+	u8 buff[10] = { 0 };
+
+	if (!info->factory_position) {
+		input_err(true, &info->client->dev, "%s: not save, factory level = %d\n",
+				__func__, info->factory_position);
+		goto out;
+	}
+
+	regAdd[0] = 0xC7;
+	regAdd[1] = 0x06;
+	regAdd[2] = info->factory_position;
+	ret = info->fts_write_reg(info, regAdd, 3);
+	if (ret < 0) {
+		input_err(true, &info->client->dev, "%s: failed to write fac position, %d\n", __func__, ret);
+		goto out;
+	}
+
+	regAdd[0] = 0xA4;
+	regAdd[1] = 0x05;
+	regAdd[2] = 0x04;
+	ret = info->fts_write_reg(info, regAdd, 3);
+	if (ret < 0) {
+		input_err(true, &info->client->dev, "%s: failed to write panel cfg area, %d\n", __func__, ret);
+		goto out;
+	}
+
+	fts_delay(200);
+	ret = fts_fw_wait_for_echo_event(info, regAdd, 3);
+	if (ret < 0) {
+		input_err(true, &info->client->dev, "%s: failed to get echo, %d\n", __func__, ret);
+		goto out;
+	}
+
+	input_info(true, &info->client->dev, "%s: position %d result is saved\n", __func__, info->factory_position);
+	return 0;
+
+out:
+	if (sec->cmd_all_factory_state != SEC_CMD_STATUS_RUNNING)
+		return ret;
+
+	snprintf(buff, sizeof(buff), "NG");
+	sec_cmd_set_cmd_result_all(sec, buff, strnlen(buff, sizeof(buff)), "CH_OPEN/SHORT_TEST_X");
+	sec_cmd_set_cmd_result_all(sec, buff, strnlen(buff, sizeof(buff)), "CH_OPEN/SHORT_TEST_Y");
+	return ret;
+}
+
+void fts_checking_miscal(struct fts_ts_info *info, int testmode)
+{
+	u8 regAdd[3] = { 0 };
+	u8 data[2] = { 0 };
+	u16 jitter_avg = 0, miscal_thd = 0;
+	int ret, diff_sum = 0, i;
+	short min = 0x7FFF;
+	short max = 0x8000;
+
+	info->miscal_result = MISCAL_PASS;
+
+	if (testmode == SAVE_MISCAL_REF_RAW) {
+		/* store miscal ref raw data after CX2=0 : in autotune */
+		fts_read_frame(info, TYPE_RAW_DATA, &min, &max);
+		memcpy(&info->miscal_ref_raw[0], &info->pFrame[0],
+				info->ForceChannelLength * info->SenseChannelLength * sizeof(short));
+		input_info(true, &info->client->dev, "%s: miscal ref raw data is saved\n", __func__);
+		return;
+	} else if (testmode != OPEN_SHORT_CRACK_TEST) {
+		return;
+	}
+
+	/* checking miscal ref raw is saved or not */
+	for (i = 0; i < info->ForceChannelLength * info->SenseChannelLength; i++) {
+		if (info->miscal_ref_raw[i] != 0)
+			break;
+	}
+
+	if (i == info->ForceChannelLength * info->SenseChannelLength) {
+		input_info(true, &info->client->dev,
+				"%s: miscal ref raw data is not saved\n", __func__);
+		return;
+	}
+
+	info->miscal_result = MISCAL_FAIL;
+
+	/* get the raw data after CX2=0 : in selftest */
+	fts_read_frame(info, TYPE_RAW_DATA, &min, &max);
+
+	regAdd[0] = 0xC7;
+	regAdd[1] = 0x0A;
+	ret = info->fts_read_reg(info, regAdd, 2, data, 2);
+	if (ret < 0) {
+		input_err(true, &info->client->dev, "%s: failed to read jitter avg\n", __func__);
+		return;
+	}
+
+	jitter_avg = data[0] << 8 | data[1];
+
+	regAdd[0] = 0xC7;
+	regAdd[1] = 0x0B;
+	ret = info->fts_read_reg(info, regAdd, 2, data, 2);
+	if (ret < 0) {
+		input_err(true, &info->client->dev, "%s: failed to read miscal threshold\n", __func__);
+		return;
+	}
+
+	miscal_thd = data[0] << 8 | data[1];
+
+	/* compare raw data between autotune and selftest */
+	for (i = 0; i < info->ForceChannelLength * info->SenseChannelLength; i++) {
+		short node_diff = abs(info->miscal_ref_raw[i] - info->pFrame[i]);
+
+		if (node_diff > jitter_avg)
+			diff_sum += node_diff - jitter_avg;
+	}
+
+	if (diff_sum < miscal_thd)
+		info->miscal_result = MISCAL_PASS;
+
+	input_info(true, &info->client->dev, "%s: jitter avg:%d, threshold:%d, diff sum:%d, miscal:%s\n",
+			__func__, jitter_avg, miscal_thd, diff_sum,
+			info->miscal_result == MISCAL_PASS ? "PASS" : "FAIL");
+}
+
 int fts_panel_ito_test(struct fts_ts_info *info, int testmode)
 {
+	struct sec_cmd_data *sec = &info->sec;
 	u8 cmd = FTS_READ_ONE_EVENT;
 	u8 regAdd[4] = { 0 };
 	u8 data[FTS_EVENT_SIZE];
@@ -1215,6 +1475,7 @@ int fts_panel_ito_test(struct fts_ts_info *info, int testmode)
 	bool matched = false;
 	int retry = 0;
 	int result = 0;
+	u8 buff[50] = { 0 };
 
 	info->fts_systemreset(info);
 
@@ -1240,6 +1501,7 @@ int fts_panel_ito_test(struct fts_ts_info *info, int testmode)
 		break;
 
 	case OPEN_SHORT_CRACK_TEST:
+	case SAVE_MISCAL_REF_RAW:
 	default:
 		regAdd[2] = 0xFF;
 		regAdd[3] = 0x01;
@@ -1332,6 +1594,19 @@ int fts_panel_ito_test(struct fts_ts_info *info, int testmode)
 		}
 		fts_delay(20);
 	}
+
+	if (info->board->item_version == 2 && sec->cmd_all_factory_state == SEC_CMD_STATUS_RUNNING) {
+		if (result < 0)
+			snprintf(buff, sizeof(buff), "%d", ITO_FAIL);
+		else
+			snprintf(buff, sizeof(buff), "%d", ITO_PASS);
+		sec_cmd_set_cmd_result_all(sec, buff, sizeof(buff), "CH_OPEN/SHORT_TEST");
+	} else if (info->board->item_version > 2) {
+		if (fts_set_sec_ito_test_result(info) >= 0)
+			fts_get_sec_ito_test_result(info);
+	}
+
+	fts_checking_miscal(info, testmode);
 
 	info->fts_systemreset(info);
 
@@ -1581,56 +1856,16 @@ static void get_mis_cal_info(void *device_data)
 	struct sec_cmd_data *sec = (struct sec_cmd_data *)device_data;
 	struct fts_ts_info *info = container_of(sec, struct fts_ts_info, sec);
 	char buff[SEC_CMD_STR_LEN] = { 0 };
-	u8 regAdd[3] = { 0 };
-	u8 data[1] = { 0 };
-	int ret;
 
 	sec_cmd_set_default_result(sec);
 
-	if (info->fts_power_state == FTS_POWER_STATE_POWERDOWN) {
-		input_err(true, &info->client->dev, "%s: [ERROR] Touch is stopped\n", __func__);
-		snprintf(buff, sizeof(buff), "%s", "TSP turned off");
-		sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
-		if (sec->cmd_all_factory_state == SEC_CMD_STATUS_RUNNING)
-			sec_cmd_set_cmd_result_all(sec, buff, strnlen(buff, sizeof(buff)), "MIS_CAL");
-		sec->cmd_state = SEC_CMD_STATUS_NOT_APPLICABLE;
-		return;
-	}
-/*
-	regAdd[0] = 0xC7;
-	regAdd[1] = 0x02;
-	regAdd[2] = 0x01;
-	ret = info->fts_write_reg(info, &regAdd[0], 3);
-	if (ret < 0) {
-		input_err(true, &info->client->dev, "%s: [ERROR] failed to write\n", __func__);
-		goto ERROR;
-	}
-
-	fts_delay(100);
-*/
-	regAdd[0] = 0xC7;
-	regAdd[1] = 0x02;
-	ret = info->fts_read_reg(info, &regAdd[0], 2, &data[0], 1);
-	if (ret < 0) {
-		input_err(true, &info->client->dev, "%s: [ERROR] failed to read\n", __func__);
-		goto ERROR;
-	}
-
-	snprintf(buff, sizeof(buff), "%d", data[0]);
+	snprintf(buff, sizeof(buff), "%d", info->miscal_result);
 	sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
 	if (sec->cmd_all_factory_state == SEC_CMD_STATUS_RUNNING)
 		sec_cmd_set_cmd_result_all(sec, buff, strnlen(buff, sizeof(buff)), "MIS_CAL");
 	sec->cmd_state = SEC_CMD_STATUS_OK;
 	input_info(true, &info->client->dev, "%s: %s\n", __func__, buff);
 	return;
-
-ERROR:
-	snprintf(buff, sizeof(buff), "%s", "NG");
-	sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
-	if (sec->cmd_all_factory_state == SEC_CMD_STATUS_RUNNING)
-		sec_cmd_set_cmd_result_all(sec, buff, strnlen(buff, sizeof(buff)), "MIS_CAL");
-	sec->cmd_state = SEC_CMD_STATUS_FAIL;
-	input_info(true, &info->client->dev, "%s: %s\n", __func__, buff);
 }
 
 static void get_wet_mode(void *device_data)
@@ -2639,14 +2874,18 @@ static void get_cx_all_data(void *device_data)
 
 	enter_factory_mode(info, true);
 	rc = read_ms_cx_data(info, &cx_min, &cx_max);
-	if (rc < 0) {
+
+	/* do not systemreset in COB type */
+	if (info->board->chip_on_board)
+		fts_set_scanmode(info, info->scan_mode);
+	else
 		enter_factory_mode(info, false);
+	if (rc < 0) {
 		snprintf(buff, sizeof(buff), "NG");
 		sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
 		sec->cmd_state = SEC_CMD_STATUS_FAIL;
 		return;
 	}
-	enter_factory_mode(info, false);
 
 	all_strbuff = kzalloc(info->ForceChannelLength * info->SenseChannelLength * 4 + 1, GFP_KERNEL);
 	if (!all_strbuff) {
@@ -3959,12 +4198,15 @@ static void factory_cmd_result_all(void *device_data)
 	sec->cmd_all_factory_state = SEC_CMD_STATUS_RUNNING;
 
 	snprintf(buff, sizeof(buff), "%d", info->board->item_version);
-	sec_cmd_set_cmd_result_all(sec, buff, sizeof(buff),"ITEM_VERSION");
+	sec_cmd_set_cmd_result_all(sec, buff, sizeof(buff), "ITEM_VERSION");
 
 	get_chip_vendor(sec);
 	get_chip_name(sec);
 	get_fw_ver_bin(sec);
 	get_fw_ver_ic(sec);
+
+	if (info->board->item_version > 1)
+		fts_panel_ito_test(info, OPEN_SHORT_CRACK_TEST);
 
 	enter_factory_mode(info, true);
 
@@ -3982,10 +4224,15 @@ static void factory_cmd_result_all(void *device_data)
 	get_cx_gap_data(sec);
 	run_ix_data_read(sec);
 
-	get_wet_mode(sec);
+	if (info->board->item_version == 1)
+		get_wet_mode(sec);
 	get_mis_cal_info(sec);
 
-	enter_factory_mode(info, false);
+	/* do not systemreset in COB type */
+	if (info->board->chip_on_board)
+		fts_set_scanmode(info, info->scan_mode);
+	else
+		enter_factory_mode(info, false);
 
 	sec->cmd_all_factory_state = SEC_CMD_STATUS_OK;
 
@@ -5464,7 +5711,10 @@ static void run_force_calibration(void *device_data)
 		snprintf(buff, sizeof(buff), "%s", "TSP turned off");
 		sec_cmd_set_cmd_result(sec, buff, strnlen(buff, sizeof(buff)));
 		sec->cmd_state = SEC_CMD_STATUS_NOT_APPLICABLE;
-		goto autotune_fail;
+#ifdef TCLM_CONCEPT
+		info->tdata->external_factory = false;
+#endif
+		return;
 	}
 
 	if (info->rawdata_read_lock == 1) {
@@ -5493,7 +5743,10 @@ static void run_force_calibration(void *device_data)
 		input_info(true, &info->client->dev, "%s: run autotune\n", __func__);
 
 		input_err(true, &info->client->dev, "%s: RUN OFFSET CALIBRATION \n", __func__);
-		fts_execute_autotune(info, true);
+		if (fts_execute_autotune(info, true) < 0) {
+			fts_set_scanmode(info, info->scan_mode);
+			goto autotune_fail;
+		}
 #ifdef TCLM_CONCEPT
 		/* devide tclm case */
 		sec_tclm_case(info->tdata, sec->cmd_param[0]);

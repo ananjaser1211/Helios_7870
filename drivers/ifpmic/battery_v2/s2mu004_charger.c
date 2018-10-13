@@ -826,7 +826,7 @@ static void s2mu004_wdt_clear(struct s2mu004_charger_data *charger)
 static int s2mu004_get_charging_health(struct s2mu004_charger_data *charger)
 {
 
-	u8 ret;
+	u8 ret, status1;
 	union power_supply_propval value;
 	if (charger->is_charging)
 		s2mu004_wdt_clear(charger);
@@ -847,6 +847,13 @@ static int s2mu004_get_charging_health(struct s2mu004_charger_data *charger)
 	case 0x05:
 		charger->ovp = false;
 		charger->unhealth_cnt = 0;
+		s2mu004_read_reg(charger->i2c, S2MU004_CHG_STATUS1, &status1);
+		if (charger->is_charging && (status1 & 0x1)) {
+			pr_info("%s: 0x%x : CHG_DONE in charging mode, Toggle Charger\n",
+				__func__, status1);
+			s2mu004_enable_charger_switch(charger, false);
+			s2mu004_enable_charger_switch(charger, true);
+		}
 		return POWER_SUPPLY_HEALTH_GOOD;
 	default:
 		break;
@@ -1035,10 +1042,7 @@ static int s2mu004_chg_set_property(struct power_supply *psy,
 		pr_info("[DEBUG] %s: is_charging %d\n", __func__, charger->is_charging);
 		charger->charging_current = val->intval;
 		/* set charging current */
-		if (charger->is_charging) {
-			/* decrease the charging current according to siop level */
-			s2mu004_set_fast_charging_current(charger, charger->charging_current);
-		}
+		s2mu004_set_fast_charging_current(charger, charger->charging_current);
 #if EN_TEST_READ
 		s2mu004_test_read(charger->i2c);
 #endif

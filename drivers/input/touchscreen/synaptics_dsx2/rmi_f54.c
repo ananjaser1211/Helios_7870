@@ -2619,6 +2619,9 @@ static void get_chip_name(void *dev_data)
 	case SYNAPTICS_PRODUCT_ID_TD4300:
 		snprintf(data->cmd_buff, CMD_RESULT_STR_LEN, "%s", tostring(TD4300));
 		break;
+	case SYNAPTICS_PRODUCT_ID_TD4310:
+		snprintf(data->cmd_buff, CMD_RESULT_STR_LEN, "%s", tostring(TD4310));
+		break;
 	default:
 		snprintf(data->cmd_buff, CMD_RESULT_STR_LEN, "%s", tostring(NA));
 	}
@@ -3814,7 +3817,7 @@ static void run_trx_open_test(void *dev_data)
 	}
 
 	/* syna customized for sec 20160819 + */
-	if(rmi4_data->product_id== SYNAPTICS_PRODUCT_ID_TD4300)
+	if((rmi4_data->product_id== SYNAPTICS_PRODUCT_ID_TD4300) || (rmi4_data->product_id== SYNAPTICS_PRODUCT_ID_TD4310))
 	{
 
 		// read the original f54 ctrl_95 data
@@ -4017,7 +4020,7 @@ static void run_trx_open_test(void *dev_data)
 	}
 
 		/* syna customized for sec 20160819 + */
-	if(rmi4_data->product_id == SYNAPTICS_PRODUCT_ID_TD4300)
+	if((rmi4_data->product_id == SYNAPTICS_PRODUCT_ID_TD4300) || (rmi4_data->product_id == SYNAPTICS_PRODUCT_ID_TD4310))
 	{
 		retval = rmi4_data->i2c_write(rmi4_data,
 				control.reg_95->address,

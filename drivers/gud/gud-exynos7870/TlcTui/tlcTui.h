@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 TRUSTONIC LIMITED
+ * Copyright (c) 2013-2017 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -18,7 +18,7 @@
 void reset_global_command_id(void);
 int tlc_wait_cmd(uint32_t *cmd_id);
 int tlc_ack_cmd(struct tlc_tui_response_t *rsp_id);
-bool tlc_notify_event(uint32_t event_type);
+bool tlc_notify_event(u32 event_type);
 
 extern atomic_t fileopened;
 #endif /* TLCTUI_H_ */
