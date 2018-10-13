@@ -18,7 +18,7 @@
 
 # Directory Contol
 CR_DIR=$(pwd)
-CR_TC=~/Android/Kernels/Toolchains/aarch64-linux-android-6.0-kernel/bin/aarch64-linux-android-
+CR_TC=~/Android/Toolchains/aarch64-linux-android-6.0-kernel/bin/aarch64-linux-android-
 CR_DTS=arch/arm64/boot/dts
 CR_OUT=$CR_DIR/Helios/Out
 CR_AIK=$CR_DIR/Helios/A.I.K
