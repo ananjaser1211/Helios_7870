@@ -467,6 +467,17 @@ on post-fs-data
     mkdir /efs/prov 0770 system system
     mkdir /efs/prov_data 0770 system system
 
+    # icd
+    check_icd
+    chown system system /dev/icd
+    chmod 0644 /dev/icd
+    chown system system /dev/icdr
+    chmod 0644 /dev/icdr
+    chown system nfc /dev/tzic
+    chmod 0660 /dev/tzic
+    restorecon /dev/icd
+    restorecon /dev/icdr
+
     # start ICD before vold
     start icd
 
@@ -925,7 +936,6 @@ on boot
    chown system radio /sys/class/power_supply/battery/factory_mode_bypass
    chown system radio /sys/class/power_supply/battery/normal_mode_bypass
    chown system radio /sys/class/power_supply/battery/factory_voltage_regulation
-   chown system radio /sys/class/power_supply/battery/factory_mode_disable
    chown media sdcard_rw /sys/class/power_supply/battery/store_mode
    chown sdcard_rw sdcard_rw /sys/class/power_supply/battery/call
    chown sdcard_rw sdcard_rw /sys/class/power_supply/battery/video
@@ -1038,6 +1048,8 @@ on boot
    chmod 0664 /sys/class/power_supply/battery/wc_cmd_info
    chown system radio /sys/class/power_supply/battery/batt_chip_id
    chmod 0660 /sys/class/power_supply/battery/batt_chip_id
+   chown system radio /sys/class/power_supply/battery/check_slave_chg
+   chmod 0660 /sys/class/power_supply/battery/check_slave_chg
    chown system radio /sys/class/power_supply/battery/error_cause
    chmod 0440 /sys/class/power_supply/battery/error_cause
    chown system radio /sys/class/power_supply/battery/cisd_fullcaprep_max
@@ -1162,17 +1174,6 @@ on boot
     chmod 0644 /efs/cpk/h2k.dat
     chown system system /efs/drm/h2k
 
-    # icd
-    check_icd
-    chown system system /dev/icd
-    chmod 0644 /dev/icd
-    chown system system /dev/icdr
-    chmod 0644 /dev/icdr
-    chown system nfc /dev/tzic
-    chmod 0660 /dev/tzic
-    restorecon /dev/icd
-    restorecon /dev/icdr
-
     # Permissions for Touchscreen
     chown system radio /sys/class/sec/tsp/cmd
     chown system system /sys/class/sec/tsp/input/enabled
@@ -1236,6 +1237,7 @@ on boot
     chown system radio /sys/class/sec/sec_epen/epen_fac_select_firmware
     chown system system /sys/class/sec/sec_epen/abnormal_reset_count
     chown system system /sys/class/sec/sec_epen/i2c_fail_count
+    chown system system /sys/class/sec/sec_epen/pen_out_count
 
     # Key
     chown system radio /sys/class/sec/sec_key/wakeup_keys
@@ -1304,6 +1306,10 @@ on charger
     chmod 0400 /efs/Battery/battery_data.dat
     write /sys/class/power_supply/battery/batt_update_data "/efs/Battery/battery_data.dat"
     class_start charger
+
+#@VOLD Emergency reset
+on property:vold.emergency_reset=1
+    start installd
 
 on property:vold.decrypt=trigger_reset_main
     class_reset main

@@ -39,9 +39,9 @@ persist.adb.notify=0
 #
 # BOOTIMAGE_BUILD_PROPERTIES
 #
-ro.bootimage.build.date=Mon Aug 13 23:06:54 KST 2018
-ro.bootimage.build.date.utc=1534169214
-ro.bootimage.build.fingerprint=samsung/j5y17ltexx/j5y17lte:8.1.0/M1AJQ/J530FXXU2BRH5:user/test-keys# Refined Tweaks
+ro.bootimage.build.date=Thu Sep 6 19:03:58 KST 2018
+ro.bootimage.build.date.utc=1536228238
+ro.bootimage.build.fingerprint=samsung/j7y17ltexxm/j7y17lte:8.1.0/M1AJQ/J730FMXXU4BRI3:user/test-keys
 ro.config.tima=0
 ro.security.vaultkeeper.feature=0
 ro.frp.pst=

@@ -18,15 +18,6 @@ on fs
     chmod 0660 /sys/devices/virtual/misc/umts_dm0/dm_state
     chown radio system /sys/devices/virtual/misc/umts_dm0/dm_state
 
-    #For cpdebug partition
-    wait /dev/block/platform/13540000.dwmmc0/by-name/EFS
-    mkdir /efs/cpdebug
-    chown radio system /efs/cpdebug
-    chmod 0660 /efs/cpdebug
-    symlink /dev/block/platform/13540000.dwmmc0/by-name/CP_DEBUG /efs/cpdebug/node
-    chown radio system /efs/cpdebug/node
-    chmod 0660 /efs/cpdebug/node
-
 on property:ril.clatd.v4-rmnet0=up
     write /sys/class/net/rmnet0/queues/rx-0/rps_cpus 4
     write /sys/class/net/v4-rmnet0/queues/rx-0/rps_cpus 2

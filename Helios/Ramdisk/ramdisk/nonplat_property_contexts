@@ -61,6 +61,7 @@ persist.sys.drs.date		u:object_r:drs_date_prop:s0
 persist.sys.enable_rescue            u:object_r:enable_rescue_prop:s0
 persist.sys.kap.date		u:object_r:knox_kap_prop:s0
 persist.sys.kap.status 		u:object_r:knox_kap_prop:s0
+persist.sys.rescue_level    u:object_r:rescue_level_prop:s0
 persist.translation.		u:object_r:system_prop:s0
 persist.vendor.camera.feature.cac    u:object_r:sec_camera_prop:s0
 product.brand                  u:object_r:csc_prop:s0
@@ -79,6 +80,7 @@ ro.oem.                                          u:object_r:oem_prop:s0
 ro.product.brand                 u:object_r:csc_prop:s0
 ro.security.                    u:object_r:system_security_prop:s0
 ro.setupwizard.                                u:object_r:setupwizard_prop:s0
+ro.sts.property    u:object_r:sts_prop:s0
 ro.vzw.sys.hw_ver                           u:object_r:vzw_sys_prop:s0
 ro.vzw.sys.sw_ver                           u:object_r:vzw_sys_prop:s0
 runtime.firstboot             u:object_r:system_prop:s0
