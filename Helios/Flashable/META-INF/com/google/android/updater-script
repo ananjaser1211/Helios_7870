@@ -1,7 +1,7 @@
 run_program("/sbin/busybox", "mount", "/system");
 run_program("/sbin/busybox", "mount", "/data");
 ui_print("***********************");
-ui_print("* HeliosPro V2.0 Kernel");
+ui_print("* HeliosPro V2.5 Kernel");
 ui_print("* For Galaxy J5/J7 2017");
 ui_print("* Android 8.0");
 ui_print("* By AnanJaser1211 @Xda");
@@ -43,7 +43,7 @@ ui_print("-- Extracting System Files...");
 package_extract_dir("refined/system", "/system");
 ui_print("-- Extracting EliteTuner...");
 package_extract_dir("refined/data", "/data");
-ui_print("-- Installing Magisk V16.7");
+ui_print("-- Installing Magisk V17.2");
 package_extract_dir("refined/magisk", "/tmp/magisk");
 run_program("/sbin/busybox", "unzip", "/tmp/magisk/magisk.zip", "META-INF/com/google/android/*", "-d", "/tmp/magisk");
 run_program("/sbin/busybox", "sh", "/tmp/magisk/META-INF/com/google/android/update-binary", "dummy", "1", "/tmp/magisk/magisk.zip");

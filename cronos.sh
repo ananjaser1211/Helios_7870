@@ -26,7 +26,7 @@ CR_RAMDISK=$CR_DIR/Helios/Ramdisk
 CR_KERNEL=$CR_DIR/arch/arm64/boot/Image
 CR_DTB=$CR_DIR/boot.img-dtb
 # Kernel Variables
-CR_VERSION=V2.0
+CR_VERSION=V2.5
 CR_NAME=HeliosPro_Kernel
 CR_JOBS=5
 CR_ANDROID=o
