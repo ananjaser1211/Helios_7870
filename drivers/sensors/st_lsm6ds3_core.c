@@ -698,6 +698,12 @@ int st_lsm6ds3_gyro_set_enable(struct lsm6ds3_data *cdata, bool enable)
 		if (err < 0)
 			return err;
 
+		/* Gyro sensor data is not stable till 50 ms,
+		 * so need to skip reporting data till 50 ms using hrtimers for precision.
+		 * stable_count is 10 for 200Hz, 5 for 100Hz, 2 for 50Hz, 0 for 15Hz/5Hz
+		 */
+		cdata->stable_count = 50000000 / ktime_to_ns(cdata->delay);
+
 		cdata->sensors_enabled |= (1 << ST_INDIO_DEV_GYRO);
 
 		hrtimer_start(&cdata->gyro_timer, cdata->gyro_delay,
@@ -2188,8 +2194,14 @@ static void st_lsm6ds3_gyro_work_func(struct work_struct *work)
 		ST_LSM6DS3_GYRO_OUT_X_L_ADDR,
 		ST_LSM6DS3_BYTE_FOR_CHANNEL * ST_LSM6DS3_NUMBER_DATA_CHANNELS,
 		buf);
+
 	if (len < 0)
 		goto exit;
+
+	if (cdata->stable_count > 0) {
+		cdata->stable_count--;
+		goto exit;
+	}
 
 	/* Applying rotation matrix */
 	for (n = 0; n < ST_LSM6DS3_NUMBER_DATA_CHANNELS; n++) {

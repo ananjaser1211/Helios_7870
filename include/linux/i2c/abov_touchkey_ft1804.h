@@ -22,6 +22,7 @@
 #define ABOV_ID 0x40
 
 extern int get_lcd_attached(char *);
+extern unsigned int lcdtype;
 
 #define LIGHT_VERSION_PATH		"/efs/FactoryApp/tkey_light_version"
 #define LIGHT_TABLE_PATH		"/efs/FactoryApp/tkey_light"

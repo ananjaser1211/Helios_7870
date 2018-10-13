@@ -288,6 +288,9 @@ void usbpd_set_ops(struct device *dev, usbpd_phy_ops_type *ops)
 	pd_data->phy_ops.set_otg_control = ops->set_otg_control;
 	pd_data->phy_ops.get_vbus_short_check = ops->get_vbus_short_check;
 	pd_data->phy_ops.set_cc_control = ops->set_cc_control;
+#if defined(CONFIG_USB_ANDROID_SAMSUNG_CCR_PROTOCOL)
+	pd_data->phy_ops.rp_check = ops->rp_check;
+#endif
 }
 
 protocol_state usbpd_protocol_rx_layer_reset_for_receive(struct protocol_data *rx)

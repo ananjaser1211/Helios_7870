@@ -590,6 +590,13 @@ config LEDS_IRIS_FPGA_ICE40XX
 	  To compile this driver as a module, choose M here.
 	  If unsure, say N.
 
+config LEDS_ICE40XX_POWER_CONTROL
+	tristate "this feature allows ICE40XX IRIS 1P2 PIN CONTROL"
+	default n
+	help
+	  This is a for driver for IRIS LEd driver based on Lattice chip.
+	  Lattice FPGA can support IRIS LED and this allow power control.
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"

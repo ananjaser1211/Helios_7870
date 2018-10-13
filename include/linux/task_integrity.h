@@ -77,9 +77,10 @@ struct processing_event_list {
 
 struct task_integrity {
 	enum task_integrity_value user_value;
-	atomic_t value;
+	enum task_integrity_value value;
 	atomic_t usage_count;
-	spinlock_t lock;
+	spinlock_t value_lock;
+	spinlock_t list_lock;
 	struct integrity_label *label;
 	struct processing_event_list events;
 };
@@ -103,34 +104,18 @@ static inline void task_integrity_put(struct task_integrity *intg)
 		task_integrity_free(intg);
 }
 
-static inline int __atomic_set_unless(atomic_t *v, int a, int u)
+static inline void __task_integrity_set(struct task_integrity *intg,
+					enum task_integrity_value value)
 {
-	int c, old;
-
-	c = atomic_read(v);
-	while (c != u && (old = atomic_cmpxchg((v), c, a)) != c)
-		c = old;
-	return c;
-}
-
-static inline void task_integrity_set_unless(struct task_integrity *intg,
-					enum task_integrity_value value,
-					enum task_integrity_value unless)
-{
-	__atomic_set_unless(&intg->value, value, unless);
+	intg->value = value;
 }
 
 static inline void task_integrity_set(struct task_integrity *intg,
 					enum task_integrity_value value)
 {
-	atomic_set(&intg->value, value);
-}
-
-static inline void task_integrity_cmpxchg(struct task_integrity *intg,
-		enum task_integrity_value old,
-		enum task_integrity_value new)
-{
-	atomic_cmpxchg(&intg->value, old, new);
+	spin_lock(&intg->value_lock);
+	intg->value = value;
+	spin_unlock(&intg->value_lock);
 }
 
 static inline void task_integrity_reset(struct task_integrity *intg)
@@ -143,35 +128,31 @@ extern void task_integrity_delayed_reset(struct task_struct *task);
 static inline enum task_integrity_value task_integrity_read(
 						struct task_integrity *intg)
 {
-	return atomic_read(&intg->value);
+	enum task_integrity_value value;
+
+	spin_lock(&intg->value_lock);
+	value = intg->value;
+	spin_unlock(&intg->value_lock);
+
+	return value;
 }
 
 static inline enum task_integrity_value task_integrity_user_read(
 						struct task_integrity *intg)
 {
-	enum task_integrity_value intg_user;
-
-	spin_lock(&intg->lock);
-	intg_user = intg->user_value;
-	spin_unlock(&intg->lock);
-
-	return intg_user;
+	return intg->user_value;
 }
 
 static inline void task_integrity_user_set(struct task_integrity *intg,
 					   enum task_integrity_value value)
 {
-	spin_lock(&intg->lock);
 	intg->user_value = value;
-	spin_unlock(&intg->lock);
 }
 
 static inline void task_integrity_reset_both(struct task_integrity *intg)
 {
-	spin_lock(&intg->lock);
 	task_integrity_reset(intg);
 	intg->user_value = INTEGRITY_NONE;
-	spin_unlock(&intg->lock);
 }
 
 extern int task_integrity_copy(struct task_integrity *from,
@@ -215,18 +196,6 @@ static inline void task_integrity_clear(struct task_integrity *tint)
 
 static inline void task_integrity_set(struct task_integrity *intg,
 						enum task_integrity_value value)
-{
-}
-
-static inline void task_integrity_set_unless(struct task_integrity *intg,
-					enum task_integrity_value value,
-					enum task_integrity_value unless)
-{
-}
-
-static inline void task_integrity_cmpxchg(struct task_integrity *intg,
-		enum task_integrity_value old,
-		enum task_integrity_value new)
 {
 }
 

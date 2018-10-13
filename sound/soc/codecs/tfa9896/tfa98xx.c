@@ -59,6 +59,10 @@
 
 #define TFA98XX_VERSION	TFA98XX_API_REV_STR
 
+#if defined(TFA_NO_SND_FORMAT_CHECK)
+#define TFA_FULL_RATE_SUPPORT_WITH_POST_CONVERSION
+#endif
+
 /* Change volume selection behavior:
  * Uncomment following line to generate a profile change when updating
  * a volume control (also changes to the profile of the modified  volume
@@ -67,7 +71,11 @@
 /* #define TFA98XX_ALSA_CTRL_PROF_CHG_ON_VOL	1 */
 
 /* Supported rates and data formats */
+#if !defined(TFA_FULL_RATE_SUPPORT_WITH_POST_CONVERSION)
 #define TFA98XX_RATES SNDRV_PCM_RATE_8000_48000
+#else
+#define TFA98XX_RATES SNDRV_PCM_RATE_8000_192000
+#endif
 #define TFA98XX_FORMATS	(SNDRV_PCM_FMTBIT_S16_LE | \
 SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S32_LE)
 
@@ -76,7 +84,6 @@ SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S32_LE)
 #define TFA_FORCE_TO_WAIT_UNTIL_CALIBRATE
 #define TFA_CHECK_CALIBRATE_DONE
 #define TFA_DBGFS_CHECK_MTPEX
-#define TFA_FULL_RATE_SUPPORT_WITH_POST_CONVERSION
 
 #define XMEM_TAP_ACK  0x0122
 #define XMEM_TAP_READ 0x010f
@@ -146,7 +153,11 @@ static int pcm_sample_format;
 module_param(pcm_sample_format, int, 0444);
 MODULE_PARM_DESC(pcm_sample_format, "PCM sample format: 0=S16_LE, 1=S24_LE, 2=S32_LE\n");
 
+#if defined(TFA_NO_SND_FORMAT_CHECK)
+static int pcm_no_constraint = 1;
+#else
 static int pcm_no_constraint;
+#endif
 module_param(pcm_no_constraint, int, 0444);
 MODULE_PARM_DESC(pcm_no_constraint, "do not use constraints for PCM parameters\n");
 
@@ -180,6 +191,14 @@ static struct tfa98xx_rate rate_to_fssel[] = {
 	{ 32000, 6 },
 	{ 44100, 7 },
 	{ 48000, 8 },
+#if defined(TFA_NO_SND_FORMAT_CHECK)
+/* out of range */
+	{ 64000, 9 },
+	{ 88200, 10 },
+	{ 96000, 11 },
+	{ 176400, 12 },
+	{ 192000, 13 },
+#endif
 };
 
 /* Wrapper for tfa start */
@@ -1568,7 +1587,7 @@ DEFINE_SIMPLE_ATTRIBUTE(tfa98xx_dbgfs_reg_##__reg##_fops, \
 
 #define TFA98XX_DEBUGFS_REG_CREATE_FILE(__reg, __name)			\
 	debugfs_create_file(TOSTRING(__reg) "-" TOSTRING(__name),	\
-			    0666, dbg_reg_dir,		\
+			    0664, dbg_reg_dir,		\
 			    i2c, &tfa98xx_dbgfs_reg_##__reg##_fops)
 
 TFA98XX_DEBUGFS_REG_SET(00);
@@ -2198,6 +2217,7 @@ static int tfa98xx_set_activate_spk(struct snd_kcontrol *kcontrol,
 	struct tfa98xx *tfa98xx = snd_soc_codec_get_drvdata(codec);
 	struct tfa98xx *tfa98xx_queued;
 	int activate_spk = ucontrol->value.integer.value[0];
+	int prior_pstream;
 	int i = 0;
 
 	dev_dbg(&tfa98xx->i2c->dev, "%s: state: %d\n", __func__, activate_spk);
@@ -2224,11 +2244,12 @@ static int tfa98xx_set_activate_spk(struct snd_kcontrol *kcontrol,
 			tfa98xx_queued = tfa98xx_devices[i];
 			if (tfa98xx_queued->pstream == 0)
 				continue;
+			prior_pstream = tfa98xx_queued->pstream;
 			pr_info("%s: [0x%x] trigger mute first if pstream is active\n",
 				__func__, tfa98xx_queued->i2c->addr);
 			_tfa98xx_mute(tfa98xx_queued,
 				1, SNDRV_PCM_STREAM_PLAYBACK);
-			pending_pstream[i] = 1;
+			pending_pstream[i] = prior_pstream;
 		}
 		for (i = 0; i < tfa98xx_cnt_max_device(); i++) {
 			if (pending_pstream[i] == 0)
@@ -2244,10 +2265,12 @@ static int tfa98xx_set_activate_spk(struct snd_kcontrol *kcontrol,
 			tfa98xx_queued = tfa98xx_devices[i];
 			if (tfa98xx_queued->pstream == 0)
 				continue;
+			prior_pstream = tfa98xx_queued->pstream;
 			pr_info("%s: [0x%x] trigger mute by force\n",
 				__func__, tfa98xx_queued->i2c->addr);
 			_tfa98xx_mute(tfa98xx_queued,
 				1, SNDRV_PCM_STREAM_PLAYBACK);
+			pending_pstream[i] = prior_pstream;
 		}
 	}
 
@@ -2995,7 +3018,6 @@ tfa98xx_container_loaded(const struct firmware *cont,	void *context)
 	enum tfa_error tfa_err;
 	int container_size;
 	int handle;
-	int ret;
 #if defined(TFA_DBGFS_CHECK_MTPEX)
 	unsigned short value;
 #endif
@@ -3133,16 +3155,19 @@ tfa98xx_container_loaded(const struct firmware *cont,	void *context)
 		tfa_reset();
 	}
 
+#if !defined(TFA_ACTIVATED_ASYNCHRONOUSLY)
 	if (tfa98xx->handle == 0) {
 		mutex_lock(&tfa98xx->dsp_lock);
-		ret = tfa98xx_tfa_start
+		tfa_err = tfa98xx_tfa_start
 			(tfa98xx, tfa98xx_profile, tfa98xx_vsteps);
-		if (ret == TFA98XX_ERROR_OK)
+		if ((int)tfa_err == TFA98XX_ERROR_OK)
 			tfa98xx->dsp_init = TFA98XX_DSP_INIT_DONE;
-		else if (ret == TFA98XX_ERROR_NOT_SUPPORTED)
+		else if ((int)tfa_err == TFA98XX_ERROR_NOT_SUPPORTED)
 			tfa98xx->dsp_fw_state = TFA98XX_DSP_FW_FAIL;
 		mutex_unlock(&tfa98xx->dsp_lock);
 	}
+#endif
+
 	tfa98xx_interrupt_enable(tfa98xx, true);
 
 	mutex_unlock(&probe_lock);
@@ -3622,23 +3647,26 @@ static int tfa98xx_startup(struct snd_pcm_substream *substream,
 			}
 		}
 	}
+
+#if !defined(TFADSP_DSP_BUFFER_POOL)
+	kfree(basename);
+#endif
+
+	return snd_pcm_hw_constraint_list(substream->runtime, 0,
+				   SNDRV_PCM_HW_PARAM_RATE,
+				   &tfa98xx->rate_constraint);
 #else
 	pr_info("%s: add all the rates in the list\n", __func__);
 	for (idx = 0; idx < ARRAY_SIZE(rate_to_fssel); idx++) {
 		tfa98xx->rate_constraint_list[idx] = rate_to_fssel[idx].rate;
 		tfa98xx->rate_constraint.count += 1;
 	}
+
+	pr_info("%s: skip setting constraint, assuming fixed format\n",
+		__func__);
+
+	return 0;
 #endif /* TFA_FULL_RATE_SUPPORT_WITH_POST_CONVERSION */
-
-#if !defined(TFA_FULL_RATE_SUPPORT_WITH_POST_CONVERSION)
-#if !defined(TFADSP_DSP_BUFFER_POOL)
-	kfree(basename);
-#endif
-#endif
-
-	return snd_pcm_hw_constraint_list(substream->runtime, 0,
-				   SNDRV_PCM_HW_PARAM_RATE,
-				   &tfa98xx->rate_constraint);
 }
 
 static int tfa98xx_set_dai_sysclk(struct snd_soc_dai *codec_dai,

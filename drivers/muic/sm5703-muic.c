@@ -1792,6 +1792,7 @@ static void sm5703_muic_init_detect(struct work_struct *work)
 {
 	struct sm5703_muic_data *muic_data =
 		container_of(work, struct sm5703_muic_data, init_work.work);
+	int adc;
 
 	pr_info("%s:%s\n", MUIC_DEV_NAME, __func__);
 
@@ -1799,6 +1800,22 @@ static void sm5703_muic_init_detect(struct work_struct *work)
 	set_int_mask(muic_data, false);
 
 	sm5703_muic_irq_thread(-1, muic_data);
+
+	adc = sm5703_i2c_read_byte(muic_data->i2c, SM5703_MUIC_REG_ADC);
+	pr_info("%s: adc = 0x%x\n", __func__, adc);
+
+	/* MHL adc = 0x20 ( 100000 ) */
+	if (adc == 0x20) {
+		pr_info("%s: MUIC Reset\n", __func__);
+
+		/* MUIC reset */
+		sm5703_i2c_write_byte(muic_data->i2c, SM5703_MUIC_REG_RESET, 0x01);
+
+		sm5703_muic_reg_init(muic_data);
+
+		/* MUIC Interrupt On */
+		set_int_mask(muic_data, false);
+	}
 }
 
 static int sm5703_init_rev_info(struct sm5703_muic_data *muic_data)

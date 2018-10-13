@@ -113,6 +113,14 @@ static int lis2ds_i2c_remove(struct i2c_client *client)
 	return 0;
 }
 
+static void lis2ds_i2c_shutdown(struct i2c_client *client)
+{
+	struct lis2ds_data *cdata = i2c_get_clientdata(client);
+
+	lis2ds_common_shutdown(cdata);
+	dev_info(cdata->dev, "%s: shutdowned\n", LIS2DS_DEV_NAME);
+}
+
 static int lis2ds_suspend(struct device *dev)
 {
 	struct lis2ds_data *cdata = i2c_get_clientdata(to_i2c_client(dev));
@@ -154,6 +162,7 @@ static struct i2c_driver lis2ds_i2c_driver = {
 	},
 	.probe    = lis2ds_i2c_probe,
 	.remove   = lis2ds_i2c_remove,
+	.shutdown = lis2ds_i2c_shutdown,
 	.id_table = lis2ds_ids,
 };
 

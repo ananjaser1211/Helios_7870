@@ -173,9 +173,9 @@ static ssize_t yas_enable_store(struct device *dev,
 		}
 	} else {
 		if (pre_enable == ON) {
-			data->mag.set_enable(0);
-			cancel_work_sync(&data->mag_work);
 			hrtimer_cancel(&data->mag_timer);
+			cancel_work_sync(&data->mag_work);
+			data->mag.set_enable(0);
 			data->enable = OFF;
 		}
 	}
@@ -416,8 +416,8 @@ static ssize_t yas_power_reset_show(struct device *dev,
 	mutex_lock(&data->enable_lock);
 	SENSOR_INFO("Start!\n");
 	if (data->enable) {
-		cancel_work_sync(&data->mag_work);
 		hrtimer_cancel(&data->mag_timer);
+		cancel_work_sync(&data->mag_work);
 	}
 	mutex_unlock(&data->enable_lock);
 	SENSOR_INFO("Done!\n");
@@ -740,10 +740,10 @@ static int yas_remove(struct i2c_client *i2c)
 	struct yas_state *data = (struct yas_state *)i2c_get_clientdata(i2c);
 
 	if (data->enable) {
-		data->mag.term();
 		/* destroy workqueue */
-		cancel_work_sync(&data->mag_work);
 		hrtimer_cancel(&data->mag_timer);
+		cancel_work_sync(&data->mag_work);
+		data->mag.term();
 		/* sysfs destroy */
 		sensors_unregister(data->yas_device, mag_sensor_attrs);
 		sysfs_remove_group(&data->input->dev.kobj,
@@ -762,13 +762,25 @@ static int yas_remove(struct i2c_client *i2c)
 	return 0;
 }
 
+static void yas_shutdown(struct i2c_client *i2c)
+{
+	struct yas_state *data = (struct yas_state *)i2c_get_clientdata(i2c);
+
+	SENSOR_INFO("is called.\n");
+	if (data->enable) {
+		hrtimer_cancel(&data->mag_timer);
+		cancel_work_sync(&data->mag_work);
+		data->mag.set_enable(0);
+	}
+}
+
 static int yas_suspend(struct device *dev)
 {
 	struct yas_state *data = dev_get_drvdata(dev);
 
 	if (data->enable) {
-		cancel_work_sync(&data->mag_work);
 		hrtimer_cancel(&data->mag_timer);
+		cancel_work_sync(&data->mag_work);
 		data->mag.set_enable(0);
 	}
 	return 0;
@@ -811,6 +823,7 @@ static struct i2c_driver yas_driver = {
 	},
 	.probe		= yas_probe,
 	.remove		= yas_remove,
+	.shutdown   = yas_shutdown,
 	.id_table	= yas_id,
 };
 module_i2c_driver(yas_driver);

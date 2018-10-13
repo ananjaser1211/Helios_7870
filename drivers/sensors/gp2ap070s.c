@@ -1378,6 +1378,21 @@ err_mem_alloc:
 	return ret;
 }
 
+static void gp2a_shutdown(struct i2c_client *client)
+{
+	struct gp2a_data *data = i2c_get_clientdata(client);
+	int enable;
+
+	SENSOR_INFO("is called.\n");
+	enable = atomic_read(&data->prox_enable);
+	if (enable) {
+		disable_irq(data->irq);
+		disable_irq_wake(data->irq);
+		gp2a_set_mode(data, OFF);
+
+		atomic_set(&data->prox_enable, OFF);
+	}
+}
 
 static int gp2a_suspend(struct device *dev)
 {
@@ -1431,6 +1446,7 @@ static struct i2c_driver gp2a_i2c_driver = {
 		.pm = &gp2a_pm_ops
 	},
 	.probe		= gp2a_i2c_probe,
+	.shutdown	= gp2a_shutdown,
 	.id_table	= gp2a_device_id,
 };
 

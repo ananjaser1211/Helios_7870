@@ -36,6 +36,7 @@ extern struct class *sec_class;
 #define SEC_CMD_BUF_SIZE		(4096 - 1)
 #define SEC_CMD_STR_LEN			256
 #define SEC_CMD_RESULT_STR_LEN		(4096 - 1)
+#define SEC_CMD_RESULT_STR_LEN_EXPAND	SEC_CMD_RESULT_STR_LEN * 2
 #define SEC_CMD_PARAM_NUM		8
 
 struct sec_cmd {
@@ -66,7 +67,7 @@ struct sec_cmd_data {
 	u8			cmd_state;
 	char			cmd[SEC_CMD_STR_LEN];
 	int			cmd_param[SEC_CMD_PARAM_NUM];
-	char			cmd_result[SEC_CMD_RESULT_STR_LEN];
+	char			*cmd_result;
 	int			cmd_buffer_size;
 	bool			cmd_is_running;
 	struct mutex		cmd_lock;

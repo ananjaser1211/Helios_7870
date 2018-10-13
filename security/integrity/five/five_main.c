@@ -58,13 +58,13 @@ static void work_handler(struct work_struct *in_data)
 
 	intg = context->tint;
 
-	spin_lock(&intg->lock);
+	spin_lock(&intg->list_lock);
 	while (!list_empty(&(intg->events.list))) {
 		struct processing_event_list *five_file;
 
 		five_file = list_entry(intg->events.list.next,
 				struct processing_event_list, list);
-		spin_unlock(&intg->lock);
+		spin_unlock(&intg->list_lock);
 		switch (five_file->event) {
 		case FIVE_VERIFY_BUNCH_FILES: {
 			rc = process_measurement(five_file);
@@ -77,13 +77,13 @@ static void work_handler(struct work_struct *in_data)
 		default:
 			break;
 		}
-		spin_lock(&intg->lock);
+		spin_lock(&intg->list_lock);
 		list_del(&five_file->list);
 		five_event_destroy(five_file);
 	}
 
 	task_integrity_done(intg);
-	spin_unlock(&intg->lock);
+	spin_unlock(&intg->list_lock);
 	task_integrity_put(intg);
 
 	kfree(context);
@@ -199,12 +199,12 @@ static int push_file_event_bunch(struct task_struct *task, struct file *file,
 	}
 	context->tint = task->integrity;
 
-	spin_lock(&task->integrity->lock);
+	spin_lock(&task->integrity->list_lock);
 
 	if (list_empty(&(task->integrity->events.list))) {
 		task_integrity_processing(task->integrity);
 		list_add_tail(&five_file->list, &task->integrity->events.list);
-		spin_unlock(&task->integrity->lock);
+		spin_unlock(&task->integrity->list_lock);
 		task_integrity_get(five_file->saved_integrity);
 		INIT_WORK(&context->data_work, work_handler);
 		rc = queue_work(g_five_workqueue, &context->data_work) ? 0 : 1;
@@ -218,7 +218,7 @@ static int push_file_event_bunch(struct task_struct *task, struct file *file,
 					&dead_list);
 		}
 		list_add_tail(&five_file->list, &task->integrity->events.list);
-		spin_unlock(&task->integrity->lock);
+		spin_unlock(&task->integrity->list_lock);
 		free_files_list(&dead_list);
 		kfree(context);
 	}
@@ -244,14 +244,14 @@ static int push_reset_event(struct task_struct *task)
 	}
 
 	task_integrity_reset_both(current_tint);
-	spin_lock(&current_tint->lock);
+	spin_lock(&current_tint->list_lock);
 	if (!list_empty(&current_tint->events.list)) {
 		list_cut_tail(&current_tint->events.list, &dead_list);
 		five_reset->event = FIVE_RESET_INTEGRITY;
 		list_add_tail(&five_reset->list, &current_tint->events.list);
-		spin_unlock(&current_tint->lock);
+		spin_unlock(&current_tint->list_lock);
 	} else {
-		spin_unlock(&current_tint->lock);
+		spin_unlock(&current_tint->list_lock);
 		five_event_destroy(five_reset);
 	}
 
@@ -387,7 +387,7 @@ static inline void task_integrity_processing(struct task_integrity *tint)
 
 static inline void task_integrity_done(struct task_integrity *tint)
 {
-	tint->user_value = atomic_read(&tint->value);
+	tint->user_value = task_integrity_read(tint);
 }
 
 static int process_measurement(const struct processing_event_list *params)
@@ -400,8 +400,6 @@ static int process_measurement(const struct processing_event_list *params)
 	struct integrity_iint_cache *iint = NULL;
 	struct five_cert cert = { {0} };
 	struct five_cert *pcert = NULL;
-	char *pathbuf = NULL;
-	const char *pathname = NULL;
 	int rc = -ENOMEM;
 	char *xattr_value = NULL;
 	int xattr_len = 0;
@@ -463,10 +461,7 @@ static int process_measurement(const struct processing_event_list *params)
 		}
 	}
 
-	pathname = five_d_path(&file->f_path, &pathbuf);
-
-	rc = five_appraise_measurement(task, function, iint, file,
-			pathname, pcert);
+	rc = five_appraise_measurement(task, function, iint, file, pcert);
 
 	if (!rc) {
 		if (match_trusted_executable(pcert))
@@ -475,8 +470,6 @@ static int process_measurement(const struct processing_event_list *params)
 
 out_digsig:
 	kfree(xattr_value);
-	if (pathbuf)
-		__putname(pathbuf);
 out:
 	inode_unlock(inode);
 
@@ -513,22 +506,15 @@ out:
 	}
 
 	if (hook_affects_integrity(fn)) {
-		int new_tint;
+		enum task_integrity_value new_tint;
+		bool is_newstate;
 		const char *msg = NULL;
 
-		new_tint = five_state_proceed(iint, integrity, fn, &msg);
-		if (fn == BPRM_CHECK) {
+		is_newstate = five_state_proceed(iint, integrity, fn,
+				&new_tint, &msg);
+		if (is_newstate && msg) {
 			five_audit_verbose(task, file, get_string_fn(fn),
-					prev_tint,
-					(enum integrity_status)new_tint,
-					"bprm-check", rc);
-		}
-
-		if (new_tint >= 0 && msg) {
-			five_audit_verbose(task, file, get_string_fn(fn),
-					prev_tint,
-					(enum integrity_status)new_tint, msg,
-					rc);
+					prev_tint, new_tint, msg, rc);
 		}
 	}
 
@@ -642,7 +628,7 @@ int five_fork(struct task_struct *task, struct task_struct *child_task)
 
 	trace_five_entry(NULL, FIVE_TRACE_ENTRY_FORK);
 
-	spin_lock(&task->integrity->lock);
+	spin_lock(&task->integrity->list_lock);
 
 	if (!list_empty(&task->integrity->events.list)) {
 		/*copy the list*/
@@ -652,7 +638,7 @@ int five_fork(struct task_struct *task, struct task_struct *child_task)
 
 		context = kmalloc(sizeof(struct worker_context), GFP_ATOMIC);
 		if (unlikely(!context)) {
-			spin_unlock(&task->integrity->lock);
+			spin_unlock(&task->integrity->list_lock);
 			return -ENOMEM;
 		}
 
@@ -663,14 +649,14 @@ int five_fork(struct task_struct *task, struct task_struct *child_task)
 					struct processing_event_list, list);
 
 			five_file = five_event_create(
-					FIVE_VERIFY_BUNCH_FILES,
+					from_entry->event,
 					child_task,
 					from_entry->file,
 					from_entry->function,
 					GFP_ATOMIC);
 			if (unlikely(!five_file)) {
 				kfree(context);
-				spin_unlock(&task->integrity->lock);
+				spin_unlock(&task->integrity->list_lock);
 				return -ENOMEM;
 			}
 
@@ -682,7 +668,7 @@ int five_fork(struct task_struct *task, struct task_struct *child_task)
 
 		rc = task_integrity_copy(task->integrity,
 				child_task->integrity);
-		spin_unlock(&task->integrity->lock);
+		spin_unlock(&task->integrity->list_lock);
 		task_integrity_get(context->tint);
 		task_integrity_processing(child_task->integrity);
 		INIT_WORK(&context->data_work, work_handler);
@@ -690,7 +676,7 @@ int five_fork(struct task_struct *task, struct task_struct *child_task)
 	} else {
 		rc = task_integrity_copy(task->integrity,
 				child_task->integrity);
-		spin_unlock(&task->integrity->lock);
+		spin_unlock(&task->integrity->list_lock);
 	}
 	return rc;
 }
@@ -712,10 +698,17 @@ int five_ptrace(struct task_struct *task, long request)
 	case PTRACE_PEEKSIGINFO:
 	case PTRACE_GETSIGMASK:
 	case PTRACE_GETEVENTMSG:
+#ifdef CONFIG_ARM64
 	case COMPAT_PTRACE_GETREGS:
 	case COMPAT_PTRACE_GET_THREAD_AREA:
 	case COMPAT_PTRACE_GETVFPREGS:
 	case COMPAT_PTRACE_GETHBPREGS:
+#else
+	case PTRACE_GETREGS:
+	case PTRACE_GET_THREAD_AREA:
+	case PTRACE_GETVFPREGS:
+	case PTRACE_GETHBPREGS:
+#endif
 		break;
 	default: {
 		struct task_integrity *tint = task->integrity;
@@ -757,7 +750,7 @@ static inline struct processing_event_list *five_event_create(
 {
 	struct processing_event_list *five_file;
 
-	five_file = kmalloc(sizeof(struct processing_event_list), flags);
+	five_file = kzalloc(sizeof(struct processing_event_list), flags);
 	if (unlikely(!five_file))
 		return NULL;
 

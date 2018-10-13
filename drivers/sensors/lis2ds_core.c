@@ -611,9 +611,6 @@ static int lis2ds_update_drdy_irq(struct lis2ds_data *cdata, int sindex, bool en
 static int lis2ds_set_fs(struct lis2ds_data *cdata, int sindex, unsigned int fs)
 {
 	int err, i;
-	struct lis2ds_sensor_data *sdata;
-
-	sdata = &cdata->sensors[sindex];
 
 	for (i = 0; i < LIS2DS_FS_LIST_NUM; i++) {
 		if (lis2ds_fs_table.fs_avl[i].urv == fs)
@@ -630,8 +627,6 @@ static int lis2ds_set_fs(struct lis2ds_data *cdata, int sindex, unsigned int fs)
 					  true);
 	if (err < 0)
 		return err;
-
-	sdata->c_gain = lis2ds_fs_table.fs_avl[i].gain;
 
 	return 0;
 }
@@ -848,7 +843,7 @@ static int lis2ds_enable_step_counter(struct lis2ds_data *cdata,
 	return 0;
 }
 
-static int _lis2ds_enable_sensors(struct lis2ds_data *cdata, int sindex)
+static int lis2ds_enable_sensors(struct lis2ds_data *cdata, int sindex)
 {
 	int err = 0;
 	u8 func = 0x00, int2 = 0x00;
@@ -935,25 +930,7 @@ static int _lis2ds_enable_sensors(struct lis2ds_data *cdata, int sindex)
 	return 0;
 }
 
-static int lis2ds_enable_sensors(struct lis2ds_data *cdata, int sindex)
-{
-	int err = 0;
-	struct lis2ds_sensor_data *sdata;
-
-	sdata = &cdata->sensors[sindex];
-
-	if (sdata->enabled)
-		return 0;
-
-	sdata->enabled = true;
-	err = _lis2ds_enable_sensors(cdata, sindex);
-	if (err < 0)
-		sdata->enabled = false;
-
-	return err;
-}
-
-static int _lis2ds_disable_sensors(struct lis2ds_data *cdata, int sindex)
+static int lis2ds_disable_sensors(struct lis2ds_data *cdata, int sindex)
 {
 	int err;
 	u8 func = 0x00, int2 = 0x00;
@@ -1065,29 +1042,9 @@ static int _lis2ds_disable_sensors(struct lis2ds_data *cdata, int sindex)
 	return 0;
 }
 
-static int lis2ds_disable_sensors(struct lis2ds_data *cdata, int sindex)
-{
-	int err;
-	struct lis2ds_sensor_data *sdata;
-
-	sdata = &cdata->sensors[sindex];
-
-	if (!sdata->enabled)
-		return 0;
-
-	sdata->enabled = false;
-	err = _lis2ds_disable_sensors(cdata, sindex);
-	if (err < 0)
-		sdata->enabled = true;
-
-	return err;
-}
-
 static int lis2ds_init_sensors(struct lis2ds_data *cdata, int sindex)
 {
 	int err;
-	int i;
-	struct lis2ds_sensor_data *sdata;
 
 	/*
 	 * Soft reset the device on power on.
@@ -1099,23 +1056,12 @@ static int lis2ds_init_sensors(struct lis2ds_data *cdata, int sindex)
 	if (err < 0)
 		return err;
 
-	for (i = 0; i < LIS2DS_SENSORS_NUMB; i++) {
-		sdata = &cdata->sensors[i];
-
-		err = lis2ds_disable_sensors(cdata, sindex);
-		if (err < 0)
-			return err;
-
-		if (sdata->sindex == LIS2DS_ACCEL) {
-			err = lis2ds_set_fs(cdata, LIS2DS_ACCEL,
-				LIS2DS_ACCEL_FS);
-			if (err < 0)
-				return err;
-		}
-	}
-
 	cdata->selftest_status = 0;
 	cdata->power_mode = LIS2DS_HR_MODE;
+
+	err = lis2ds_set_fs(cdata, LIS2DS_ACCEL, LIS2DS_ACCEL_FS);
+	if (err < 0)
+		return err;
 
 	/*
 	 * Enable latched interrupt mode.
@@ -1145,6 +1091,14 @@ static int lis2ds_init_sensors(struct lis2ds_data *cdata, int sindex)
 					  LIS2DS_EN_BIT, true);
 	if (err < 0)
 		return err;
+
+	/*
+	 * Set the wake_up_ths max to be prevented from false alert
+	 */
+	err = lis2ds_write_data_with_mask(cdata,
+					   LIS2DS_WAKE_UP_THS_ADDR,
+					   LIS2DS_WAKE_UP_THS_WU_MASK,
+					   0x3f, true);
 
 	return 0;
 }
@@ -1988,7 +1942,7 @@ static ssize_t lis2ds_smart_alert_store(struct device *dev,
 		mdelay(100);
 
 		if (factory_mode == 1) {
-			threshold = 0;
+			threshold = 0x00;
 			odr = LIS2DS_ODR_200HZ_HR_VAL;
 			duration = 0x00;
 		} else {
@@ -2030,6 +1984,11 @@ static ssize_t lis2ds_smart_alert_store(struct device *dev,
 	} else if ((enable == 0) && (cdata->sa_flag == 1)) {
 		lis2ds_set_irq(cdata, 0);
 		cdata->sa_flag = 0;
+
+		lis2ds_write_data_with_mask(cdata,
+					   LIS2DS_WAKE_UP_THS_ADDR,
+					   LIS2DS_WAKE_UP_THS_WU_MASK,
+					   0x3f, true);
 
 		lis2ds_write_data_with_mask(cdata,
 					   LIS2DS_CTRL4_INT1_PAD_ADDR,
@@ -2431,7 +2390,7 @@ int lis2ds_common_probe(struct lis2ds_data *cdata, int irq, u16 bustype)
 {
 	int32_t err, i;
 	u8 wai = 0;
-	struct lis2ds_sensor_data *sdata;
+	int retry = 5;
 
 	SENSOR_INFO("Start!\n");
 
@@ -2449,16 +2408,19 @@ int lis2ds_common_probe(struct lis2ds_data *cdata, int irq, u16 bustype)
 	lis2ds_vdd_onoff(cdata, ON);
 
 	/* Read Chip ID register */
-	err = cdata->tf->read(cdata, LIS2DS_WHO_AM_I_ADDR, 1, &wai, true);
-	if (err < 0) {
-		SENSOR_ERR("failed to read Who-Am-I register.\n");
-		goto exit_err_chip_id_or_i2c_error;
+	while (retry--) {
+		err = cdata->tf->read(cdata, LIS2DS_WHO_AM_I_ADDR, 1, &wai, true);
+		if (err < 0)
+			SENSOR_ERR("failed to read Who-Am-I register. err = %d\n", err);
+
+		if (wai != LIS2DS_WHO_AM_I_DEF)
+			SENSOR_ERR("Who-Am-I value not valid. wai = %d err = %d\n", wai, err);
+		else
+			break;
 	}
 
-	if (wai != LIS2DS_WHO_AM_I_DEF) {
-		SENSOR_ERR("Who-Am-I value not valid.\n");
+	if (retry < 0)
 		goto exit_err_chip_id_or_i2c_error;
-	}
 
 	/* input device init */
 	err = lis2ds_acc_input_init(cdata);
@@ -2481,26 +2443,9 @@ int lis2ds_common_probe(struct lis2ds_data *cdata, int irq, u16 bustype)
 	if (err < 0)
 		goto exit_sd_input_init;
 
-	for (i = 0; i < LIS2DS_SENSORS_NUMB; i++) {
-		sdata = &cdata->sensors[i];
-		sdata->enabled = false;
-		sdata->sindex = i;
-		sdata->name = lis2ds_sensor_name[i].name;
-		switch (i) {
-		case LIS2DS_ACCEL:
-			sdata->odr_val = LIS2DS_ODR_200HZ_HR_VAL;
-			break;
-		case LIS2DS_STEP_C:
-		case LIS2DS_STEP_D:
-		case LIS2DS_SIGN_M:
-		case LIS2DS_TILT:
-			sdata->odr_val = LIS2DS_ODR_25HZ_HR_VAL;
-			break;
-		}
-		err = lis2ds_init_sensors(cdata, i);
-		if (err < 0)
-			goto exit_init_sensor;
-	}
+	err = lis2ds_init_sensors(cdata, i);
+	if (err < 0)
+		goto exit_init_sensor;
 
 	/* factory test sysfs node */
 	err = sensors_register(&cdata->acc_factory_dev, cdata,
@@ -2647,6 +2592,16 @@ void lis2ds_common_remove(struct lis2ds_data *cdata, int irq)
 }
 EXPORT_SYMBOL(lis2ds_common_remove);
 
+void lis2ds_common_shutdown(struct lis2ds_data *cdata)
+{
+	u8 i;
+
+	for (i = 0; i < LIS2DS_SENSORS_NUMB; i++)
+		lis2ds_disable_sensors(cdata, i);
+
+}
+EXPORT_SYMBOL(lis2ds_common_shutdown);
+
 static int lis2ds_resume_sensors(struct lis2ds_data *cdata)
 {
 	int err;
@@ -2680,7 +2635,7 @@ static int lis2ds_resume_sensors(struct lis2ds_data *cdata)
 	}
 
 	if (atomic_read(&cdata->acc_wkqueue_en) == 1) {
-		err = _lis2ds_enable_sensors(cdata, LIS2DS_ACCEL);
+		err = lis2ds_enable_sensors(cdata, LIS2DS_ACCEL);
 		if (err < 0)
 			return err;
 	}
@@ -2693,7 +2648,7 @@ static int lis2ds_suspend_sensors(struct lis2ds_data *cdata)
 	int err;
 
 	if (atomic_read(&cdata->acc_wkqueue_en) == 1) {
-		err = _lis2ds_disable_sensors(cdata, LIS2DS_ACCEL);
+		err = lis2ds_disable_sensors(cdata, LIS2DS_ACCEL);
 		if (err < 0)
 			return err;
 	}

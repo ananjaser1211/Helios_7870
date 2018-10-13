@@ -98,7 +98,7 @@ static void dbg(const char *fmt, ...)
 #ifndef CONFIG_SAMSUNG_PRODUCT_SHIP
 #define SERIAL_UART_TRACE 1
 #define PROC_SERIAL_DIR	"serial/uart"
-#define SERIAL_UART_PORT_LINE 2
+#define SERIAL_UART_PORT_LINE 0
 #endif
 
 /* Baudrate definition*/

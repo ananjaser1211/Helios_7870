@@ -8,6 +8,7 @@ TFA_ACTIVATED_ASYNCHRONOUSLY=1
 TFA_USE_PSTREAM_ONLY     =1
 TFA_USE_DEVICE_SPECIFIC_CONTROL=1
 #TFA_PROFILE_ON_DEVICE   =0
+TFA_NO_SND_FORMAT_CHECK  =1
 TFA_SRC_DIR              =sound/soc/codecs/$(TFA_VERSION)
 TFA98XX_FLAGS           := -DUSE_TFA9896
 
@@ -36,6 +37,9 @@ ccflags-y               += -DTFA_USE_DEVICE_SPECIFIC_CONTROL
 endif
 ifdef TFA_PROFILE_ON_DEVICE
 ccflags-y               += -DTFA_PROFILE_ON_DEVICE
+endif
+ifdef TFA_NO_SND_FORMAT_CHECK
+ccflags-y               += -DTFA_NO_SND_FORMAT_CHECK
 endif
 
 # objs

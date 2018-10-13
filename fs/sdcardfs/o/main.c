@@ -348,6 +348,7 @@ static int sdcardfs_read_super(struct vfsmount *mnt, struct super_block *sb,
 		snprintf(sb_info->obbpath_s, PATH_MAX, "%s/Android/obb", dev_name);
 	}
 	fixup_tmp_permissions(sb->s_root->d_inode);
+	fixup_lower_ownership(sb->s_root, sb->s_root->d_name.name);
 	sb_info->sb = sb;
 	list_add(&sb_info->list, &sdcardfs_super_list);
 	mutex_unlock(&sdcardfs_super_list_lock);

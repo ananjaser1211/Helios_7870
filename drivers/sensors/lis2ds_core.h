@@ -189,6 +189,7 @@ struct lis2ds_data {
 
 int lis2ds_common_probe(struct lis2ds_data *cdata, int irq, u16 bustype);
 void lis2ds_common_remove(struct lis2ds_data *cdata, int irq);
+void lis2ds_common_shutdown(struct lis2ds_data *cdata);
 
 #ifdef CONFIG_PM
 int lis2ds_common_suspend(struct lis2ds_data *cdata);

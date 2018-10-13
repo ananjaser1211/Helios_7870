@@ -480,6 +480,17 @@ config SENSORS_A96T3X6_J6
 
 	  Say N here if you do not use A96T3X6 for grip.
 
+config SENSORS_A96T3X6_J6KOR
+	depends on I2C
+	tristate "A96T3X6 touchkey"
+	default n
+	help
+	  Say Y here if you use A96T3X6 for grip.
+	  This option enables grip sensors using
+	  Above A96T3X6 device driver for grip.
+
+	  Say N here if you do not use A96T3X6 for grip.
+
 config SENSORS_A96T3X6_A6
 	depends on I2C
 	tristate "A96T3X6 touchkey"

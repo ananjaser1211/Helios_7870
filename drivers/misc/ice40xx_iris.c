@@ -96,7 +96,26 @@ static int ice40_iris_parse_dt(struct device *dev,
 	pdata->cdone = of_get_named_gpio(np, "ice40,cdone", 0);
 	pdata->rst_n = of_get_named_gpio(np, "ice40,reset_n", 0);
 	pdata->fpga_clk = of_get_named_gpio(np, "ice40,fpga_clk", 0);
+#if defined(CONFIG_LEDS_ICE40XX_POWER_CONTROL)
+	pdata->gpio_iris_1p2_en = of_get_named_gpio(np, "ice40,gpio_iris_1p2_en", 0);
 
+	if (!gpio_is_valid(pdata->gpio_iris_1p2_en)) {
+		pr_err("failed to get gpio_iris_1p2_en\n");
+		return 0;
+	} else {
+		ret = gpio_request(pdata->gpio_iris_1p2_en, "gpio_iris_1p2_en");
+
+		if (ret) {
+			pr_err("Failed to requeset gpio_iris_1p2_en\n");
+			return ret;
+		}
+
+		gpio_direction_output(pdata->gpio_iris_1p2_en, GPIO_LEVEL_HIGH);
+		usleep_range(1000, 2000);
+
+		gpio_free(pdata->gpio_iris_1p2_en);
+	}
+#endif
 	return 0;
 }
 #else

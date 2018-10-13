@@ -77,6 +77,11 @@ enum {
 	SWITCH_SEL_AFC_DISABLE_MASK	= 0x100,
 };
 
+/* bootparam CHARGING_MODE */
+enum {
+	CH_MODE_AFC_DISABLE_VAL = 0x31, /* char '1' */
+};
+
 /* MUIC ADC table */
 typedef enum {
 	ADC_GND			= 0x00,
@@ -248,6 +253,7 @@ struct muic_platform_data {
 };
 
 extern int get_switch_sel(void);
+extern int get_afc_mode(void);
 extern void muic_disable_otg_detect(void);
 extern struct device *switch_device;
 #ifdef CONFIG_SEC_FACTORY

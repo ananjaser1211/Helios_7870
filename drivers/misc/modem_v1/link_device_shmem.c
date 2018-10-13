@@ -1084,21 +1084,17 @@ static int xmit_ipc_to_rb(struct mem_link_device *mld, enum sipc_ch_id ch,
 		skb->len = min_t(int, skb->len, rb->buff_size);
 		ret = skb->len;
 
-		if (hrtimer_is_queued(&mld->sbd_tx_timer)) {
-			skb_queue_tail(skb_txq, skb);
-		} else if (hrtimer_active(&mld->sbd_tx_timer)) {
-			skb_queue_tail(skb_txq, skb);
+		skb_queue_tail(skb_txq, skb);
+
+		if (hrtimer_active(&mld->sbd_tx_timer)) {
 			start_tx_timer(mld, &mld->sbd_tx_timer);
-		} else if (!(spin_trylock_irqsave(&rb->lock, flags))) {
-			skb_queue_tail(skb_txq, skb);
-		} else {
+		} else if (spin_trylock_irqsave(&rb->lock, flags)) {
 			do {
+				skb = skb_dequeue(skb_txq);
+				if (!skb) break;
+
 				ret2 = sbd_tx_func(mld, &mld->sbd_tx_timer, rb, skb);
 				if (ret2 < 0) break;
-				else {
-					skb = skb_dequeue(skb_txq);
-					if (!skb) break;
-				}
 			} while (--quota);
 
 			spin_unlock_irqrestore(&rb->lock, flags);
@@ -1146,21 +1142,17 @@ static int xmit_ipc_to_dev(struct mem_link_device *mld, enum sipc_ch_id ch,
 	} else {
 		ret = skb->len;
 
-		if (hrtimer_is_queued(&mld->tx_timer)) {
-			skb_queue_tail(skb_txq, skb);
-		} else if (hrtimer_active(&mld->tx_timer)) {
-			skb_queue_tail(skb_txq, skb);
+		skb_queue_tail(skb_txq, skb);
+
+		if (hrtimer_active(&mld->tx_timer)) {
 			start_tx_timer(mld, &mld->tx_timer);
-		} else if (!(spin_trylock_irqsave(&dev->tx_lock, flags))) {
-			skb_queue_tail(skb_txq, skb);
-		} else {
+		} else if (spin_trylock_irqsave(&dev->tx_lock, flags)) {
 			do {
+				skb = skb_dequeue(skb_txq);
+				if (!skb) break;
+
 				ret2 = tx_func(mld, &mld->tx_timer, dev, skb);
 				if (ret2 < 0) break;
-				else {
-					skb = skb_dequeue(skb_txq);
-					if (!skb) break;
-				}
 			} while (--quota);
 
 			spin_unlock_irqrestore(&dev->tx_lock, flags);

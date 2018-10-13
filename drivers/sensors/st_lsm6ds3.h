@@ -191,6 +191,7 @@ struct lsm6ds3_data {
 	struct lsm6ds3_sensor_data *sdata;
 
 	int lpf_on;
+	u16 stable_count;
 };
 
 int st_lsm6ds3_common_probe(struct lsm6ds3_data *cdata, int irq);

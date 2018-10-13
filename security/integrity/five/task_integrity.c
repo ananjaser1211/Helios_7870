@@ -24,7 +24,8 @@ static void init_once(void *foo)
 	struct task_integrity *intg = foo;
 
 	memset(intg, 0, sizeof(*intg));
-	spin_lock_init(&intg->lock);
+	spin_lock_init(&intg->value_lock);
+	spin_lock_init(&intg->list_lock);
 }
 
 static int __init task_integrity_cache_init(void)
@@ -57,25 +58,25 @@ struct task_integrity *task_integrity_alloc(void)
 void task_integrity_free(struct task_integrity *intg)
 {
 	if (intg) {
-		spin_lock(&intg->lock);
+		spin_lock(&intg->value_lock);
 		kfree(intg->label);
 		intg->label = NULL;
 		intg->user_value = INTEGRITY_NONE;
-		spin_unlock(&intg->lock);
+		spin_unlock(&intg->value_lock);
 
 		atomic_set(&intg->usage_count, 0);
-		atomic_set(&intg->value, INTEGRITY_NONE);
+		task_integrity_set(intg, INTEGRITY_NONE);
 		kmem_cache_free(task_integrity_cache, intg);
 	}
 }
 
 void task_integrity_clear(struct task_integrity *tint)
 {
-	spin_lock(&tint->lock);
-	atomic_set(&tint->value, INTEGRITY_NONE);
+	task_integrity_set(tint, INTEGRITY_NONE);
+	spin_lock(&tint->value_lock);
 	kfree(tint->label);
 	tint->label = NULL;
-	spin_unlock(&tint->lock);
+	spin_unlock(&tint->value_lock);
 }
 
 static int copy_label(struct task_integrity *from, struct task_integrity *to)
@@ -83,7 +84,7 @@ static int copy_label(struct task_integrity *from, struct task_integrity *to)
 	int ret = 0;
 	struct integrity_label *l = NULL;
 
-	if (atomic_read(&from->value) && from->label)
+	if (task_integrity_read(from) && from->label)
 		l = from->label;
 
 	if (l) {
@@ -107,15 +108,12 @@ exit:
 int task_integrity_copy(struct task_integrity *from, struct task_integrity *to)
 {
 	int rc = -EPERM;
-	enum task_integrity_value value = atomic_read(&from->value);
+	enum task_integrity_value value = task_integrity_read(from);
 
-	spin_lock(&to->lock);
-	atomic_set(&to->value, value);
+	task_integrity_set(to, value);
 
 	if (list_empty(&from->events.list))
 		to->user_value = value;
-
-	spin_unlock(&to->lock);
 
 	rc = copy_label(from, to);
 

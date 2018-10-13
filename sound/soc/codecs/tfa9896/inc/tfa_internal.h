@@ -159,6 +159,7 @@ struct tfa98xx_handle_private {
 	uint16_t interrupt_status[3];
 	int ext_dsp; /* respond to external DSP: 0:none, 1:cold, 2:warm  */
 	int is_cold; /* respond to MANSTATE, before tfa_run_speaker_boost */
+	int first_after_boot; /* loaded default register set once */
 	enum tfadsp_event_en tfadsp_event;
 	int default_boost_trip_level;
 	int saam_use_case;

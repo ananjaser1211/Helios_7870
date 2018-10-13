@@ -157,6 +157,7 @@ enum {
 module_param(perdev_minors, int, 0444);
 MODULE_PARM_DESC(perdev_minors, "Minors numbers to allocate per device");
 
+static void mmc_card_error_logging(struct mmc_card *card, struct mmc_blk_request *brq, u32 status);
 static inline int mmc_blk_part_switch(struct mmc_card *card,
 				      struct mmc_blk_data *md);
 static int get_card_status(struct mmc_card *card, u32 *status, int retries);
@@ -814,8 +815,10 @@ static inline int mmc_blk_part_switch(struct mmc_card *card,
 		ret = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
 				 EXT_CSD_PART_CONFIG, part_config,
 				 card->ext_csd.part_time);
-		if (ret)
+		if (ret) {
+			mmc_card_error_logging(card, NULL, RPMB_SWITCH_ERR);
 			return ret;
+		}
 
 		card->ext_csd.part_config = part_config;
 	}
@@ -951,7 +954,12 @@ static void mmc_card_error_logging(struct mmc_card *card, struct mmc_blk_request
 	int ret = 0;
 	bool noti = false;
 
-    if(!brq)
+	if(status & RPMB_SWITCH_ERR) {
+		err_log[index].rpmb_cnt++;
+		return;
+	}
+
+	if(!brq)
 		return;
 
 	err_log = card->err_log;

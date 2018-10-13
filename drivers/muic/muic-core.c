@@ -329,6 +329,27 @@ int get_switch_sel(void)
 	return muic_pdata.switch_sel;
 }
 
+/* afc_mode:
+ *   0x31 : Disabled
+ *   0x30 : Enabled
+ */
+static int afc_mode = 0x31;
+static int __init set_afc_mode(char *str)
+{
+	int mode;
+	get_option(&str, &mode);
+	afc_mode = (mode & 0x0000FF00) >> 8;
+	pr_info("%s: afc_mode is 0x%02x\n", __func__, afc_mode);
+
+	return 0;
+}
+early_param("charging_mode", set_afc_mode);
+
+int get_afc_mode(void)
+{
+	return afc_mode;
+}
+
 bool is_muic_usb_path_ap_usb(void)
 {
 	if (MUIC_PATH_USB_AP == muic_pdata.usb_path) {

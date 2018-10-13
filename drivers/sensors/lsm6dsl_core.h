@@ -292,6 +292,7 @@ struct lsm6dsl_data {
 
 int lsm6dsl_common_probe(struct lsm6dsl_data *cdata, int irq, u16 bustype);
 void lsm6dsl_common_remove(struct lsm6dsl_data *cdata);
+void lsm6dsl_common_shutdown(struct lsm6dsl_data *cdata);
 
 #ifdef CONFIG_PM
 int lsm6dsl_common_suspend(struct lsm6dsl_data *cdata);

@@ -318,6 +318,7 @@ typedef struct usbpd_phy_ops {
 	bool   (*poll_status)(void *);
 	void   (*driver_reset)(void *);
 	int    (*set_otg_control)(void *, int);
+	int    (*set_cc_control)(void *, int);
 } usbpd_phy_ops_type;
 
 struct policy_data {

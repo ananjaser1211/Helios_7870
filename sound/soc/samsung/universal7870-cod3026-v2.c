@@ -36,6 +36,7 @@
 
 #define CODEC_BFS_48KHZ		32
 #define CODEC_RFS_48KHZ		512
+#define CODEC_BFS_48KHZ_24BIT		64
 #define CODEC_SAMPLE_RATE_48KHZ	48000
 
 #define CODEC_BFS_192KHZ		64
@@ -83,6 +84,7 @@ struct universal7870_mic_bias_count {
 struct cod3026x_machine_priv {
 	struct snd_soc_codec *codec;
 	int aifrate;
+	int aifwidth;
 	struct universal7870_mic_bias mic_bias;
 	struct universal7870_mic_bias_count mic_bias_count;
 	bool use_external_jd;
@@ -112,14 +114,20 @@ static int universal7870_aif1_hw_params(struct snd_pcm_substream *substream,
 		 params_buffer_bytes(params));
 
 	priv->aifrate = params_rate(params);
+	priv->aifwidth = params_width(params);
 
 	if (priv->aifrate == CODEC_SAMPLE_RATE_192KHZ) {
 		rfs = CODEC_RFS_192KHZ;
 		bfs = CODEC_BFS_192KHZ;
 	} else {
 		rfs = CODEC_RFS_48KHZ;
-		bfs = CODEC_BFS_48KHZ;
+		if (priv->aifwidth == 16)
+			bfs = CODEC_BFS_48KHZ;
+		else
+			bfs = CODEC_BFS_48KHZ_24BIT;
 	}
+
+	dev_info(card->dev, "rfs:%d, bfs:%d\n", rfs, bfs);
 
 	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S
 						| SND_SOC_DAIFMT_NB_NF

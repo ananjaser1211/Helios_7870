@@ -56,7 +56,6 @@
 #include <linux/pipe_fs_i.h>
 #include <linux/oom.h>
 #include <linux/compat.h>
-#include <linux/ksm.h>
 #include <linux/task_integrity.h>
 
 #include <asm/uaccess.h>
@@ -67,6 +66,10 @@
 #include "internal.h"
 
 #include <trace/events/sched.h>
+
+#ifdef CONFIG_SECURITY_DEFEX
+#include <linux/defex.h>
+#endif
 
 int suid_dumpable = 0;
 
@@ -1630,6 +1633,15 @@ static int do_execve_common(struct filename *filename,
 	if (IS_ERR(file))
 		goto out_unmark;
 
+#ifdef CONFIG_SECURITY_DEFEX
+	retval = task_defex_enforce(current, file, -__NR_execve);
+	if (retval < 0) {
+		bprm->file = file;
+		retval = -EPERM;
+		goto out_unmark;
+	}
+#endif
+
 	sched_exec();
 
 	bprm->file = file;
@@ -1760,9 +1772,6 @@ SYSCALL_DEFINE3(execve,
 		const char __user *const __user *, argv,
 		const char __user *const __user *, envp)
 {
-	struct filename *path = getname(filename);
-	if (!IS_ERR(path)) {
-
 #if defined CONFIG_SEC_RESTRICT_FORK
 		if(CHECK_ROOT_UID(current)){
 			if(sec_restrict_fork()){
@@ -1774,8 +1783,6 @@ SYSCALL_DEFINE3(execve,
 			}
 		}
 #endif	// End of CONFIG_SEC_RESTRICT_FORK
-	}
-
 	return do_execve(getname(filename), argv, envp);
 }
 #ifdef CONFIG_COMPAT

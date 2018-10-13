@@ -250,10 +250,9 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
 				break;
 
 			timeout--;
-			if (!timeout) {
-				pr_err("TMU is busy.\n");
+			if (!timeout)
 				break;
-			}
+
 			udelay(5);
 		}
 	}
@@ -458,10 +457,9 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
 					break;
 
 				timeout--;
-				if (!timeout) {
-					pr_err("TMU is busy.\n");
+				if (!timeout)
 					break;
-				}
+
 				udelay(5);
 			}
 
@@ -591,10 +589,9 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
 			break;
 
 		timeout--;
-		if (!timeout) {
-			pr_err("TMU is busy.\n");
+		if (!timeout)
 			break;
-		}
+
 		udelay(5);
 	}
 
@@ -769,9 +766,6 @@ void exynos_tmu_core_control(bool on, int id)
 
 				udelay(5);
 			}
-
-			if (count == 10)
-				pr_err("TMU is busy.\n");
 		}
 
 	}

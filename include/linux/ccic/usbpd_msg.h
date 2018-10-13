@@ -208,6 +208,11 @@ enum usbpd_port_role {
 	USBPD_Ra	= 0x01 << 2,
 };
 
+enum {
+	USBPD_CC_OFF,
+	USBPD_CC_ON,
+};
+
 enum vdm_command_type{
 	Initiator       = 0,
 	Responder_ACK   = 1,

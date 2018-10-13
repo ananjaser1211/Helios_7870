@@ -3551,6 +3551,7 @@ int lsm6dsl_common_probe(struct lsm6dsl_data *cdata, int irq, u16 bustype)
 {
 	int32_t err;
 	u8 wai = 0x00;
+	int retry = 5;
 
 	SENSOR_INFO(" Start!\n");
 
@@ -3568,15 +3569,22 @@ int lsm6dsl_common_probe(struct lsm6dsl_data *cdata, int irq, u16 bustype)
 	lsm6dsl_vdd_onoff(cdata, ON);
 
 	/* Read Chip ID register */
-	err = cdata->tf->read(cdata, LSM6DSL_WHO_AM_I, 1, &wai, true);
-	if (err < 0) {
-		dev_err(cdata->dev, "failed to read Who-Am-I register.\n");
-		goto exit_err_chip_id_or_i2c_error;
+	while (retry--) {
+		err = cdata->tf->read(cdata, LSM6DSL_WHO_AM_I, 1, &wai, true);
+		if (err < 0)
+			SENSOR_ERR("failed to read Who-Am-I register.err = %d\n", err);
+
+		if (wai != LSM6DSL_WHO_AM_I_DEF)
+			SENSOR_ERR("Who-Am-I value not valid. wai = %d err = %d\n", wai, err);
+		else
+			break;
+
+		msleep(20);
 	}
-	if (wai != LSM6DSL_WHO_AM_I_DEF) {
-		dev_err(cdata->dev, "Who-Am-I value not valid.\n");
+
+	if (retry < 0)
 		goto exit_err_chip_id_or_i2c_error;
-	}
+
 
 	/* input device init */
 	err = lsm6dsl_acc_input_init(cdata);
@@ -3824,6 +3832,16 @@ void lsm6dsl_common_remove(struct lsm6dsl_data *cdata)
 		lsm6dsl_disable_sensors(cdata, LSM6DSL_GYRO);
 }
 EXPORT_SYMBOL(lsm6dsl_common_remove);
+
+void lsm6dsl_common_shutdown(struct lsm6dsl_data *cdata)
+{
+	u8 i;
+
+	for (i = 0; i < LSM6DSL_SENSORS_NUMB; i++)
+		lsm6dsl_disable_sensors(cdata, i);
+
+}
+EXPORT_SYMBOL(lsm6dsl_common_shutdown);
 
 MODULE_DESCRIPTION("STMicroelectronics lsm6dsl driver");
 MODULE_AUTHOR("Giuseppe Barba");

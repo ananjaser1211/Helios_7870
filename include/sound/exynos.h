@@ -84,4 +84,6 @@ extern void lpass_reset_toggle(int ip);
 extern void lpass_set_ip_idle(bool value);
 extern void lpass_set_fm_bt_mux(int is_fm);
 
+
+
 #endif /* __SOUND_EXYNOS_H */

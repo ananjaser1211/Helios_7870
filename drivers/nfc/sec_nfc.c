@@ -67,6 +67,10 @@ struct sec_nfc_i2c_info {};
 #include <linux/poll.h>
 #include <linux/sched.h>
 #include <linux/i2c.h>
+#ifdef CONFIG_ESE_SECURE
+#include <linux/smc.h>
+#endif
+
 
 #include <linux/moduleparam.h>
 
@@ -1179,6 +1183,13 @@ static int __devinit sec_nfc_probe(struct i2c_client *client,
 {
 	int ret = 0;
 
+#ifdef CONFIG_ESE_SECURE
+	ret = exynos_smc(0x83000032, 0 , 0, 0);
+	if (ret == EBUSY) { 
+		pr_err("[NFC] eSE spi secure fail!\n");
+		return -EBUSY;
+	}
+#endif
 	ret = __sec_nfc_probe(&client->dev);
 	if (ret)
 		return ret;

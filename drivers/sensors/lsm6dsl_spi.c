@@ -144,6 +144,14 @@ static int lsm6dsl_spi_remove(struct spi_device *spi)
 	return 0;
 }
 
+static void lsm6dsl_spi_shutdown(struct spi_device *spi)
+{
+	struct lsm6dsl_data *cdata = spi_get_drvdata(spi);
+
+	lsm6dsl_common_shutdown(cdata);
+	dev_info(cdata->dev, "%s: shutdowned\n", LSM6DSL_DEV_NAME);
+}
+
 #ifdef CONFIG_PM
 static int lsm6dsl_suspend(struct device *dev)
 {
@@ -193,6 +201,7 @@ static struct spi_driver lsm6dsl_spi_driver = {
 	},
 	.probe    = lsm6dsl_spi_probe,
 	.remove   = lsm6dsl_spi_remove,
+	.shutdown = lsm6dsl_spi_shutdown,
 	.id_table = lsm6dsl_ids,
 };
 

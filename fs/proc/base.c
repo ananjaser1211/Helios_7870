@@ -2534,22 +2534,22 @@ static int proc_integrity_label_read(struct seq_file *m,
 {
 	struct integrity_label *l;
 
-	spin_lock(&task->integrity->lock);
+	spin_lock(&task->integrity->value_lock);
 	l = task->integrity->label;
-	spin_unlock(&task->integrity->lock);
+	spin_unlock(&task->integrity->value_lock);
 
 	if (l) {
 		size_t remaining_len;
 		char *buffer = NULL;
-		size_t hex_len = l->len * 2;
+		size_t data_len = l->len * 2;
 
-		seq_printf(m, "%zu\n", hex_len);
+		seq_printf(m, "%zu\n", data_len);
 		remaining_len = seq_get_buf(m, &buffer);
 
-		if (l->len && remaining_len) {
-			size_t size = min(hex_len, remaining_len);
+		if (data_len && remaining_len > 1) {
+			size_t size = min(data_len, remaining_len);
 
-			bin2hex(buffer, l->data, size);
+			bin2hex(buffer, l->data, size / 2);
 			seq_commit(m, size);
 		}
 	} else {

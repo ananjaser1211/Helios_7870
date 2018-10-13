@@ -62,11 +62,7 @@ enum five_hooks {
 int five_appraise_measurement(struct task_struct *task, int func,
 			      struct integrity_iint_cache *iint,
 			      struct file *file,
-			      const unsigned char *filename,
 			      struct five_cert *cert);
-void five_update_xattr(struct task_struct *task,
-			struct integrity_iint_cache *iint, struct file *file,
-			struct integrity_label *label);
 enum five_file_integrity five_get_cache_status(
 					struct integrity_iint_cache *iint);
 

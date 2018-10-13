@@ -88,6 +88,6 @@ config FIVE_PA_FEATURE
 config FIVE_AUDIT_VERBOSE
 	bool "FIVE verbose audit logs"
 	depends on FIVE_DEBUG
-	default y
+	default n
 	help
 	   Enable verbose audit logs.

@@ -39,9 +39,13 @@
 #if defined(CONFIG_DUAL_ROLE_USB_INTF)
 #define DUAL_ROLE_SET_MODE_WAIT_MS		(2000)
 #endif
-#define S2MU004_WATER_CHK_INTERVAL_TIME		(200)
+#define S2MU004_WATER_CHK_INTERVAL_TIME		(300)
 
-#define WATER_CHK_RETRY_CNT	5
+#define WATER_CHK_RETRY_CNT	2
+#define IS_CC_RP(cc1, cc2)	((cc1 == USBPD_Rp) && (cc2 == USBPD_Rp))
+#define IS_CC_WATER(cc1, cc2)	((cc1 != USBPD_Rp) && (cc2 != USBPD_Rp))
+#define IS_ONLY_CC1_WATER(cc1, cc2)	((cc1 != USBPD_Rp) && (cc2 == USBPD_Rp))
+#define IS_ONLY_CC2_WATER(cc1, cc2)	((cc1 == USBPD_Rp) && (cc2 != USBPD_Rp))
 
 /*****************************************/
 /***********DEFINITION REGISTER***********/
@@ -106,12 +110,15 @@
 #define S2MU004_REG_PLUG_CTRL_CC_HOLD_BIT     (0x1)
 
 /* reg 0x27 */
+#define S2MU004_REG_PLUG_CTRL_FSM_MANUAL_EN_SHIFT	(2)
 #define S2MU004_REG_PLUG_CTRL_RpRd_PLUG_SEL_SHIFT	(3)
 #define S2MU004_REG_PLUG_CTRL_VCONN_MANUAL_EN_SHIFT	(4)
 #define S2MU004_REG_PLUG_CTRL_RpRd_CC1_VCONN_SHIFT	(5)
 #define S2MU004_REG_PLUG_CTRL_RpRd_CC2_VCONN_SHIFT	(6)
 #define S2MU004_REG_PLUG_CTRL_RpRd_MANUAL_EN_SHIFT	(7)
 
+#define S2MU004_REG_PLUG_CTRL_FSM_MANUAL_EN \
+		(0x1 << S2MU004_REG_PLUG_CTRL_FSM_MANUAL_EN_SHIFT) /* 0x04 */
 #define S2MU004_REG_PLUG_CTRL_RpRd_MANUAL_MASK \
 		(0x1 << S2MU004_REG_PLUG_CTRL_RpRd_PLUG_SEL_SHIFT | \
 			0x1 << S2MU004_REG_PLUG_CTRL_RpRd_MANUAL_EN_SHIFT) /* 0x88 */
@@ -138,6 +145,11 @@
 #define S2MU004_REG_PLUG_CTRL_CC1_MANUAL_EN_SHIFT	(5)
 #define S2MU004_REG_PLUG_CTRL_CC2_MANUAL_EN_SHIFT	(6)
 
+#define S2MU004_REG_PLUG_CTRL_FSM_MANUAL_INPUT_MASK	(0xf)
+#define S2MU004_REG_PLUG_CTRL_FSM_ATTACHED_SNK		(2)
+#define S2MU004_REG_PLUG_CTRL_FSM_ATTACHED_SRC		(6)
+#define S2MU004_REG_PLUG_CTRL_CC_MANUAL_EN \
+		(0x1 << S2MU004_REG_PLUG_CTRL_CC_MANUAL_EN_SHIFT) /* 0x10 */
 #define S2MU004_REG_PLUG_CTRL_CC1_MANUAL_ON \
 		(0x1 << S2MU004_REG_PLUG_CTRL_CC_MANUAL_EN_SHIFT | \
 		0x1 << S2MU004_REG_PLUG_CTRL_CC1_MANUAL_EN_SHIFT) /* 0x30 */
@@ -269,6 +281,7 @@
 #define ENABLED_INT_4	(S2MU004_REG_INT_STATUS4_USB_DETACH |\
 				S2MU004_REG_INT_STATUS4_PLUG_IRQ |\
 				S2MU004_REG_INT_STATUS4_MSG_PASS)
+#define ENABLED_INT_5   (S2MU004_REG_INT_STATUS5_HARD_RESET)
 
 /* S2MU004 I2C registers */
 enum s2mu004_usbpd_reg {
@@ -476,6 +489,7 @@ struct s2mu004_usbpd_data {
 	struct mutex _mutex;
 	struct mutex poll_mutex;
 	struct mutex lpm_mutex;
+	struct mutex cc_mutex;
 	int vconn_en;
 	int regulator_en;
 	int irq_gpio;
@@ -501,6 +515,7 @@ struct s2mu004_usbpd_data {
 	int data_role_dual; /* data_role for dual role swap */
 	int power_role_dual; /* power_role for dual role swap */
 	int is_attached;
+	u8 rp_currentlvl; 
 #if defined(CONFIG_DUAL_ROLE_USB_INTF)
 	struct dual_role_phy_instance *dual_role;
 	struct dual_role_phy_desc *desc;

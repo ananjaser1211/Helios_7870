@@ -144,6 +144,14 @@ static int lsm6dsl_i2c_remove(struct i2c_client *client)
 	return 0;
 }
 
+static void lsm6dsl_i2c_shutdown(struct i2c_client *client)
+{
+	struct lsm6dsl_data *cdata = i2c_get_clientdata(client);
+
+	lsm6dsl_common_shutdown(cdata);
+	dev_info(cdata->dev, "%s: shutdowned\n", LSM6DSL_DEV_NAME);
+}
+
 static int lsm6dsl_suspend(struct device *dev)
 {
 	struct lsm6dsl_data *cdata = i2c_get_clientdata(to_i2c_client(dev));
@@ -185,6 +193,7 @@ static struct i2c_driver lsm6dsl_i2c_driver = {
 	},
 	.probe    = lsm6dsl_i2c_probe,
 	.remove   = lsm6dsl_i2c_remove,
+	.shutdown = lsm6dsl_i2c_shutdown,
 	.id_table = lsm6dsl_ids,
 };
 

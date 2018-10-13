@@ -1814,6 +1814,87 @@ static void s2mu004_usbpd_control_cc12_rd(struct s2mu004_usbpd_data *pdic_data,
 }
 #endif
 
+#if defined(CONFIG_USB_ANDROID_SAMSUNG_CCR_PROTOCOL)
+static void s2mu004_rp_check(void *_data)
+{
+	struct usbpd_data *data = (struct usbpd_data *) _data;
+	struct s2mu004_usbpd_data *pdic_data = data->phy_driver_data;
+	struct i2c_client *i2c = pdic_data->i2c;
+	struct device *dev = pdic_data->dev;
+	u8 val = 0;
+	u8 cc1_val = 0, cc2_val = 0;
+	u8 rp_currentlvl = 0;
+
+	mutex_lock(&pdic_data->_mutex);
+
+	s2mu004_usbpd_read_reg(i2c, S2MU004_REG_PLUG_CTRL_CC12, &val);
+	val &= ~S2MU004_REG_PLUG_CTRL_FSM_MANUAL_INPUT_MASK;
+	val |= S2MU004_REG_PLUG_CTRL_FSM_ATTACHED_SNK;
+	s2mu004_usbpd_write_reg(i2c, S2MU004_REG_PLUG_CTRL_CC12, val);
+
+	s2mu004_usbpd_read_reg(i2c, S2MU004_REG_PLUG_CTRL_RpRd, &val);
+	val |= S2MU004_REG_PLUG_CTRL_FSM_MANUAL_EN;
+	s2mu004_usbpd_write_reg(i2c, S2MU004_REG_PLUG_CTRL_RpRd, val);
+
+	s2mu004_usbpd_write_reg(i2c, S2MU004_REG_PLUG_CTRL_SET_RP, S2MU004_THRESHOLD_1328MV);
+	msleep(20);
+	s2mu004_usbpd_read_reg(i2c, S2MU004_REG_PLUG_MON1, &val);
+
+	cc1_val = val & S2MU004_REG_CTRL_MON_CC1_MASK;
+	cc2_val = (val & S2MU004_REG_CTRL_MON_CC2_MASK) >> S2MU004_REG_CTRL_MON_CC2_SHIFT;
+
+	dev_info(dev, "%s, 10k check : cc1_val(%x), cc2_val(%x)\n",
+					__func__, cc1_val, cc2_val);
+
+	if (cc1_val == USBPD_Ra && cc2_val == USBPD_Ra)
+		rp_currentlvl = RP_CURRENT_LEVEL3;
+	else {
+		s2mu004_usbpd_write_reg(i2c, S2MU004_REG_PLUG_CTRL_SET_RP, S2MU004_THRESHOLD_685MV);
+		msleep(20);
+		s2mu004_usbpd_read_reg(i2c, S2MU004_REG_PLUG_MON1, &val);
+
+		cc1_val = val & S2MU004_REG_CTRL_MON_CC1_MASK;
+		cc2_val = (val & S2MU004_REG_CTRL_MON_CC2_MASK) >> S2MU004_REG_CTRL_MON_CC2_SHIFT;
+
+		dev_info(dev, "%s, 56k check : cc1_val(%x), cc2_val(%x)\n",
+						__func__, cc1_val, cc2_val);
+
+		if (cc1_val == USBPD_Rd || cc2_val == USBPD_Rd)
+			rp_currentlvl = RP_CURRENT_LEVEL_DEFAULT;
+		else
+			rp_currentlvl = RP_CURRENT_LEVEL2;
+	}
+
+#ifdef CONFIG_BATTERY_SAMSUNG
+#ifdef CONFIG_USB_TYPEC_MANAGER_NOTIFIER
+	pd_noti.sink_status.rp_currentlvl = rp_currentlvl;
+	pd_noti.event = PDIC_NOTIFY_EVENT_CCIC_ATTACH;
+	ccic_event_work(pdic_data, CCIC_NOTIFY_DEV_BATTERY, CCIC_NOTIFY_ID_POWER_STATUS, 1, 0);
+#endif
+#endif
+
+	s2mu004_usbpd_write_reg(i2c, S2MU004_REG_PLUG_CTRL_SET_RP, S2MU004_THRESHOLD_2057MV);
+	msleep(20);
+
+	s2mu004_usbpd_read_reg(i2c, S2MU004_REG_PLUG_CTRL_RpRd, &val);
+	val &= ~S2MU004_REG_PLUG_CTRL_FSM_MANUAL_EN;
+	s2mu004_usbpd_write_reg(i2c, S2MU004_REG_PLUG_CTRL_RpRd, val);
+
+	s2mu004_usbpd_read_reg(i2c, S2MU004_REG_PLUG_CTRL_CC12, &val);
+	val &= ~S2MU004_REG_PLUG_CTRL_FSM_MANUAL_INPUT_MASK;
+	s2mu004_usbpd_write_reg(i2c, S2MU004_REG_PLUG_CTRL_CC12, val);
+
+	s2mu004_usbpd_read_reg(i2c, S2MU004_REG_PLUG_MON2, &val);
+	if ((val & S2MU004_PR_MASK) == S2MU004_PDIC_SINK)
+		dev_err(dev, "%s, cc Rp check success (%x)\n", __func__, val);
+	else  {
+		pdic_data->status_reg |= PLUG_ATTACH;
+		pdic_data->status_reg |= PLUG_DETACH;
+	}
+
+	mutex_unlock(&pdic_data->_mutex);
+}
+#endif
 static void s2mu004_vbus_short_check(struct s2mu004_usbpd_data *pdic_data)
 {
 	struct i2c_client *i2c = pdic_data->i2c;
@@ -2081,7 +2162,8 @@ static void s2mu004_usbpd_notify_detach(struct s2mu004_usbpd_data *pdic_data)
 	ccic_event_work(pdic_data, CCIC_NOTIFY_DEV_MUIC, CCIC_NOTIFY_ID_RID,
 							REG_RID_OPEN/*rid*/, 0);
 	if (pdic_data->is_host > HOST_OFF || pdic_data->is_client > CLIENT_OFF) {
-		if (pdic_data->is_host > HOST_OFF) {
+		if (pdic_data->is_host > HOST_OFF ||
+					pdic_data->power_role_dual == DUAL_ROLE_PROP_PR_SRC) {
 			vbus_turn_on_ctrl(pdic_data, VBUS_OFF);
 			muic_disable_otg_detect();
 			usbpd_manager_acc_detach(dev);
@@ -2208,9 +2290,6 @@ static int s2mu004_check_port_detect(struct s2mu004_usbpd_data *pdic_data)
 						1/*attach*/, USB_STATUS_NOTIFY_ATTACH_UFP/*drp*/);
 			}
 		}
-#endif
-#if defined(CONFIG_USB_ANDROID_SAMSUNG_CCR_PROTOCOL)
-		msleep(250);
 #endif
 		s2mu004_vbus_short_check(pdic_data);
 	} else if ((data & S2MU004_PR_MASK) == S2MU004_PDIC_SOURCE) {
@@ -2789,6 +2868,9 @@ static usbpd_phy_ops_type s2mu004_ops = {
 	.set_otg_control	= s2mu004_set_otg_control,
 	.get_vbus_short_check	= s2mu004_get_vbus_short_check,
 	.set_cc_control		= s2mu004_set_cc_control,
+#if defined(CONFIG_USB_ANDROID_SAMSUNG_CCR_PROTOCOL)
+	.rp_check		= s2mu004_rp_check,
+#endif
 };
 
 #if defined CONFIG_PM

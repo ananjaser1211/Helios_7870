@@ -218,7 +218,9 @@ static void muic_handle_attach(muic_data_t *pmuic,
 	case ATTACHED_DEV_UNDEFINED_RANGE_MUIC:
 		break;
 	case ATTACHED_DEV_CHARGING_POGO_VB_MUIC:
+#ifdef CONFIG_MUIC_POGO
 		muic_mux_sel_control(pmuic, NORMAL_USB_PATH);
+#endif
 		break;
 
 	default:
@@ -298,8 +300,10 @@ static void muic_handle_attach(muic_data_t *pmuic,
 		pmuic->attached_dev = new_dev;
 		break;
 	case ATTACHED_DEV_CHARGING_POGO_VB_MUIC:
+#ifdef CONFIG_MUIC_POGO
 		muic_mux_sel_control(pmuic, POGO_USB_PATH);
 		pmuic->attached_dev = new_dev;
+#endif
 		break;
 	default:
 		pr_warn("%s:%s unsupported dev=%d, adc=0x%x, vbus=%c\n",
@@ -399,9 +403,11 @@ static void muic_handle_detach(muic_data_t *pmuic)
 		pmuic->attached_dev = ATTACHED_DEV_NONE_MUIC;
 		break;
 	case ATTACHED_DEV_CHARGING_POGO_VB_MUIC:
+#ifdef CONFIG_MUIC_POGO
 		pr_info("%s:%s CHARGING POGO DOCK\n", MUIC_DEV_NAME, __func__);
 		muic_mux_sel_control(pmuic, NORMAL_USB_PATH);
 		pmuic->attached_dev = ATTACHED_DEV_NONE_MUIC;
+#endif
 		break;
 	default:
 		pmuic->is_afc_device = 0;

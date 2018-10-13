@@ -440,7 +440,14 @@ policy_state usbpd_policy_snk_wait_for_capabilities(struct policy_data *policy)
 	if (pd_data->counter.hard_reset_counter <= USBPD_nHardResetCount)
 		return PE_SNK_Hard_Reset;
 	else
+#if defined(CONFIG_USB_ANDROID_SAMSUNG_CCR_PROTOCOL)
+	{
+		pd_data->phy_ops.rp_check(pd_data);
+#endif
 		return Error_Recovery;
+#if defined(CONFIG_USB_ANDROID_SAMSUNG_CCR_PROTOCOL)
+	}
+#endif
 #endif
 	return PE_SNK_Wait_for_Capabilities;
 }

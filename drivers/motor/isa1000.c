@@ -80,13 +80,14 @@ static void isa1000_enable(struct timed_output_dev *dev, int value)
 	unsigned long flags;
 	cancel_work_sync(&ddata->work);
 	hrtimer_cancel(timer);
-	schedule_work(&ddata->work);
 
 	if (value > ddata->pdata->max_timeout)
 		value = ddata->pdata->max_timeout;
 	spin_lock_irqsave(&ddata->lock, flags);
 	ddata->timeout = value;
 	spin_unlock_irqrestore(&ddata->lock, flags);
+
+	schedule_work(&ddata->work);
 }
 
 static void isa1000_pwm_config(struct isa1000_ddata *ddata, int duty)

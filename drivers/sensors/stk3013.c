@@ -1146,7 +1146,7 @@ static DEVICE_ATTR(prox_offset_pass, S_IRUGO, proximity_calibration_pass_show,
 #endif
 static DEVICE_ATTR(prox_avg, S_IRUGO | S_IWUSR | S_IWGRP,
 	proximity_avg_show, proximity_avg_store);
-static DEVICE_ATTR(prox_trim, S_IRUSR | S_IRGRP,
+static DEVICE_ATTR(prox_trim, S_IRUGO,
 	proximity_trim_show, NULL);
 static DEVICE_ATTR(thresh_high, S_IRUGO | S_IWUSR | S_IWGRP,
 	proximity_thresh_high_show, proximity_thresh_high_store);
@@ -1154,8 +1154,8 @@ static DEVICE_ATTR(thresh_low, S_IRUGO | S_IWUSR | S_IWGRP,
 	proximity_thresh_low_show, proximity_thresh_low_store);
 static DEVICE_ATTR(state, S_IRUGO, proximity_state_show, NULL);
 static DEVICE_ATTR(raw_data, S_IRUGO, proximity_state_show, NULL);
-static DEVICE_ATTR(vendor, S_IRUSR | S_IRGRP, stk3013_vendor_show, NULL);
-static DEVICE_ATTR(name, S_IRUSR | S_IRGRP, stk3013_name_show, NULL);
+static DEVICE_ATTR(vendor, S_IRUGO, stk3013_vendor_show, NULL);
+static DEVICE_ATTR(name, S_IRUGO, stk3013_name_show, NULL);
 
 static struct device_attribute *prox_sensor_attrs[] = {
 #ifdef PROXIMITY_CALIBRATION

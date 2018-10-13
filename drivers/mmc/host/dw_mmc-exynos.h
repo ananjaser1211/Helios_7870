@@ -15,7 +15,7 @@
 
 #define NUM_PINS(x)			(x + 2)
 
-#define MAX_TUNING_RETRIES	6
+#define MAX_TUNING_RETRIES	7
 #define MAX_TUNING_LOOP		(MAX_TUNING_RETRIES * 8 * 2)
 
 

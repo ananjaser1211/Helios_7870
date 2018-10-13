@@ -40,7 +40,11 @@
 #define TFA98XX_FLAG_LP_MODES	        (1 << 9)
 #define TFA98XX_FLAG_TDM_DEVICE         (1 << 10)
 
+#if defined(TFA_NO_SND_FORMAT_CHECK)
+#define TFA98XX_NUM_RATES		14
+#else
 #define TFA98XX_NUM_RATES		9
+#endif
 
 /* DSP init status */
 enum tfa98xx_dsp_init_state {

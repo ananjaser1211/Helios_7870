@@ -26,6 +26,9 @@ struct ice40_iris_platform_data {
 	int cresetb;
 	int rst_n;
 	int cdone;
+#if defined(CONFIG_LEDS_ICE40XX_POWER_CONTROL)
+	int gpio_iris_1p2_en;
+#endif
 #ifdef CONFIG_LEDS_IRIS_IRLED_SUPPORT
 	int led_tz;
 #endif

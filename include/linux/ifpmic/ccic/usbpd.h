@@ -316,6 +316,9 @@ typedef struct usbpd_phy_ops {
 	int    (*set_otg_control)(void *, int);
 	void    (*get_vbus_short_check)(void *, bool *);
 	int    (*set_cc_control)(void *, int);
+#if defined(CONFIG_USB_ANDROID_SAMSUNG_CCR_PROTOCOL)
+	void    (*rp_check)(void *);
+#endif
 } usbpd_phy_ops_type;
 
 struct policy_data {
