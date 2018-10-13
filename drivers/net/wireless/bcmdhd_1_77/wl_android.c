@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wl_android.c 748342 2018-02-22 12:02:50Z $
+ * $Id: wl_android.c 755150 2018-04-02 08:14:47Z $
  */
 
 #include <linux/module.h>
@@ -369,18 +369,6 @@ typedef struct android_wifi_af_params {
 #define MIRACAST_MODE_OFF	0
 #define MIRACAST_MODE_SOURCE	1
 #define MIRACAST_MODE_SINK	2
-
-#ifndef MIRACAST_AMPDU_SIZE
-#define MIRACAST_AMPDU_SIZE	8
-#endif
-
-#ifndef MIRACAST_MCHAN_ALGO
-#define MIRACAST_MCHAN_ALGO     1
-#endif
-
-#ifndef MIRACAST_MCHAN_BW
-#define MIRACAST_MCHAN_BW       25
-#endif
 
 #ifdef CONNECTION_STATISTICS
 #define CMD_GET_CONNECTION_STATS	"GET_CONNECTION_STATS"
@@ -4669,6 +4657,7 @@ wl_android_set_miracast(struct net_device *dev, char *command, int total_len)
 
 	switch (mode) {
 	case MIRACAST_MODE_SOURCE:
+#ifdef MIRACAST_MCHAN_ALGO
 		/* setting mchan_algo to platform specific value */
 		config.iovar = "mchan_algo";
 
@@ -4685,7 +4674,9 @@ wl_android_set_miracast(struct net_device *dev, char *command, int total_len)
 		if (ret) {
 			goto resume;
 		}
+#endif /* MIRACAST_MCHAN_ALGO */
 
+#ifdef MIRACAST_MCHAN_BW
 		/* setting mchan_bw to platform specific value */
 		config.iovar = "mchan_bw";
 		config.param = MIRACAST_MCHAN_BW;
@@ -4693,7 +4684,9 @@ wl_android_set_miracast(struct net_device *dev, char *command, int total_len)
 		if (ret) {
 			goto resume;
 		}
+#endif /* MIRACAST_MCHAN_BW */
 
+#ifdef MIRACAST_AMPDU_SIZE
 		/* setting apmdu to platform specific value */
 		config.iovar = "ampdu_mpdu";
 		config.param = MIRACAST_AMPDU_SIZE;
@@ -4701,6 +4694,7 @@ wl_android_set_miracast(struct net_device *dev, char *command, int total_len)
 		if (ret) {
 			goto resume;
 		}
+#endif /* MIRACAST_AMPDU_SIZE */
 		/* FALLTROUGH */
 		/* Source mode shares most configurations with sink mode.
 		 * Fall through here to avoid code duplication
@@ -5928,6 +5922,7 @@ wl_android_set_adps_mode(struct net_device *dev, const char* string_num)
 #endif	/* DHD_PM_CONTROL_FROM_FILE */
 
 	adps_mode = bcm_atoi(string_num);
+	WL_ERR(("%s: SET_ADPS %d\n", __FUNCTION__, adps_mode));
 
 	if ((adps_mode < 0) && (1 < adps_mode)) {
 		WL_ERR(("%s: Invalid value %d.\n", __FUNCTION__, adps_mode));
@@ -5958,7 +5953,7 @@ wl_android_get_adps_mode(
 
 	memset(&iov_buf, 0, sizeof(iov_buf));
 
-	len = OFFSETOF(bcm_iov_buf_t, data) + sizeof(*data);
+	len = OFFSETOF(bcm_iov_buf_t, data) + sizeof(band);
 
 	iov_buf.version = WL_ADPS_IOV_VER;
 	iov_buf.len = sizeof(band);
@@ -6613,17 +6608,15 @@ wl_handle_private_cmd(struct net_device *net, char *command, u32 cmd_len)
 		int revinfo = -1;
 		struct wireless_dev *wdev = ndev_to_wdev(net);
 		struct wiphy *wiphy = wdev->wiphy;
-#if defined(DHD_BLOB_EXISTENCE_CHECK) && !defined(DHD_USE_CLMINFO_PARSER)
 		dhd_pub_t *dhdp = wl_cfg80211_get_dhdp(net);
 
-		if (dhdp->is_blob) {
+		BCM_REFERENCE(dhdp);
+		if (CHECK_IS_BLOB(dhdp) && !CHECK_IS_MULT_REGREV(dhdp)) {
 			revinfo = 0;
-		} else
-#endif /* DHD_BLOB_EXISTENCE_CHECK && !DHD_USE_CLMINFO_PARSER */
-		if ((rev_info_delim) &&
-			(strnicmp(rev_info_delim, CMD_COUNTRY_DELIMITER,
-			strlen(CMD_COUNTRY_DELIMITER)) == 0) &&
-			(rev_info_delim + 1)) {
+		} else if ((rev_info_delim) &&
+				(strnicmp(rev_info_delim, CMD_COUNTRY_DELIMITER,
+				strlen(CMD_COUNTRY_DELIMITER)) == 0) &&
+				(rev_info_delim + 1)) {
 			revinfo  = bcm_atoi(rev_info_delim + 1);
 		}
 

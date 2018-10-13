@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_common.c 745499 2018-02-08 11:54:35Z $
+ * $Id: dhd_common.c 755077 2018-03-30 12:47:05Z $
  */
 #include <typedefs.h>
 #include <osl.h>
@@ -103,6 +103,10 @@
 #if defined(BCMEMBEDIMAGE) && defined(DHD_EFI)
 #include <nvram_4364.h>
 #endif
+
+#ifdef DHD_SSSR_DUMP
+#include <bcmdevs.h>
+#endif /* DHD_SSSR_DUMP */
 
 
 extern int is_wlc_event_frame(void *pktdata, uint pktlen, uint16 exp_usr_subtype,
@@ -427,6 +431,7 @@ dhd_query_bus_erros(dhd_pub_t *dhdp)
 int
 dhd_sssr_mempool_init(dhd_pub_t *dhd)
 {
+	DHD_TRACE(("%s: ENTER\n", __FUNCTION__));
 	dhd->sssr_mempool = (uint8 *) MALLOCZ(dhd->osh, DHD_SSSR_MEMPOOL_SIZE);
 	if (dhd->sssr_mempool == NULL) {
 		DHD_ERROR(("%s: MALLOC of sssr_mempool failed\n",
@@ -439,29 +444,159 @@ dhd_sssr_mempool_init(dhd_pub_t *dhd)
 void
 dhd_sssr_mempool_deinit(dhd_pub_t *dhd)
 {
+	DHD_TRACE(("%s: ENTER\n", __FUNCTION__));
 	if (dhd->sssr_mempool) {
 		MFREE(dhd->osh, dhd->sssr_mempool, DHD_SSSR_MEMPOOL_SIZE);
 		dhd->sssr_mempool = NULL;
 	}
 }
 
+void
+dhd_dump_sssr_reg_info(dhd_pub_t *dhd)
+{
+	int i;
+
+	DHD_ERROR(("PMU regs\n"));
+	DHD_ERROR(("pmuintmask0=0x%x pmuintmask1=0x%x resreqtimer=0x%x "
+		"macresreqtimer=0x%x macresreqtimer1=0x%x\n",
+		dhd->sssr_reg_info.pmu_regs.base_regs.pmuintmask0,
+		dhd->sssr_reg_info.pmu_regs.base_regs.pmuintmask1,
+		dhd->sssr_reg_info.pmu_regs.base_regs.resreqtimer,
+		dhd->sssr_reg_info.pmu_regs.base_regs.macresreqtimer,
+		dhd->sssr_reg_info.pmu_regs.base_regs.macresreqtimer1));
+	DHD_ERROR(("chipcommon_regs\n"));
+	DHD_ERROR(("intmask=0x%x powerctrl=0x%x clockcontrolstatus=0x%x "
+		"powerctrl_mask=0x%x\n",
+		dhd->sssr_reg_info.chipcommon_regs.base_regs.intmask,
+		dhd->sssr_reg_info.chipcommon_regs.base_regs.powerctrl,
+		dhd->sssr_reg_info.chipcommon_regs.base_regs.clockcontrolstatus,
+		dhd->sssr_reg_info.chipcommon_regs.base_regs.powerctrl_mask));
+	DHD_ERROR(("ARM regs\n"));
+	DHD_ERROR(("clockcontrolstatus=0x%x clockcontrolstatus_val=0x%x"
+		" resetctrl=0x%x itopoobb=0x%x\n",
+		dhd->sssr_reg_info.arm_regs.base_regs.clockcontrolstatus,
+		dhd->sssr_reg_info.arm_regs.base_regs.clockcontrolstatus_val,
+		dhd->sssr_reg_info.arm_regs.wrapper_regs.resetctrl,
+		dhd->sssr_reg_info.arm_regs.wrapper_regs.itopoobb));
+	DHD_ERROR(("PCIe regs\n"));
+	DHD_ERROR(("ltrstate=0x%x clockcontrolstatus=0x%x"
+		" clockcontrolstatus_val=0x%x itopoobb=0x%x\n",
+		dhd->sssr_reg_info.pcie_regs.base_regs.ltrstate,
+		dhd->sssr_reg_info.pcie_regs.base_regs.clockcontrolstatus,
+		dhd->sssr_reg_info.pcie_regs.base_regs.clockcontrolstatus_val,
+		dhd->sssr_reg_info.pcie_regs.wrapper_regs.itopoobb));
+	DHD_ERROR(("VASIP regs\n"));
+	DHD_ERROR(("ioctrl=0x%x vasip_sr_addr=0x%x vasip_sr_size=0x%x\n",
+		dhd->sssr_reg_info.vasip_regs.wrapper_regs.ioctrl,
+		dhd->sssr_reg_info.vasip_regs.vasip_sr_addr,
+		dhd->sssr_reg_info.vasip_regs.vasip_sr_size));
+
+	for (i = 0; i < MAX_NUM_D11CORES; i++) {
+		DHD_ERROR(("MAC[%d] regs\n", i));
+		DHD_ERROR(("xmtaddress=0x%x xmtdata=0x%x clockcontrolstatus=0x%x"
+			" clockcontrolstatus_val=0x%x\n",
+			dhd->sssr_reg_info.mac_regs[i].base_regs.xmtaddress,
+			dhd->sssr_reg_info.mac_regs[i].base_regs.xmtdata,
+			dhd->sssr_reg_info.mac_regs[i].base_regs.clockcontrolstatus,
+			dhd->sssr_reg_info.mac_regs[i].base_regs.clockcontrolstatus_val));
+		DHD_ERROR(("resetctrl=0x%x itopoobb=0x%x ioctrl=0x%x "
+			"ioctrl_resetseq_val=0x%x 0x%x 0x%x 0x%x 0x%x\n",
+			dhd->sssr_reg_info.mac_regs[i].wrapper_regs.resetctrl,
+			dhd->sssr_reg_info.mac_regs[i].wrapper_regs.itopoobb,
+			dhd->sssr_reg_info.mac_regs[i].wrapper_regs.ioctrl,
+			dhd->sssr_reg_info.mac_regs[i].wrapper_regs.ioctrl_resetseq_val[0],
+			dhd->sssr_reg_info.mac_regs[i].wrapper_regs.ioctrl_resetseq_val[1],
+			dhd->sssr_reg_info.mac_regs[i].wrapper_regs.ioctrl_resetseq_val[2],
+			dhd->sssr_reg_info.mac_regs[i].wrapper_regs.ioctrl_resetseq_val[3],
+			dhd->sssr_reg_info.mac_regs[i].wrapper_regs.ioctrl_resetseq_val[4]));
+		DHD_ERROR(("SR size=0x%x\n", dhd->sssr_reg_info.mac_regs[i].sr_size));
+	}
+
+	prhex("reginfo", (char *)&dhd->sssr_reg_info, sizeof(dhd->sssr_reg_info));
+}
+
+int
+dhd_get_sssr_reg_info_bcm4359(dhd_pub_t *dhd)
+{
+	dhd->sssr_reg_info.version = SSSR_REG_INFO_VER;
+	dhd->sssr_reg_info.length = sizeof(sssr_reg_info_t);
+
+	/* PMU regs */
+	dhd->sssr_reg_info.pmu_regs.base_regs.pmuintmask0 = 0x18000700;
+	dhd->sssr_reg_info.pmu_regs.base_regs.pmuintmask1 = 0x18000704;
+	dhd->sssr_reg_info.pmu_regs.base_regs.resreqtimer = 0x18000644;
+	dhd->sssr_reg_info.pmu_regs.base_regs.macresreqtimer = 0x18000688;
+	dhd->sssr_reg_info.pmu_regs.base_regs.macresreqtimer1 = 0x180006f0;
+
+	/* chipcommon regs */
+	dhd->sssr_reg_info.chipcommon_regs.base_regs.intmask = 0x18000024;
+	dhd->sssr_reg_info.chipcommon_regs.base_regs.powerctrl = 0x180001e8;
+	dhd->sssr_reg_info.chipcommon_regs.base_regs.clockcontrolstatus = 0x180001e0;
+	dhd->sssr_reg_info.chipcommon_regs.base_regs.powerctrl_mask = 0xf00;
+
+	/* ARM regs */
+	dhd->sssr_reg_info.arm_regs.base_regs.clockcontrolstatus = 0x180021e0;
+	dhd->sssr_reg_info.arm_regs.base_regs.clockcontrolstatus_val = 0x20;
+	dhd->sssr_reg_info.arm_regs.wrapper_regs.resetctrl = 0x18102800;
+	dhd->sssr_reg_info.arm_regs.wrapper_regs.itopoobb = 0x18102f34;
+
+	/* PCIe regs */
+	dhd->sssr_reg_info.pcie_regs.base_regs.ltrstate = 0x180031a0;
+	dhd->sssr_reg_info.pcie_regs.base_regs.clockcontrolstatus = 0x180031e0;
+	dhd->sssr_reg_info.pcie_regs.base_regs.clockcontrolstatus_val = 0x0;
+	dhd->sssr_reg_info.pcie_regs.wrapper_regs.itopoobb = 0x18103f34;
+
+	/* MAC regs */
+	dhd->sssr_reg_info.mac_regs[0].base_regs.xmtdata = 0x18001134;
+	dhd->sssr_reg_info.mac_regs[0].base_regs.xmtaddress = 0x18001130;
+	dhd->sssr_reg_info.mac_regs[0].base_regs.clockcontrolstatus = 0x180011e0;
+	dhd->sssr_reg_info.mac_regs[0].base_regs.clockcontrolstatus_val = 0x20;
+	dhd->sssr_reg_info.mac_regs[0].wrapper_regs.resetctrl = 0x18101800;
+	dhd->sssr_reg_info.mac_regs[0].wrapper_regs.itopoobb = 0x18101f34;
+	dhd->sssr_reg_info.mac_regs[0].wrapper_regs.ioctrl = 0x18101408;
+	dhd->sssr_reg_info.mac_regs[0].wrapper_regs.ioctrl_resetseq_val[0] = 0xc7;
+	dhd->sssr_reg_info.mac_regs[0].wrapper_regs.ioctrl_resetseq_val[1] = 0x15f;
+	dhd->sssr_reg_info.mac_regs[0].wrapper_regs.ioctrl_resetseq_val[2] = 0x151;
+	dhd->sssr_reg_info.mac_regs[0].wrapper_regs.ioctrl_resetseq_val[3] = 0x155;
+	dhd->sssr_reg_info.mac_regs[0].wrapper_regs.ioctrl_resetseq_val[4] = 0xc5;
+	dhd->sssr_reg_info.mac_regs[0].sr_size = 0x40000;
+
+	return BCME_OK;
+}
+
 int
 dhd_get_sssr_reg_info(dhd_pub_t *dhd)
 {
 	int ret = BCME_ERROR;
+	uint16 chipid, chiprev;
 
 	DHD_ERROR(("%s: get sssr_reg_info\n", __FUNCTION__));
+
+	chipid = dhd_get_chipid(dhd);
+	chiprev = dhd_bus_chiprev_id(dhd);
+
 	/* get sssr_reg_info from firmware */
 	memset((void *)&dhd->sssr_reg_info, 0, sizeof(dhd->sssr_reg_info));
-	if (bcm_mkiovar("sssr_reg_info", 0, 0, (char *)&dhd->sssr_reg_info,
-		sizeof(dhd->sssr_reg_info))) {
-		if ((ret = dhd_wl_ioctl_cmd(dhd, WLC_GET_VAR, &dhd->sssr_reg_info,
-			sizeof(dhd->sssr_reg_info), FALSE, 0)) < 0) {
-			DHD_ERROR(("%s: dhd_wl_ioctl_cmd failed (error=%d)\n", __FUNCTION__, ret));
-		}
+
+	if ((chipid == BCM4355_CHIP_ID || chipid == BCM4359_CHIP_ID) &&
+		chiprev == 9) {
+		/* Get SSSR reg info with alternative way for 4359C0/43596A0 */
+		ret = dhd_get_sssr_reg_info_bcm4359(dhd);
 	} else {
+		if (bcm_mkiovar("sssr_reg_info", 0, 0, (char *)&dhd->sssr_reg_info,
+			sizeof(dhd->sssr_reg_info))) {
+			if ((ret = dhd_wl_ioctl_cmd(dhd, WLC_GET_VAR, &dhd->sssr_reg_info,
+				sizeof(dhd->sssr_reg_info), FALSE, 0)) < 0) {
+				DHD_ERROR(("%s: dhd_wl_ioctl_cmd failed (error=%d)\n",
+					__FUNCTION__, ret));
+			}
+		} else {
 			DHD_ERROR(("%s: bcm_mkiovar failed\n", __FUNCTION__));
+		}
 	}
+
+	/* Dump the information */
+	dhd_dump_sssr_reg_info(dhd);
 
 	return ret;
 }
@@ -544,6 +679,8 @@ dhd_sssr_dump_init(dhd_pub_t *dhd)
 
 			dhd->sssr_d11_after[i] = (uint32 *)(dhd->sssr_mempool + mempool_used);
 			mempool_used += dhd->sssr_reg_info.mac_regs[i].sr_size;
+		} else {
+			DHD_ERROR(("%s: SR size for core[%d] is 0\n", __FUNCTION__, i));
 		}
 	}
 
@@ -558,7 +695,6 @@ dhd_sssr_dump_init(dhd_pub_t *dhd)
 	dhd->sssr_inited = TRUE;
 
 	return BCME_OK;
-
 }
 
 void
@@ -892,8 +1028,14 @@ dhd_wl_ioctl(dhd_pub_t *dhd_pub, int ifidx, wl_ioctl_t *ioc, void *buf, int len)
 				ioc->cmd, msg, lval, ioc->len, ioc->set));
 		} else {
 			slen = ioc->len;
-			if (buf != NULL) {
-				val = *(int*)buf;
+			if (buf != NULL && slen != 0) {
+				if (slen >= 4) {
+					val = *(int*)buf;
+				} else if (slen >= 2) {
+					val = *(short*)buf;
+				} else {
+					val = *(char*)buf;
+				}
 				/* Do not dump for WLC_GET_MAGIC and WLC_GET_VERSION */
 				if (ioc->cmd != WLC_GET_MAGIC && ioc->cmd != WLC_GET_VERSION)
 					DHD_ERROR_MEM(("WLC_IOCTL: cmd: %d, val: %d, len: %d, "
@@ -5049,8 +5191,11 @@ dhd_get_clminfo(dhd_pub_t *dhd, char *clm_path)
 	if (dhd_get_download_buffer(dhd, clminfo_path, CLMINFO, &memblock, &len) != 0) {
 		DHD_ERROR(("%s: Cannot open .clminfo file\n", __FUNCTION__));
 		bcmerror = BCME_ERROR;
+		dhd->is_clm_mult_regrev = FALSE;
 		goto out;
 	}
+
+	dhd->is_clm_mult_regrev = TRUE;
 
 	if ((len > 0) && (len < MAX_CLMINFO_BUF_SIZE) && memblock) {
 		/* Found clminfo file. Parsing the file */

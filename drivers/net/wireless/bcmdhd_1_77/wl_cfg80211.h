@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wl_cfg80211.h 747646 2018-02-19 07:40:33Z $
+ * $Id: wl_cfg80211.h 755941 2018-04-05 12:14:54Z $
  */
 
 /**
@@ -1808,6 +1808,7 @@ int wl_cfg80211_iface_count(struct net_device *dev);
 struct net_device* wl_get_ap_netdev(struct bcm_cfg80211 *cfg, char *ifname);
 struct net_device* wl_get_netdev_by_name(struct bcm_cfg80211 *cfg, char *ifname);
 int wl_cfg80211_get_vndr_ouilist(struct bcm_cfg80211 *cfg, uint8 *buf, int max_cnt);
+void wl_cfg80211_disassoc(struct net_device *ndev);
 #ifdef SUPPORT_SET_CAC
 extern int wl_cfg80211_enable_cac(struct net_device *dev, int enable);
 #endif /* SUPPORT_SET_CAC */

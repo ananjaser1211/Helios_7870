@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_pcie.c 747655 2018-02-19 08:09:31Z $
+ * $Id: dhd_pcie.c 755077 2018-03-30 12:47:05Z $
  */
 
 
@@ -1911,6 +1911,10 @@ static int concate_revision_bcm4359(dhd_bus_t *bus, char *fw_path, char *nv_path
 #if defined(CONFIG_WLAN_GRACE) || defined(CONFIG_SEC_GRACEQLTE_PROJECT)
 		DHD_ERROR(("----- Adding _plus string -----\n"));
 		strncat(chipver_tag, "_plus", strlen("_plus"));
+#if defined(SUPPORT_MULTIPLE_MODULE_CIS) && defined(USE_CID_CHECK) && \
+	defined(SUPPORT_BCM4359_MIXED_MODULES)
+		strncat(chipver_tag_nv, "_plus", strlen("_plus"));
+#endif /* SUPPORT_MULTIPLE_MODULE_CIS && USE_CID_CHECK && SUPPORT_BCM4359_MIXED_MODULES */
 #endif /* CONFIG_WLAN_GRACE || CONFIG_SEC_GRACEQLTE_PROJECT */
 	} else {
 		DHD_ERROR(("----- Unknown chip version, ver=%x -----\n", chip_ver));
@@ -8758,6 +8762,11 @@ dhdpcie_d11_check_outofreset(dhd_pub_t *dhd)
 	for (i = 0; i < MAX_NUM_D11CORES; i++) {
 		/* Check if bit 0 of resetctrl is cleared */
 		addr = dhd->sssr_reg_info.mac_regs[i].wrapper_regs.resetctrl;
+		if (!addr) {
+			/* ignore invalid address */
+			dhd->sssr_d11_outofreset[i] = FALSE;
+			continue;
+		}
 		dhd_sbreg_op(dhd, addr, &val, TRUE);
 		if (!(val & 1)) {
 			dhd->sssr_d11_outofreset[i] = TRUE;

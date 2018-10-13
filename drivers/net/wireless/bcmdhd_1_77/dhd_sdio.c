@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_sdio.c 739313 2018-01-08 04:36:56Z $
+ * $Id: dhd_sdio.c 749762 2018-03-02 01:20:46Z $
  */
 
 #include <typedefs.h>
@@ -2805,7 +2805,7 @@ dhd_bus_txctl(struct dhd_bus *bus, uchar *msg, uint msglen)
 			}
 #ifdef DHD_FW_COREDUMP
 			/* Collect socram dump */
-			if ((bus->dhd->memdump_enabled) && 
+			if ((bus->dhd->memdump_enabled) &&
 				(bus->dhd->txcnt_timeout >= MAX_CNTL_TX_TIMEOUT)) {
 				/* collect core dump */
 				bus->dhd->memdump_type = DUMP_TYPE_RESUMED_ON_TIMEOUT_TX;

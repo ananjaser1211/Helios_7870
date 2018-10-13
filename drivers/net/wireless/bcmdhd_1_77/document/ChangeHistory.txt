@@ -1,5 +1,42 @@
-BCM4361 DHD 1.77.64 for Android Great/Dream/Hero & BCM4345X & BCM4343X Project
+BCM4361 DHD 1.77.69 for Android Great/Dream/Hero & BCM4345X & BCM4343X Project
 (Notes: 1.77.x is twigged off from 1.579.235.9)
+
+DHD 1.77.69 - 2018.04.13
+Security Patch
+ - CS4511968(By Hogil Kwak) Fixed out of bound read of GET_ADPS private command reported by KASAN
+ - CS4789072(By Kim Gwang Min) Fixed out of bounds read access issues
+
+Others
+ - CS4045271(By Hogil Kwak) Added SET_ADPS log message
+ - CS4725359(By Junsu Choi) Disabled android PNO feature
+ - CS4757515(By Jeong Min Cheol) Disabled CAC at initial state on BCM4359 device
+ - CS4779893(By Anh Tran Tuan) Fixed to get proper link statistic value on VTS test
+ - CS4789317(By Van Son Nguyen) Fixed HANG recovery issue due to reason code
+ - CS4807325(By Min SungBin) Replaced country code to XZ ccode if ccode is an undefined country
+ - CS4807862(By Van Son Nguyen) TPUT enhancement and dongle dump enable for J6 project
+ - CS4842583(By Seo Jung Kuk Seo) Fixed SoftAP turn on failure due to invalid channel configuration
+ - Supported SSSR dump for BCM4359C0 project
+
+
+DHD 1.77.67 - 2018.03.23
+New Feature
+ - CS4714586(By kwon Jaecheol) Increased the number of maximum STA association to 10 in case of STA/SoftAP concurrent mode
+
+Others
+ - CS4688655(By Lee SoonHo) Added to disable vhtmode after set country code
+ - CS4696802(By Ahn Byunghun) Added UDP port 137 packet filter for Tizen
+ - CS4713830(By Choi Jongmin) Added to execute memdump when performing private command 'DEBUG_DUMP' on SDIO bus interface
+
+
+DHD 1.77.65 - 2018.03.16
+Others
+ - CS4384009(By bang haejung) Fixed wrong configurations at MIRACAST
+ - CS4456720(By Cho Seong Ji) Added MAX_CNTL_TX_TIMEOUT in memdump condition if TX control timeout
+ - CS4539141(By Cho Seong Ji) Added additional string ('_plus') at nvram file name for 4359C0 (B90S module/GraceR projects)
+ - CS4596042(By Kwak Hogil) Changed EXCESS_PM_WAKE_EVENT interval time on suspend mode
+ - CS4611122(By Kim Gwang Min) CS4617024(By Cho Seong Ji) Added CLM multiple/single regrev blob checking logic
+ - CS4678265(By Anh Tran Tuan) Fixed Single Nvram define on BCM4343X for Android O-OS
+
 
 DHD 1.77.64 - 2018.03.05
 New Feature

@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wl_cfg80211.c 748344 2018-02-22 12:13:56Z $
+ * $Id: wl_cfg80211.c 755941 2018-04-05 12:14:54Z $
  */
 /* */
 #include <typedefs.h>
@@ -8312,14 +8312,7 @@ wl_cfg80211_set_channel(struct wiphy *wiphy, struct net_device *dev,
 
 		/* Check if current channel is restricted */
 		if (wl_cfg80211_check_indoor_channels(prmry_ndev, _chan)) {
-			scb_val_t scbval;
-
-			bzero(&scbval, sizeof(scb_val_t));
-			err = wldev_ioctl_set(prmry_ndev, WLC_DISASSOC, &scbval,
-				sizeof(scb_val_t));
-			if (err < 0) {
-				WL_ERR(("Failed to disassoc, err=%d\n", err));
-			}
+			wl_cfg80211_disassoc(prmry_ndev);
 			WL_ERR(("Force to disconnect existing AP as "
 				"channel %d is indoor channel\n", _chan));
 
@@ -12391,6 +12384,19 @@ s32 wl_cfg80211_get_bss_info(struct net_device *dev, char* cmd, int total_len)
 
 #endif /* DHD_ENABLE_BIGDATA_LOGGING */
 
+void wl_cfg80211_disassoc(struct net_device *ndev)
+{
+	scb_val_t scbval;
+	s32 err;
+
+	memset(&scbval, 0x0, sizeof(scb_val_t));
+	scbval.val = htod32(WLAN_REASON_DEAUTH_LEAVING);
+	err = wldev_ioctl_set(ndev, WLC_DISASSOC, &scbval, sizeof(scb_val_t));
+	if (err < 0) {
+		WL_ERR(("WLC_DISASSOC error %d\n", err));
+	}
+}
+
 #ifdef DHD_PM_CONTROL_FROM_FILE
 extern bool g_pm_control;
 #endif /* DHD_PM_CONTROL_FROM_FILE */
@@ -12966,7 +12972,7 @@ wl_notify_roaming_status(struct bcm_cfg80211 *cfg, bcm_struct_cfgdev *cfgdev,
 
 #ifdef CUSTOM_EVENT_PM_WAKE
 uint32 last_dpm_upd_time = 0;	/* ms */
-#define DPM_UPD_LMT_TIME	25000	/* ms */
+#define DPM_UPD_LMT_TIME	(CUSTOM_EVENT_PM_WAKE + 5000) * 4	/* ms */
 #define DPM_UPD_LMT_RSSI	-85	/* dbm */
 
 static s32
@@ -22684,6 +22690,7 @@ wl_cfg80211_set_indoor_channels(struct net_device *ndev, char *command, int tota
 {
 	uint i = 0, j = 0;
 	struct bcm_cfg80211 *cfg = wl_get_cfg(ndev);
+	struct net_device *prmry_ndev = bcmcfg_to_prmry_ndev(cfg);
 	dhd_pub_t *dhdp = (dhd_pub_t *)(cfg->pub);
 	wl_block_ch_t *block_ch = NULL;
 	int block_ch_len = 0;
@@ -22759,7 +22766,6 @@ wl_cfg80211_set_indoor_channels(struct net_device *ndev, char *command, int tota
 		err = BCME_NOMEM;
 		goto exit;
 	}
-	memset(block_ch, 0, block_ch_len);
 
 	block_ch->version = WL_BLOCK_CHANNEL_VER_1;
 	block_ch->len = block_ch_len;
@@ -22793,6 +22799,11 @@ wl_cfg80211_set_indoor_channels(struct net_device *ndev, char *command, int tota
 			}
 			block_ch->channel[i] = channel;
 		}
+	}
+
+	/* Abort any association before setting block channel */
+	if (wl_get_drv_status(cfg, CONNECTING, prmry_ndev)) {
+		wl_cfg80211_disassoc(prmry_ndev);
 	}
 
 	/* Setting block channel list to fw */

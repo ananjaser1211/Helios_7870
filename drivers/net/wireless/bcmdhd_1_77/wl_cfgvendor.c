@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wl_cfgvendor.c 744879 2018-02-06 02:45:32Z $
+ * $Id: wl_cfgvendor.c 753885 2018-03-23 06:10:26Z $
  */
 
 /*
@@ -2316,6 +2316,32 @@ exit:
 #define NUM_PEER 1
 #define NUM_CHAN 11
 #define HEADER_SIZE sizeof(ver_len)
+
+static int wl_cfgvendor_lstats_get_bcn_mbss(char *buf, uint32 *rxbeaconmbss)
+{
+	wl_cnt_info_t *cbuf = (wl_cnt_info_t *)buf;
+	const void *cnt;
+
+	if ((cnt = (const void *)bcm_get_data_from_xtlv_buf(cbuf->data, cbuf->datalen,
+		WL_CNT_XTLV_CNTV_LE10_UCODE, NULL, BCM_XTLV_OPTION_ALIGN32)) != NULL) {
+		*rxbeaconmbss = ((const wl_cnt_v_le10_mcst_t *)cnt)->rxbeaconmbss;
+	} else if ((cnt = (const void *)bcm_get_data_from_xtlv_buf(cbuf->data, cbuf->datalen,
+		WL_CNT_XTLV_LT40_UCODE_V1, NULL, BCM_XTLV_OPTION_ALIGN32)) != NULL) {
+		*rxbeaconmbss = ((const wl_cnt_lt40mcst_v1_t *)cnt)->rxbeaconmbss;
+	} else if ((cnt = (const void *)bcm_get_data_from_xtlv_buf(cbuf->data, cbuf->datalen,
+		WL_CNT_XTLV_GE40_UCODE_V1, NULL, BCM_XTLV_OPTION_ALIGN32)) != NULL) {
+		*rxbeaconmbss = ((const wl_cnt_ge40mcst_v1_t *)cnt)->rxbeaconmbss;
+	} else if ((cnt = (const void *)bcm_get_data_from_xtlv_buf(cbuf->data, cbuf->datalen,
+		WL_CNT_XTLV_GE80_UCODE_V1, NULL, BCM_XTLV_OPTION_ALIGN32)) != NULL) {
+		*rxbeaconmbss = ((const wl_cnt_ge80mcst_v1_t *)cnt)->rxbeaconmbss;
+	} else {
+		*rxbeaconmbss = 0;
+		return BCME_NOTFOUND;
+	}
+
+	return BCME_OK;
+}
+
 static int wl_cfgvendor_lstats_get_info(struct wiphy *wiphy,
 	struct wireless_dev *wdev, const void  *data, int len)
 {
@@ -2325,7 +2351,6 @@ static int wl_cfgvendor_lstats_get_info(struct wiphy *wiphy,
 	wifi_radio_stat *radio;
 	wifi_radio_stat_h radio_h;
 	wl_wme_cnt_t *wl_wme_cnt;
-	wl_cnt_ge40mcst_v1_t *macstat_cnt;
 	wl_cnt_wlc_t *wlc_cnt;
 	scb_val_t scbval;
 	char *output = NULL;
@@ -2333,6 +2358,7 @@ static int wl_cfgvendor_lstats_get_info(struct wiphy *wiphy,
 	wifi_rate_stat_v1 *p_wifi_rate_stat_v1 = NULL;
 	wifi_rate_stat *p_wifi_rate_stat = NULL;
 	uint total_len = 0;
+	uint32 rxbeaconmbss;
 	wifi_iface_stat iface;
 	wlc_rev_info_t revinfo;
 #ifdef CONFIG_COMPAT
@@ -2448,19 +2474,9 @@ static int wl_cfgvendor_lstats_get_info(struct wiphy *wiphy,
 
 	COMPAT_ASSIGN_VALUE(iface, ac[WIFI_AC_BE].retries, wlc_cnt->txretry);
 
-	if ((macstat_cnt = bcm_get_data_from_xtlv_buf(((wl_cnt_info_t *)iovar_buf)->data,
-			((wl_cnt_info_t *)iovar_buf)->datalen,
-			WL_CNT_XTLV_CNTV_LE10_UCODE, NULL,
-			BCM_XTLV_OPTION_ALIGN32)) == NULL) {
-		macstat_cnt = bcm_get_data_from_xtlv_buf(((wl_cnt_info_t *)iovar_buf)->data,
-				((wl_cnt_info_t *)iovar_buf)->datalen,
-				WL_CNT_XTLV_GE40_UCODE_V1, NULL,
-				BCM_XTLV_OPTION_ALIGN32);
-	}
-
-	if (macstat_cnt == NULL) {
-		printf("wlmTxGetAckedPackets: macstat_cnt NULL!\n");
-		err = BCME_ERROR;
+	err = wl_cfgvendor_lstats_get_bcn_mbss(iovar_buf, &rxbeaconmbss);
+	if (unlikely(err)) {
+		WL_ERR(("get_bcn_mbss error (%d)\n", err));
 		goto exit;
 	}
 
@@ -2470,7 +2486,7 @@ static int wl_cfgvendor_lstats_get_info(struct wiphy *wiphy,
 		goto exit;
 	}
 
-	COMPAT_ASSIGN_VALUE(iface, beacon_rx, macstat_cnt->rxbeaconmbss);
+	COMPAT_ASSIGN_VALUE(iface, beacon_rx, rxbeaconmbss);
 	COMPAT_ASSIGN_VALUE(iface, rssi_mgmt, scbval.val);
 	COMPAT_ASSIGN_VALUE(iface, num_peers, NUM_PEER);
 	COMPAT_ASSIGN_VALUE(iface, peer_info->num_rate, NUM_RATE);

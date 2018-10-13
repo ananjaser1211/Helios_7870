@@ -25,7 +25,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_linux.c 748337 2018-02-22 11:50:54Z $
+ * $Id: dhd_linux.c 755939 2018-04-05 12:05:28Z $
  */
 
 #include <typedefs.h>
@@ -3364,6 +3364,9 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 #ifdef ENABLE_IPMCAST_FILTER
 	int ipmcast_l2filter;
 #endif /* ENABLE_IPMCAST_FILTER */
+#ifdef CUSTOM_EVENT_PM_WAKE
+	uint32 pm_awake_thresh = CUSTOM_EVENT_PM_WAKE;
+#endif /* CUSTOM_EVENT_PM_WAKE */
 #ifdef DYNAMIC_SWOOB_DURATION
 #ifndef CUSTOM_INTR_WIDTH
 #define CUSTOM_INTR_WIDTH 100
@@ -3562,6 +3565,16 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 					DHD_ERROR(("failed to set intr_width (%d)\n", ret));
 				}
 #endif /* DYNAMIC_SWOOB_DURATION */
+#ifdef CUSTOM_EVENT_PM_WAKE
+				pm_awake_thresh = CUSTOM_EVENT_PM_WAKE * 4;
+				ret = dhd_iovar(dhd, 0, "const_awake_thresh",
+					(char *)&pm_awake_thresh,
+					sizeof(pm_awake_thresh), NULL, 0, TRUE);
+				if (ret < 0) {
+					DHD_ERROR(("%s set const_awake_thresh failed %d\n",
+						__FUNCTION__, ret));
+				}
+#endif /* CUSTOM_EVENT_PM_WAKE */
 #endif /* DHD_USE_EARLYSUSPEND */
 			} else {
 #ifdef PKT_FILTER_SUPPORT
@@ -3689,6 +3702,15 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 						(char *)&ipmcast_l2filter, sizeof(ipmcast_l2filter),
 						NULL, 0, TRUE);
 #endif /* ENABLE_IPMCAST_FILTER */
+#ifdef CUSTOM_EVENT_PM_WAKE
+				ret = dhd_iovar(dhd, 0, "const_awake_thresh",
+					(char *)&pm_awake_thresh,
+					sizeof(pm_awake_thresh), NULL, 0, TRUE);
+				if (ret < 0) {
+					DHD_ERROR(("%s set const_awake_thresh failed %d\n",
+						__FUNCTION__, ret));
+				}
+#endif /* CUSTOM_EVENT_PM_WAKE */
 #endif /* DHD_USE_EARLYSUSPEND */
 #ifdef DHD_LB_IRQSET
 				dhd_irq_set_affinity(dhd);
@@ -9349,6 +9371,7 @@ dhd_attach(osl_t *osh, struct dhd_bus *bus, uint bus_hdrlen)
 	INIT_WORK(&dhd->event_log_dispatcher_work, dhd_event_logtrace_process);
 #endif /* SHOW_LOGTRACE */
 
+	DHD_INFO(("%s: sssr mempool init\n", __FUNCTION__));
 	DHD_SSSR_MEMPOOL_INIT(&dhd->pub);
 
 #ifdef REPORT_FATAL_TIMEOUTS
@@ -10322,7 +10345,11 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 	uint32 frameburst = CUSTOM_FRAMEBURST_SET;
 	uint wnm_bsstrans_resp = 0;
 #ifdef SUPPORT_SET_CAC
+#ifdef SUPPORT_CUSTOM_SET_CAC
+	uint32 cac = 0;
+#else
 	uint32 cac = 1;
+#endif /* SUPPORT_CUSTOM_SET_CAC */
 #endif /* SUPPORT_SET_CAC */
 
 #if defined(DHD_NON_DMA_M2M_CORRUPTION)
@@ -10521,9 +10548,11 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 
 #ifdef DHD_USE_CLMINFO_PARSER
 	if ((ret = dhd_get_clminfo(dhd, clm_path)) < 0) {
-		DHD_ERROR(("%s: CLM Information load failed. Abort initialization.\n",
-			__FUNCTION__));
-		goto done;
+		if (dhd->is_clm_mult_regrev) {
+			DHD_ERROR(("%s: CLM Information load failed. Abort initialization.\n",
+				__FUNCTION__));
+			goto done;
+		}
 	}
 #endif /* DHD_USE_CLMINFO_PARSER */
 	if ((ret = dhd_apply_default_clm(dhd, clm_path)) < 0) {
@@ -11344,6 +11373,11 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 			"109 1 6 ETH_H:14 0xFFFFFF 0x0001AF";
 
 		dhd->pktfilter_count = 10;
+#ifdef DISCARD_UDPNETBIOS
+		/* Immediately pkt filter TYPE 6 Dicard Broadcast IP packet */
+		dhd->pktfilter[DHD_UDPNETBIOS_DROP_FILTER_NUM] = DISCARD_UDPNETBIOS;
+		dhd->pktfilter_count++;
+#endif /* DISCARD_UDPNETBIOS */
 	}
 
 #ifdef GAN_LITE_NAT_KEEPALIVE_FILTER
@@ -13951,7 +13985,7 @@ dhd_dev_get_feature_set(struct net_device *dev)
 	feature_set |= WIFI_FEATURE_LINKSTAT;
 #endif /* LINKSTAT_SUPPORT */
 
-#ifdef PNO_SUPPORT
+#if defined(PNO_SUPPORT) && !defined(DISABLE_ANDROID_PNO)
 	if (dhd_is_pno_supported(dhd)) {
 		feature_set |= WIFI_FEATURE_PNO;
 #ifdef GSCAN_SUPPORT
@@ -13959,7 +13993,7 @@ dhd_dev_get_feature_set(struct net_device *dev)
 		feature_set |= WIFI_FEATURE_HAL_EPNO;
 #endif /* GSCAN_SUPPORT */
 	}
-#endif /* PNO_SUPPORT */
+#endif /* PNO_SUPPORT && !DISABLE_ANDROID_PNO */
 #ifdef RSSI_MONITOR_SUPPORT
 	if (FW_SUPPORTED(dhd, rssi_mon)) {
 		feature_set |= WIFI_FEATURE_RSSI_MONITOR;
@@ -15481,10 +15515,10 @@ void dhd_get_customized_country_code(struct net_device *dev, char *country_iso_c
 	wl_country_t *cspec)
 {
 	dhd_info_t *dhd = DHD_DEV_INFO(dev);
-#if defined(DHD_BLOB_EXISTENCE_CHECK) && !defined(DHD_USE_CLMINFO_PARSER)
-	if (!dhd->pub.is_blob)
-#endif /* DHD_BLOB_EXISTENCE_CHECK && !DHD_USE_CLMINFO_PARSER */
-	{
+	dhd_pub_t *dhdp = &dhd->pub;
+
+	BCM_REFERENCE(dhdp);
+	if (!CHECK_IS_BLOB(dhdp) || CHECK_IS_MULT_REGREV(dhdp)) {
 #if defined(CUSTOM_COUNTRY_CODE)
 		get_customized_country_code(dhd->adapter, country_iso_code, cspec,
 			dhd->pub.dhd_cflags);
@@ -15492,13 +15526,21 @@ void dhd_get_customized_country_code(struct net_device *dev, char *country_iso_c
 		get_customized_country_code(dhd->adapter, country_iso_code, cspec);
 #endif /* CUSTOM_COUNTRY_CODE */
 	}
+#if !defined(CUSTOM_COUNTRY_CODE)
+	else {
+		/* Replace the ccode to XZ if ccode is undefined country */
+		if (strncmp(country_iso_code, "", WLC_CNTRY_BUF_SZ) == 0) {
+			strlcpy(country_iso_code, "XZ", WLC_CNTRY_BUF_SZ);
+			strlcpy(cspec->country_abbrev, country_iso_code, WLC_CNTRY_BUF_SZ);
+			strlcpy(cspec->ccode, country_iso_code, WLC_CNTRY_BUF_SZ);
+			DHD_ERROR(("%s: ccode change to %s\n", __FUNCTION__, country_iso_code));
+		}
+	}
+#endif /* !CUSTOM_COUNTRY_CODE */
 
 #if defined(KEEP_KR_REGREV)
 	if (strncmp(country_iso_code, "KR", 3) == 0) {
-#if defined(DHD_BLOB_EXISTENCE_CHECK) && !defined(DHD_USE_CLMINFO_PARSER)
-		if (!dhd->pub.is_blob)
-#endif /* DHD_BLOB_EXISTENCE_CHECK && !DHD_USE_CLMINFO_PARSER */
-		{
+		if (!CHECK_IS_BLOB(dhdp) || CHECK_IS_MULT_REGREV(dhdp)) {
 			if (strncmp(dhd->pub.vars_ccode, "KR", 3) == 0) {
 				cspec->rev = dhd->pub.vars_regrev;
 			}
@@ -15508,15 +15550,12 @@ void dhd_get_customized_country_code(struct net_device *dev, char *country_iso_c
 
 #ifdef KEEP_JP_REGREV
 	if (strncmp(country_iso_code, "JP", 3) == 0) {
-#if defined(DHD_BLOB_EXISTENCE_CHECK) && !defined(DHD_USE_CLMINFO_PARSER)
-		if (dhd->pub.is_blob) {
+		if (CHECK_IS_BLOB(dhdp) && !CHECK_IS_MULT_REGREV(dhdp)) {
 			if (strncmp(dhd->pub.vars_ccode, "J1", 3) == 0) {
 				memcpy(cspec->ccode, dhd->pub.vars_ccode,
 					sizeof(dhd->pub.vars_ccode));
 			}
-		} else
-#endif /* DHD_BLOB_EXISTENCE_CHECK && !DHD_USE_CLMINFO_PARSER */
-		{
+		} else {
 			if (strncmp(dhd->pub.vars_ccode, "JP", 3) == 0) {
 				cspec->rev = dhd->pub.vars_regrev;
 			}
@@ -15550,10 +15589,26 @@ dhd_disable_vhtmode(dhd_pub_t *dhd)
 {
 	int ret = 0;
 	uint32 vhtmode = FALSE;
-	ret = dhd_iovar(dhd, 0, "vhtmode", (char *)&vhtmode, sizeof(vhtmode), NULL, 0, TRUE);
-	if (ret < 0) {
-		DHD_ERROR(("%s Set vhtmode 0 failed  %d\n", __FUNCTION__, ret));
+	char buf[32];
 
+	/* Get vhtmode */
+	ret = dhd_iovar(dhd, 0, "vhtmode", NULL, 0, (char *)&buf, sizeof(buf), FALSE);
+	if (ret < 0) {
+		DHD_ERROR(("%s Get vhtmode Fail ret %d\n", __FUNCTION__, ret));
+		return;
+	}
+	memcpy(&vhtmode, buf, sizeof(uint32));
+	if (vhtmode == 0) {
+		DHD_ERROR(("%s Get vhtmode is 0\n", __FUNCTION__));
+		return;
+	}
+	vhtmode = FALSE;
+
+	/* Set vhtmode */
+	ret = dhd_iovar(dhd, 0, "vhtmode", (char *)&vhtmode, sizeof(vhtmode), NULL, 0, TRUE);
+	if (ret == 0) {
+		DHD_ERROR(("%s Set vhtmode Success %d\n", __FUNCTION__, vhtmode));
+	} else {
 		if (ret == BCME_NOTDOWN) {
 			uint wl_down = 1;
 			ret = dhd_wl_ioctl_cmd(dhd, WLC_DOWN,
@@ -15572,6 +15627,8 @@ dhd_disable_vhtmode(dhd_pub_t *dhd)
 			if (ret) {
 				DHD_ERROR(("%s WL_UP Fail ret %d\n", __FUNCTION__, ret));
 			}
+		} else {
+			DHD_ERROR(("%s Set vhtmode 0 failed  %d\n", __FUNCTION__, ret));
 		}
 	}
 }

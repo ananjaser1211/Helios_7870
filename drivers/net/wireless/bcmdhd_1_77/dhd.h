@@ -27,7 +27,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd.h 748337 2018-02-22 11:50:54Z $
+ * $Id: dhd.h 752171 2018-03-15 02:55:35Z $
  */
 
 /****************
@@ -1057,6 +1057,9 @@ typedef struct dhd_pub {
 	uint8 reassoc_mumimo_sw;
 	uint8 murx_block_eapol;
 #endif /* DYNAMIC_MUMIMO_CONTROL */
+#ifdef DHD_USE_CLMINFO_PARSER
+	bool is_clm_mult_regrev;	/* Checking for CLM single/multiple regrev */
+#endif /* DHD_USE_CLMINFO_PARSER */
 } dhd_pub_t;
 
 typedef struct {
@@ -1616,9 +1619,11 @@ void dhd_schedule_sssr_dump(dhd_pub_t *dhdp);
 #define DHD_IP4BCAST_DROP_FILTER_NUM	7
 #define DHD_CISCO_STP_DROP_FILTER_NUM	8
 #define DHD_CISCO_XID_DROP_FILTER_NUM	9
+#define DHD_UDPNETBIOS_DROP_FILTER_NUM 10
 #define DISCARD_IPV4_MCAST	"102 1 6 IP4_H:16 0xf0 0xe0"
 #define DISCARD_IPV6_MCAST	"103 1 6 IP6_H:24 0xff 0xff"
 #define DISCARD_IPV4_BCAST	"107 1 6 IP4_H:16 0xffffffff 0xffffffff"
+#define DISCARD_UDPNETBIOS	"110 1 6 UDP_H:2 0xffff 0x0089"
 extern int dhd_os_enable_packet_filter(dhd_pub_t *dhdp, int val);
 extern void dhd_enable_packet_filter(int value, dhd_pub_t *dhd);
 extern int dhd_packet_filter_add_remove(dhd_pub_t *dhdp, int add_remove, int num);
@@ -2652,5 +2657,19 @@ void argos_config_mumimo_reset(void);
 extern uint dhd_get_chip_id(dhd_pub_t *dhdp);
 extern uint dhd_get_chiprev_id(dhd_pub_t *dhdp);
 #endif /* BCMSDIO || BCMPCIE */
+
+#if defined(DHD_BLOB_EXISTENCE_CHECK) && defined(DHD_USE_CLMINFO_PARSER)
+#define CHECK_IS_BLOB(dhdp)		(dhdp)->is_blob
+#define CHECK_IS_MULT_REGREV(dhdp)	(dhdp)->is_clm_mult_regrev
+#elif defined(DHD_BLOB_EXISTENCE_CHECK) && !defined(DHD_USE_CLMINFO_PARSER)
+#define CHECK_IS_BLOB(dhdp)		(dhdp)->is_blob
+#define CHECK_IS_MULT_REGREV(dhdp)	FALSE
+#elif !defined(DHD_BLOB_EXISTENCE_CHECK) && defined(DHD_USE_CLMINFO_PARSER)
+#define CHECK_IS_BLOB(dhdp)		TRUE
+#define CHECK_IS_MULT_REGREV(dhdp)	(dhdp)->is_clm_mult_regrev
+#else /* !DHD_BLOB_EXISTENCE_CHECK && !DHD_USE_CLMINFO_PARSER */
+#define CHECK_IS_BLOB(dhdp)		FALSE
+#define CHECK_IS_MULT_REGREV(dhdp)	TRUE
+#endif /* DHD_BLOB_EXISTENCE_CHECK && DHD_USE_CLMINFO_PARSER */
 
 #endif /* _dhd_h_ */
