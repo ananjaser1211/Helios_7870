@@ -10,9 +10,9 @@
 */
 
 /dts-v1/;
+#include "exynos7870-rmem-2000MB.dtsi"
 #include "exynos7870.dtsi"
 #include "modem-ss315ap-pdata.dtsi"
-#include "exynos7870-rmem-2000MB.dtsi"
 
 / {
 	model = "Exynos 7870 SMDK board";

@@ -22,10 +22,6 @@
 		PIN_IN(gpq0-1, DOWN, LV1);	/* NC */
 	};
 
-	sleep0: sleep-state {
-	    PIN_SLP(gpa1-5, INPUT, DOWN);	/* NC */
-	};
-
 	/*
 	 * Note:
 	 *   Please do not make "sleep-state" node for GPA group GPIOs.
@@ -117,11 +113,12 @@
 	pinctrl-0 = <&initial6>;
 	pinctrl-1 = <&sleep6>;
 	initial6: initial-state {
-		PIN_OUT_SET_PULL(gpd1-6, 0, LV1, DOWN);	/* VTCAM_CORE_EN */
+		PIN_IN(gpc0-2, DOWN, LV1);	/* NC */
 
 		PIN_OUT_SET_PULL(gpd1-1, 0, LV1, DOWN);	/* CAM_AF_2P8_EN */
 		PIN_IN(gpd1-3, NONE, LV1);	/* GRIP_DET  */
 		PIN_IN(gpd1-5, NONE, LV1);	/* EMMC_RST */
+		PIN_OUT_SET_PULL(gpd1-6, 0, LV1, DOWN);	/* VTCAM_CORE_EN */
 
 		PIN_IN(gpd2-4, NONE, LV1);	/* HW_REV0 */
 		PIN_IN(gpd2-5, NONE, LV1);	/* HW_REV1 */
@@ -147,6 +144,7 @@
 		PIN_SLP(gpb0-3, OUT1, UP);	/* BT_UART_RTS */
 
 		PIN_SLP(gpc0-1, INPUT, DOWN);	/* NC */
+		PIN_SLP(gpc0-2, INPUT, DOWN);	/* NC */
 
 		PIN_SLP(gpc1-0, PREV, UP);	/* IF_PMIC_SDA_1P8 */
 		PIN_SLP(gpc1-1, PREV, UP);	/* IF_PMIC_SCL_1P8 */

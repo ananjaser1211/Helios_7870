@@ -14,7 +14,7 @@
 #include "modem-ss315ap-pdata.dtsi"
 #include "exynos7870-j6lte_ltn_dtv_gpio_00.dtsi"
 #include "exynos7870-j6lte_cis_ser_battery_00.dtsi"
-#include "exynos7870-j6lte_fingerprint-sensor_00.dtsi"
+#include "exynos7870-j6lte_fingerprint-sensor_02.dtsi"
 #include "exynos7870-j6lte_ltn_dtv-isdbt_00.dtsi"
 
 / {
@@ -77,6 +77,10 @@
 					0x5C 0x0D 0x28
 					0x5C 0x0D 0x28
 					>;
+			};
+			
+				muic {
+				new_factory;
 			};
 		};
 	};
@@ -359,12 +363,7 @@
 
 		audio_codec_cod3026x: cod3026x@04 {
 			ant-det-gpio = <&gpa1 7 0xf>;
-			but-zones-list = <&but_zones 226 0 200>, /* send/end */
-					<&but_zones 582 201 290>, /* google */
-					<&but_zones 115 291 496>, /* vol up */
-					<&but_zones 114 497 1000>; /* vol down */
-			mic-adc-range = <1350>;
-			ant-adc-range = <3580>;
+			ant-adc-range = <3450>;
 		};
 	};
 

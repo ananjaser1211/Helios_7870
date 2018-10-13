@@ -505,8 +505,8 @@
 			status = "okay";
 			isa1000,max_timeout = <10000>;
 			isa1000,pwm_use = <1>;
-			isa1000,duty = <32850>;
-			isa1000,period = <37820>;
+			isa1000,duty = <34290>;
+			isa1000,period = <38100>;
 			isa1000,pwm_id = <0>;
 			isa1000,regulator_name = "VDD_MOTOR_3.3";
 		};

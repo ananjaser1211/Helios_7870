@@ -464,7 +464,7 @@
 				};
 
 				ldo33_reg: LDO33 {
-					regulator-name = "vdd_ldo33";
+					regulator-name = "VDD_SENSOR_2P8";
 					regulator-min-microvolt = <2800000>;
 					regulator-max-microvolt = <2800000>;
 					regulator-initial-mode = <0>;

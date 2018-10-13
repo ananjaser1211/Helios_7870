@@ -24,15 +24,6 @@
 		PIN_IN(gpa1-7, DOWN, LV1);	/* NC */
 		PIN_IN(gpq0-1, DOWN, LV1);	/* NC */
 	};
-
-	sleep0: sleep-state {
-		PIN_SLP(gpa1-2, PREV, NONE);	/* BT_WAKE */
-		PIN_SLP(gpa1-3, INPUT, NONE);	/* COVER_INT */
-		PIN_SLP(gpa1-4, INPUT, DOWN);   /* NC */
-		PIN_SLP(gpa1-5, INPUT, DOWN);	/* VTCAM_RST_N */
-		PIN_SLP(gpa2-5, INPUT, NONE);	/* GRIP_INT */
-	};
-
 	/*
 	 * Note:
 	 *   Please do not make "sleep-state" node for GPA group GPIOs.
@@ -146,6 +137,7 @@
 		PIN_SLP(gpb0-2, INPUT, UP);	/* BT_UART_CTS */
 		PIN_SLP(gpb0-3, OUT1, UP);	/* BT_UART_RTS */
 
+		PIN_SLP(gpc0-1, INPUT, DOWN);	/* NC */
 		PIN_SLP(gpc0-2, PREV, NONE);	/* NFC_DET */
 
 		PIN_SLP(gpc1-0, PREV, UP);	/* IF_PMIC_SDA_1P8 */
@@ -182,7 +174,7 @@
 
 		PIN_SLP(gpd2-0, INPUT, NONE);	/* REG0_DET */
 		PIN_SLP(gpd2-1, PREV, DOWN);	/* VDD_NFC_EN */
-		PIN_SLP(gpd2-2, PREV, NONE);	/* NC */
+		PIN_SLP(gpd2-2, INPUT, DOWN);	/* NC */
 		PIN_SLP(gpd2-3, PREV, NONE);	/* RGB_PROXY_EN */
 		PIN_SLP(gpd2-4, INPUT, NONE);	/* HW_REV0 */
 		PIN_SLP(gpd2-5, INPUT, NONE);	/* HW_REV1 */

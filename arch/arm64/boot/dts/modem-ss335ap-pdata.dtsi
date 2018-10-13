@@ -49,7 +49,7 @@
 		mif,link_types = <0x200>;	/* LINKDEV_SHMEM */
 		mif,link_name = "shmem";
 		mif,link_attrs = <0x7C9>;	/* XMIT_BTDLR(0x400) | DUMP_ALIGNED (0x200) | BOOT_ALIGNED (0x100) | MEM_DUMP (0x80) | MEM_BOOT (0x40) | DPRAM_MAGIC (0x08) | SBD_IPC (0x01) */
-		mif,num_iodevs = <18>;
+		mif,num_iodevs = <17>;
 		iodevs {
 			io_device_0 {
 				iod,name = "umts_ipc0";
@@ -130,19 +130,6 @@
 				iod,dl_buffer_size = <2048>;
 			};
 			io_device_6 {
-				iod,name = "ipc_loopback0";
-				iod,id = <244>;
-				iod,format = <0>;
-				iod,io_type = <0>;
-				iod,links = <0x200>;
-				iod,attrs = <0x82>;
-				iod,app = "CLD";
-				iod,ul_num_buffers = <16>;
-				iod,ul_buffer_size = <2048>;
-				iod,dl_num_buffers = <32>;
-				iod,dl_buffer_size = <2048>;
-			};
-			io_device_7 {
 				iod,name = "rmnet0";
 				iod,id = <10>;
 				iod,format = <1>;
@@ -155,7 +142,7 @@
 				iod,dl_num_buffers = <0>;
 				iod,dl_buffer_size = <2048>;
 			};
-			io_device_8 {
+			io_device_7 {
 				iod,name = "rmnet1";
 				iod,id = <11>;
 				iod,format = <1>;
@@ -168,7 +155,7 @@
 				iod,dl_num_buffers = <0>;
 				iod,dl_buffer_size = <2048>;
 			};
-			io_device_9 {
+			io_device_8 {
 				iod,name = "rmnet2";
 				iod,id = <12>;
 				iod,format = <1>;
@@ -181,7 +168,7 @@
 				iod,dl_num_buffers = <0>;
 				iod,dl_buffer_size = <2048>;
 			};
-			io_device_10 {
+			io_device_9 {
 				iod,name = "rmnet3";
 				iod,id = <13>;
 				iod,format = <1>;
@@ -194,7 +181,7 @@
 				iod,dl_num_buffers = <0>;
 				iod,dl_buffer_size = <2048>;
 			};
-			io_device_11 {
+			io_device_10 {
 				iod,name = "rmnet4";
 				iod,id = <14>;
 				iod,format = <1>;
@@ -206,7 +193,7 @@
 				iod,dl_num_buffers = <0>;
 				iod,dl_buffer_size = <2048>;
 			};
-			io_device_12 {
+			io_device_11 {
 				iod,name = "rmnet5";
 				iod,id = <15>;
 				iod,format = <1>;
@@ -218,7 +205,7 @@
 				iod,dl_num_buffers = <0>;
 				iod,dl_buffer_size = <2048>;
 			};
-			io_device_13 {
+			io_device_12 {
 				iod,name = "rmnet6";
 				iod,id = <16>;
 				iod,format = <1>;
@@ -230,7 +217,7 @@
 				iod,dl_num_buffers = <0>;
 				iod,dl_buffer_size = <2048>;
 			};
-			io_device_14 {
+			io_device_13 {
 				iod,name = "rmnet7";
 				iod,id = <17>;
 				iod,format = <1>;
@@ -242,7 +229,7 @@
 				iod,dl_num_buffers = <0>;
 				iod,dl_buffer_size = <2048>;
 			};
-			io_device_15 {
+			io_device_14 {
 				iod,name = "multipdp";
 				iod,id = <0>;
 				iod,format = <3>;		/* IPC_MULTI_RAW */
@@ -255,7 +242,7 @@
 				iod,dl_num_buffers = <1024>;
 				iod,dl_buffer_size = <2048>;
 			};
-			io_device_16 {
+			io_device_15 {
 				iod,name = "umts_boot0";
 				iod,id = <215>;
 				iod,format = <4>;		/* IPC_BOOT */
@@ -264,7 +251,7 @@
 				iod,attrs = <0x02>;
 				iod,app = "CBD";
 			};
-			io_device_17 {
+			io_device_16 {
 				iod,name = "umts_ramdump0";
 				iod,id = <225>;
 				iod,format = <5>;		/* IPC_DUMP */

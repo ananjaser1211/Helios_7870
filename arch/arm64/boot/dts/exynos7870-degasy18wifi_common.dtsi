@@ -541,12 +541,12 @@
 			sec,regulator_boot_on;
 			sec,tsp_connect = <&gpd1 5 0>; /* TSP_ID5000 */
 			//sec,always_lpmode = <1>;
-			sec,tclm_level = <1>;
-			//sec,afe_base = <0x0121>;
+			sec,tclm_level = <2>;
+			sec,afe_base = <0x0110>;
 			sec,project_name = "Daimler", "T230NZ";
 			sec,firmware_name = "tsp_sec/y761_daimler.fw";
 //			support_dex_mode;
-			sec,factory_item_version = <3>;
+			sec,factory_item_version = <5>;
 			sec,bringup = <3>;
 		};
 	};

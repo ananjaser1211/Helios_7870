@@ -113,11 +113,10 @@
 	initial6: initial-state {
 		PIN_IN(gpc0-2, DOWN, LV1);	/* NC */
 
-		PIN_OUT_SET_PULL(gpd1-6, 0, LV1, DOWN);	/* VTCAM_CORE_EN */
-
 		PIN_OUT_SET_PULL(gpd1-1, 0, LV1, DOWN);	/* CAM_AF_2P8_EN */
 		PIN_IN(gpd1-3, NONE, LV1);	/* GRIP_DET  */
 		PIN_IN(gpd1-5, DOWN, LV1);	/* NC */
+		PIN_OUT_SET_PULL(gpd1-6, 0, LV1, DOWN);	/* VTCAM_CORE_EN */
 
 		PIN_IN(gpd2-4, NONE, LV1);	/* HW_REV0 */
 		PIN_IN(gpd2-5, NONE, LV1);	/* HW_REV1 */

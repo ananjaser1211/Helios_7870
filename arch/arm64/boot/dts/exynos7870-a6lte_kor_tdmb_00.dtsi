@@ -54,9 +54,8 @@
 
 	spi_2: spi@13930000 {
 		status = "ok";
-		pinctrl-names = "default", "idle";
+		pinctrl-names = "default";
 		pinctrl-0 = <&spi2_bus &spi2_cs>;
-		pinctrl-1 = <&spi2_idle>;
 
 		tdmb-spi@0 {
 			compatible = "tdmb_spi_comp";

@@ -78,6 +78,10 @@
 					0x5C 0x0D 0x28
 					>;
 			};
+						
+				muic {
+				new_factory;
+			};
 		};
 	};
 
@@ -359,12 +363,7 @@
 
 		audio_codec_cod3026x: cod3026x@04 {
 			ant-det-gpio = <&gpa1 7 0xf>;
-			but-zones-list = <&but_zones 226 0 200>, /* send/end */
-					<&but_zones 582 201 290>, /* google */
-					<&but_zones 115 291 496>, /* vol up */
-					<&but_zones 114 497 1000>; /* vol down */
-			mic-adc-range = <1350>;
-			ant-adc-range = <3580>;
+			ant-adc-range = <3450>;
 		};
 	};
 
@@ -489,14 +488,14 @@
 		grip_i2c: grip_i2c {
 			samsung,pins = "gpf3-0", "gpf3-1";
 			samsung,pin-function = <2>;
-			samsung,pin-pud = <0>;
+			samsung,pin-pud = <3>;
 			samsung,pin-drv = <0>;
 		};
 
 		grip_gpio: grip_gpio {
 			samsung,pins = "gpf3-0", "gpf3-1";
 			samsung,pin-function = <0>;
-			samsung,pin-pud = <0>;
+			samsung,pin-pud = <3>;
 			samsung,pin-drv = <0>;
 		};
 

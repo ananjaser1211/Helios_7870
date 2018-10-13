@@ -24,14 +24,6 @@
 	model_info-hw_rev_end = <1>;
 	compatible = "samsung, GTAXLADWIFI KOR OPEN 01", "samsung,exynos7870";
 
-	cnss_dcdc_en: cnss_dcdc_en {
-		compatible = "regulator-fixed";
-		regulator-name = "cnss_dcdc_en";
-		startup-delay-us = <4000>;
-		enable-active-high;
-		gpio = <&gpa0 6 0>;
-	};
-
 	pinctrl@139C0000 {
 		light_i2c: light_i2c {
 			samsung,pins = "gpc2-1", "gpc2-0";
@@ -98,7 +90,7 @@
 			pinctrl-0 = <&acc_int>;
 			interrupt-parent = <&gpa0>;
 			interrupts = <7 0 0>;
-			st,orientation = <1 2 1 0 1 1 1 1 0>;
+			st,orientation = <2 1 1 1 2 1 1 1 0>;
 			st,drdy-int-pin = <1>;
 			st,irq_gpio = <&gpa0 7 0x00>;
 			st,vdd_ldo_pin = <&gpd1 6 0x01>; /* SENSOR_LDO_EN */

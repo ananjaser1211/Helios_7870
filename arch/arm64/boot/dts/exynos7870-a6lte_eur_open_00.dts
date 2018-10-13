@@ -568,6 +568,7 @@
 			a96t3x6,irq_gpio = <&gpa2 5 0>;
 			a96t3x6,fw_path = "abov/a96t326_a6lte.fw";
 			a96t3x6,firmup_cmd = <0x32>;
+			a96t3x6,earjack_noise = <1>;
 		};
 	};
 

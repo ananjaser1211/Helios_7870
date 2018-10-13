@@ -22,7 +22,7 @@
 	model_info-platform = "android";
 	model_info-subtype = "samsung";
 	model_info-hw_rev = <0>;
-	model_info-hw_rev_end = <255>;
+	model_info-hw_rev_end = <1>;
 	compatible = "samsung, J6 LTE LTN 00", "samsung,exynos7870";
 
 	i2c@13870000 {

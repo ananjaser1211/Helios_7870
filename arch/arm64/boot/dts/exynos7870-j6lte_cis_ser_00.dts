@@ -118,14 +118,14 @@
 			wtsr_timer_val = <3>;   /* 1000ms */
 			smpl_timer_val = <0>;   /* 100ms */
 			check_jigon = <0>; /* do not check jigon */
-			/* RTC: If it's first boot, reset rtc to 1/1/2016 12:00:00(Fri) */
+			/* RTC: If it's first boot, reset rtc to 1/1/2018 12:00:00(Mon) */
 			init_time,sec = <0>;
 			init_time,min = <0>;
 			init_time,hour = <12>;
 			init_time,mday = <1>;
 			init_time,mon = <0>;
-			init_time,year = <116>;
-			init_time,wday = <5>;
+			init_time,year = <118>;
+			init_time,wday = <1>;
 
 			regulators {
 				buck1_reg: BUCK1 {

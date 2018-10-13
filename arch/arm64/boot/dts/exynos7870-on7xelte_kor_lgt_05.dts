@@ -102,10 +102,11 @@
 			sx9320,phen = <0x03>;
 			sx9320,nirq-gpio = <&gpa2 5 0x00>;
 			sx9320,gain = <0x01>;
-			sx9320,again = <0x01>;
+			sx9320,again = <0x08>;
 			sx9320,scan_period = <0x16>;
 			sx9320,range = <0x00>;
 			sx9320,sampling_freq = <0x08>;
+			sx9320,resolution = <0x04>;
 			sx9320,rawfilt = <0x01>;
 			sx9320,hyst = <0x02>;
 			sx9320,avgposfilt = <0x03>;

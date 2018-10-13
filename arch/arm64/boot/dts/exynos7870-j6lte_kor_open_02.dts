@@ -14,7 +14,7 @@
 #include "modem-ss315ap-pdata.dtsi"
 #include "exynos7870-j6lte_kor_open_gpio_02.dtsi"
 #include "exynos7870-j6lte_kor_open_battery_01.dtsi"
-#include "exynos7870-j6lte_fingerprint-sensor_00.dtsi"
+#include "exynos7870-j6lte_fingerprint-sensor_02.dtsi"
 #include "exynos7870-j6lte_kor_tdmb_00.dtsi"
 
 / {
@@ -524,8 +524,8 @@
 			gp2a,vled-supply = <&ldo33_reg>;
 			gp2a,vdd_always_on = <1>;
 			gp2a,regulator_divided = <0>;
-			gp2a,default_high_thd = <110>;
-			gp2a,default_low_thd = <70>;
+			gp2a,default_high_thd = <130>;
+			gp2a,default_low_thd = <80>;
 			gp2a,reg_intval = <0x03>;
 			gp2a,reg_res_p = <0x20>;
 			gp2a,reg_ledctrl = <0x24>;
@@ -561,7 +561,7 @@
 			interrupt-parent = <&gpa2>;
 			interrupts = <5 0 0>;
 			a96t3x6,irq_gpio = <&gpa2 5 0>;
-			a96t3x6,fw_path = "abov/a96t326_j6lte.fw";
+			a96t3x6,fw_path = "abov/a96t326_j6ltekor.fw";
 			a96t3x6,firmup_cmd = <0x32>;
 		};
 	};

@@ -12,19 +12,18 @@
 /dts-v1/;
 #include "exynos7870-j6lte_common.dtsi"
 #include "modem-ss315ap-pdata.dtsi"
-#include "exynos7870-j6lte_kor_open_gpio_01.dtsi"
-#include "exynos7870-j6lte_kor_open_battery_01.dtsi"
-#include "exynos7870-j6lte_fingerprint-sensor_00.dtsi"
-#include "exynos7870-j6lte_kor_tdmb_00.dtsi"
+#include "exynos7870-j6lte_ltn_gpio_00.dtsi"
+#include "exynos7870-j6lte_cis_ser_battery_00.dtsi"
+#include "exynos7870-j6lte_fingerprint-sensor_02.dtsi"
 
 / {
-	model = "Samsung J6 LTE OPEN rev02 board based on Exynos7870";
+	model = "Samsung J6 LTE LTN OPEN rev03 board based on Exynos7870";
 	model_info-chip = <7870>;
 	model_info-platform = "android";
 	model_info-subtype = "samsung";
-	model_info-hw_rev = <1>;
-	model_info-hw_rev_end = <1>;
-	compatible = "samsung, J6 LTE KOR OPEN 02", "samsung,exynos7870";
+	model_info-hw_rev = <2>;
+	model_info-hw_rev_end = <255>;
+	compatible = "samsung, J6 LTE LTN 03", "samsung,exynos7870";
 
 	i2c@13870000 {
 		status = "okay";
@@ -78,8 +77,8 @@
 					0x5C 0x0D 0x28
 					>;
 			};
-
-			muic {
+			
+				muic {
 				new_factory;
 			};
 		};
@@ -362,6 +361,30 @@
 		};
 	};
 
+	hsi2c_6: hsi2c@138F0000 {
+		samsung,i2c-sda-delay = <100>;
+		samsung,i2c-max-bus-freq = <300000>;
+		status = "okay";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		sec-nfc@27 {
+			compatible = "sec-nfc";
+			reg = <0x27>;
+			interrupts = <6 0 0>;
+			interrupt-parent = <&gpa2>;
+			sec-nfc,nfc_pd = <&gpc2 2 0x2>;
+			sec-nfc,firm-gpio = <&gpd4 1 0>;
+			sec-nfc,irq-gpio = <&gpa2 6 0>;
+			clkctrl-reg = <0x1048600C>;
+			sec-nfc,nfc_clkreq = <&gpc2 3 0x2>;
+			sec-nfc,pvdd_en = <&gpd2 1 0>;
+			sec-nfc,check_nfc = <&gpc0 2 0x0>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&nfc_n5_firm &nfc_n5_clk_req &nfc_pd &nfc_int &nfc_pvdd_en &nfc_det>;
+		};
+	};
+
 	i2c@13850000 {
 		status = "disable";
 	};
@@ -392,8 +415,6 @@
 			&gpa1 6 0xF	/*BT_HOST_WAKE*/ >;
 		pinctrl-names = "default";
 		pinctrl-0=<&bt_hostwake_bcm &bt_btwake_bcm &bt_en_bcm>;
-		fm-dtv-ctrl-1=<&gpd1 5 1>; /*FM_DTV_CTRL1*/
-		fm-dtv-ctrl-2=<&gpd3 1 1>; /*FM_DTV_CTRL2*/
 		status = "okay";
 	};
 
@@ -459,14 +480,14 @@
 		grip_i2c: grip_i2c {
 			samsung,pins = "gpf3-0", "gpf3-1";
 			samsung,pin-function = <2>;
-			samsung,pin-pud = <0>;
+			samsung,pin-pud = <3>;
 			samsung,pin-drv = <0>;
 		};
 
 		grip_gpio: grip_gpio {
 			samsung,pins = "gpf3-0", "gpf3-1";
 			samsung,pin-function = <0>;
-			samsung,pin-pud = <0>;
+			samsung,pin-pud = <3>;
 			samsung,pin-drv = <0>;
 		};
 
@@ -476,6 +497,12 @@
 			samsung,pin-pud = <0>;
 			samsung,pin-con-pdn = <3>;
 			samsung,pin-pud-pdn = <0>;
+		};
+
+		nfc_det: nfc-det {
+			samsung,pins = "gpc0-2";
+			samsung,pin-function = <0>;
+			samsung,pin-pud = <0>;
 		};
 	};
 
@@ -524,13 +551,13 @@
 			gp2a,vled-supply = <&ldo33_reg>;
 			gp2a,vdd_always_on = <1>;
 			gp2a,regulator_divided = <0>;
-			gp2a,default_high_thd = <130>;
+			gp2a,default_high_thd = <110>;
 			gp2a,default_low_thd = <80>;
 			gp2a,reg_intval = <0x03>;
 			gp2a,reg_res_p = <0x20>;
 			gp2a,reg_ledctrl = <0x24>;
 			gp2a,reg_prst = <0x38>;
-			gp2a,default_offset = <45>;
+			gp2a,default_offset = <65>;
 			gp2a,cancel_high_thd = <80>;
 			gp2a,cancel_low_thd = <50>;
 		};
@@ -561,7 +588,7 @@
 			interrupt-parent = <&gpa2>;
 			interrupts = <5 0 0>;
 			a96t3x6,irq_gpio = <&gpa2 5 0>;
-			a96t3x6,fw_path = "abov/a96t326_j6ltekor.fw";
+			a96t3x6,fw_path = "abov/a96t326_j6lte.fw";
 			a96t3x6,firmup_cmd = <0x32>;
 		};
 	};

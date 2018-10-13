@@ -69,6 +69,7 @@
 	};
 
 	serial_0: uart@13810000 {
+		samsung,uart-logging;
 		status = "okay";
 	};
 
@@ -77,7 +78,6 @@
 	};
 
 	serial_2: uart@13820000 {
-		samsung,uart-logging;
 		status = "okay";
 	};
 
@@ -265,21 +265,21 @@
 					dev = "/dev/block/platform/13540000.dwmmc0/by-name/SYSTEM";
 					type = "ext4";
 					mnt_flags = "ro";
-					fsmgr_flags = "wait";
+					fsmgr_flags = "wait,verify";
 				};
 				vendor {
 					compatible = "android,vendor";
 					dev = "/dev/block/platform/13540000.dwmmc0/by-name/VENDOR";
 					type = "ext4";
 					mnt_flags = "ro";
-					fsmgr_flags = "wait";
+					fsmgr_flags = "wait,verify";
 				};
 				odm {
 					compatible = "android,odm";
 					dev = "/dev/block/platform/13540000.dwmmc0/by-name/ODM";
 					type = "ext4";
 					mnt_flags = "ro";
-					fsmgr_flags = "wait";
+					fsmgr_flags = "wait,verify";
 				};
 			};
 		};
@@ -1703,8 +1703,8 @@
 			zinitix,firmware_name = "tsp_zinitix/zt7548_j6.fw";
 			/* zinitix,spay = "true"; */
 			/* zinitix,aod = "true"; */
-			zinitix,tclm_level = <0x01>;
-			zinitix,afe_base = <0x0000>;
+			zinitix,tclm_level = <0x02>;
+			zinitix,afe_base = <0x800D>;
 			zinitix,mis_cal_check = "true";
 			zinitix,factory_item_version = <2>;
 		};

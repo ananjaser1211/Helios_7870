@@ -389,7 +389,7 @@
 		battery,swelling_low_temp_recov_1st = <200>;
 		battery,swelling_low_temp_block_2nd = <50>;
 		battery,swelling_low_temp_recov_2nd = <100>;
-		battery,swelling_low_temp_current = <900>;
+		battery,swelling_low_temp_current = <700>;
 		battery,swelling_low_temp_topoff = <150>;
 		battery,swelling_high_temp_current = <1200>;
 		battery,swelling_high_temp_topoff = <150>;
@@ -397,7 +397,7 @@
 		battery,swelling_high_rechg_voltage = <4000>;
 		battery,swelling_low_rechg_voltage = <4000>;
 
-		battery,siop_input_limit_current = <1550>;
+		battery,siop_input_limit_current = <1000>;
 		battery,siop_charging_limit_current = <1000>;
 
 		battery,cisd_max_voltage_thr = <5000>;

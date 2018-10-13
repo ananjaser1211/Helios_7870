@@ -23,7 +23,7 @@
 
 	memory@40000000 {
 		device_type = "memory";
-		reg = <0x0 0x40000000 0x3E400000>;
+		reg = <0x0 0x40000000 0x3D800000>;
 	};
 
 	memory@80000000 {
@@ -405,8 +405,14 @@
 			synaptics,reset-delay-ms = <200>;
 			synaptics,reset-on-state = <0>;
 			synaptics,reset-active-ms = <20>;
-			synaptics,firmware_name = "tsp_synaptics/td4300_on7xelte.fw";
-			synaptics,firmware_name_bl = "tsp_synaptics/td4300_on7xelte_recovery.fw";
+			td4300 {
+				synaptics,firmware_name = "tsp_synaptics/td4300_on7xelte.fw";
+				synaptics,firmware_name_bl = "tsp_synaptics/td4300_on7xelte_recovery.fw";
+			};
+			td4310 {
+				synaptics,firmware_name = "tsp_synaptics/td4310_on7xelte.fw";
+				synaptics,firmware_name_bl = "tsp_synaptics/td4310_on7xelte_recovery.fw";
+			};
 			/* uncomment and update line below as appropriate if there are 0D buttons */
 			/* synaptics,cap-button-codes = <102 158>; */
 			/* uncomment and update lines below as appropriate if there are virtual buttons */

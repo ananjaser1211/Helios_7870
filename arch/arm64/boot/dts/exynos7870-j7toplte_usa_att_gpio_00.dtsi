@@ -21,10 +21,6 @@
 		PIN_IN(gpq0-1, DOWN, LV1);	/* NC */
 	};
 
-	sleep0: sleep-state {
-	    PIN_SLP(gpa1-5, INPUT, DOWN);	/* NC */
-	};
-
 	/*
 	 * Note:
 	 *   Please do not make "sleep-state" node for GPA group GPIOs.

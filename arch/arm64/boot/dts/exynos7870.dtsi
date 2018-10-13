@@ -76,6 +76,15 @@
 		tmuctrl0 = &tmuctrl_0;
 		tmuctrl1 = &tmuctrl_1;
 		tmuctrl2 = &tmuctrl_2;
+		ni2c0 = &i2c_0;
+		ni2c1 = &i2c_1;
+		ni2c2 = &i2c_2;
+		ni2c3 = &i2c_3;
+		ni2c4 = &i2c_4;
+		ni2c5 = &i2c_5;
+		ni2c6 = &i2c_6;
+		ni2c7 = &i2c_7;
+		ni2c8 = &i2c_8;
 	};
 
 	chipid@10100000 {
@@ -443,7 +452,7 @@
 				  13   676000  800000	450000
 				  14   546000  800000	450000
 				  15   449000  800000	450000
-				  16   343000  800000	450000>;
+				  16   343000  800000	450000 >;
 
 		/* CL1 table ->	 idx  freq    volt   bus_lock */
 		cl1_dvfs_domain_name = "dvfs_cpucl1";
@@ -463,7 +472,7 @@
 				  13   676000  800000	450000
 				  14   546000  800000	450000
 				  15   449000  800000	450000
-				  16   343000  800000	450000>;	
+				  16   343000  800000	450000 >;
 	};
 
 	smc_info: mcinfo@10400000 {
@@ -1268,6 +1277,12 @@
 		#clock-cells = <1>;
 	};
 
+	/* TEEgris */
+	tgris {
+		compatible = "samsung,blowfish";
+		interrupts = <0 468 0>, <0 469 0>;
+	};
+
 	watchdog@10170000 {
 		compatible = "samsung,exynos7-wdt";
 		reg = <0x0 0x10170000 0x100>;
@@ -1344,7 +1359,7 @@
 		#size-cells = <1>;
 		ranges;
 
-		domain-clients = <&fimc_is>, <&fimc_is_sensor0>, <&fimc_is_sensor1>;
+		domain-clients = <&fimc_is>, <&fimc_is_sensor0>, <&fimc_is_sensor1>, <&fimc_is_sensor2>;
 
 		sysmmu_isp0: sysmmu@0x14470000 {
 			 compatible = "samsung,exynos7420-sysmmu";
@@ -1357,11 +1372,13 @@
 			 pb-info {
 				pb@0 {
 					master_axi_id_list =    <&fimc_is_sensor0 AW(4) AW(5) AW(8) AW(9) AW(12) AW(13)>,
-								<&fimc_is_sensor1 AW(4) AW(5) AW(8) AW(9) AW(12) AW(13)>;
+								<&fimc_is_sensor1 AW(4) AW(5) AW(8) AW(9) AW(12) AW(13)>,
+								<&fimc_is_sensor2 AW(4) AW(5) AW(8) AW(9) AW(12) AW(13)>;
 				};
 				pb@1 {
 					 master_axi_id_list =   <&fimc_is_sensor0 AW(0) AW(1) AW(2) NAID NAID NAID>,
-								<&fimc_is_sensor1 AW(0) AW(1) AW(2) NAID NAID NAID>;
+								<&fimc_is_sensor1 AW(0) AW(1) AW(2) NAID NAID NAID>,
+								<&fimc_is_sensor2 AW(0) AW(1) AW(2) NAID NAID NAID>;
 				};
 			 };
 		 };
@@ -1729,13 +1746,14 @@
 		compatible = "samsung,mipi-phy-csis";
 		reg = <0x0 0x144F1040 0x4>; /* SYSREG address for reset */
 		samsung,pmu-syscon = <&pmu_system_controller>;
-		isolation 	= <0x070C 0x0714>; /* PMU address offset */
-		reset 		= <0 	  1>; /* reset bit */
+		isolation 	= <0x070C 0x0714 0x0734>; /* PMU address offset */
+		reset 		= <0      1      2>; /* reset bit */
+		option 		= <256    3      256>; /* option bit */
 		#phy-cells = <1>;
 	};
 
 	fimc_is_sensor0: fimc_is_sensor@14420000 {
-		/* BACK/CSIS0 */
+		/* CSIS0 */
 		compatible = "samsung,exynos5-fimc-is-sensor";
 		#pb-id-cells = <6>;
 		reg = <0x0 0x14420000 0x10000>, /* MIPI-CSI0 */
@@ -1757,7 +1775,7 @@
 	};
 
 	fimc_is_sensor1: fimc_is_sensor@14460000 {
-		/* FRONT/CSIS1 */
+		/* CSIS1 */
 		compatible = "samsung,exynos5-fimc-is-sensor";
 		#pb-id-cells = <6>;
 		reg = <0x0 0x14460000 0x10000>, /* MIPI-CSI1 */
@@ -1767,6 +1785,28 @@
 		samsung,power-domain = <&pd_cam0>;
 
 		phys = <&mipi_phy_isp 1>;
+		phy-names = "csis_dphy";
+
+		clock-names =
+			"isp_sensor0_sclk",
+			"isp_sensor1_sclk",
+			"isp_sensor2_sclk";
+		clocks = <&clock 640>,
+				<&clock 641>,
+				<&clock 642>;
+	};
+
+	fimc_is_sensor2: fimc_is_sensor_secure@14460000 {
+		/* CSIS1 */
+		compatible = "samsung,exynos5-fimc-is-sensor";
+		#pb-id-cells = <6>;
+		reg = <0x0 0x14460000 0x10000>, /* MIPI-CSI1 */
+			<0x0 0x14410000 0x10000>; /* FIMC-BNS */
+		interrupts = <0 145 0>, /* MIPI-CSI1 */
+			<0 137 0>; /* FIMC-BNS */
+		samsung,power-domain = <&pd_cam0>;
+
+		phys = <&mipi_phy_isp 2>;
 		phy-names = "csis_dphy";
 
 		clock-names =
@@ -1997,4 +2037,7 @@
 		/* If you need to add new key type, add it this position */
 	};
 
+	fips-fmp {
+		compatible = "samsung,exynos-fips-fmp";
+	};
 };

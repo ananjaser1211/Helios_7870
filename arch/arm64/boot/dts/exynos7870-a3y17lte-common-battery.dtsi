@@ -266,8 +266,8 @@
 
 		battery,input_current_limit = <1500 450 450 1500 500 900 1500 450 1000 450 900 900 900 1900 1500 450 450 400 700 1300 300 1000 1500 450 1650 2100 1000 1650 80 1800 1650 1400 1000 1000 700 900 900 900 500 2000 1600 3000>;
 		battery,fast_charging_current = <1775 450 450 1775 800 1200 1500 450 1200 450 1775 1775 1775 1600 1775 450 450 400 700 1300 300 1000 1500 450 3000 3500 1000 3000 80 1800 1000 1775 450 1000 1675 1775 1775 1775 450 3000 3000 3000>;
-		battery,full_check_current_1st = <150 0 0 150 150 150 150 150 150 0 150 150 150 150 150 0 0 150 150 150 150 150 150 0 150 150 150 150 0 150 150 150 0 150 150 150 150 150 150 150 150 150>;
-		battery,full_check_current_2nd = <100 0 0 100 100 100 100 100 100 0 100 100 100 100 100 0 0 100 100 100 100 100 100 0 100 100 100 100 0 100 100 100 0 100 100 100 100 100 100 100 100 100>;
+		battery,full_check_current_1st = <245 0 0 245 245 245 245 245 245 0 245 245 245 245 245 0 0 245 245 245 245 245 245 0 245 245 245 245 0 245 245 245 0 245 245 245 245 245 245 245 245 245>;
+		battery,full_check_current_2nd = <122 0 0 122 122 122 122 122 122 0 122 122 122 122 122 0 0 122 122 122 122 122 122 0 122 122 122 122 0 122 122 122 0 122 122 122 122 122 122 122 122 122>;
 
 		battery,wireless_cc_cv = <85>;
 		battery,inbat_voltage = <1>;
@@ -370,9 +370,9 @@
 		battery,swelling_low_temp_recov_2nd = <100>;
 
 		battery,swelling_low_temp_current = <550>;	/* 0.3C */
-		battery,swelling_low_temp_topoff = <150>;	/* 0.05C */
+		battery,swelling_low_temp_topoff = <122>;	/* 0.05C */
 		battery,swelling_high_temp_current = <825>;	/* 0.45C */
-		battery,swelling_high_temp_topoff = <150>;	/* 0.05C */
+		battery,swelling_high_temp_topoff = <122>;	/* 0.05C */
 
 		battery,swelling_drop_float_voltage = <4150>;
 		battery,swelling_high_rechg_voltage = <4000>;

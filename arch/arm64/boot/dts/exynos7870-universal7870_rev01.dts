@@ -10,9 +10,9 @@
 */
 
 /dts-v1/;
+#include "exynos7870-rmem-2000MB.dtsi"
 #include "exynos7870.dtsi"
 #include "modem-ss315ap-pdata.dtsi"
-#include "exynos7870-rmem-2000MB.dtsi"
 
 / {
 	model = "Exynos7870 universal board";
@@ -57,6 +57,29 @@
 			compatible = "exynos5433-ion,mfc_nfw";
 			reg = <0x0 0xAE600000 0x200000>;
 			id = <12>;
+		};
+	};
+
+	firmware {
+		android {
+			compatible = "android,firmware";
+			fstab {
+				compatible = "android,fstab";
+				system {
+					compatible = "android,system";
+					dev = "/dev/block/platform/13540000.dwmmc0/by-name/system";
+					type = "ext4";
+					mnt_flags = "ro";
+					fsmgr_flags = "wait";
+				};
+				vendor {
+					compatible = "android,vendor";
+					dev = "/dev/block/platform/13540000.dwmmc0/by-name/vendor";
+					type = "ext4";
+					mnt_flags = "ro";
+					fsmgr_flags = "wait";
+				};
+			};
 		};
 	};
 
