@@ -415,7 +415,7 @@
 		/* For CPUFREQ table */
 		/* CL0 */
 		cl0_idx_num = <17>;
-		cl0_max_support_idx = <3>;
+		cl0_max_support_idx = <1>;
 		cl0_min_support_idx = <16>;
 		cl0_boot_max_qos = <1482000>;
 		cl0_boot_min_qos = <1482000>;
@@ -425,7 +425,7 @@
 
 		/* CL1 */
 		cl1_idx_num = <17>;
-		cl1_max_support_idx = <3>;
+		cl1_max_support_idx = <1>;
 		cl1_min_support_idx = <16>;
 		cl1_boot_max_qos = <1482000>;
 		cl1_boot_min_qos = <1482000>;
