@@ -631,7 +631,27 @@ static int dvfscpucl0_get_asv_table(unsigned int *table)
 	max_lv = asv_dvfs_cpucl0->table->num_of_lv;
 
 	for (lv = 0; lv < max_lv; lv++)
-		table[lv] = get_asv_voltage(cal_asv_dvfs_cpucl0, lv);
+	{
+	/* CL0 Voltage Override
+	Define Needed Voltages manually */
+	table[0] = 1200000;
+	table[1] = 1375000;
+	table[2] = 1150000;
+	table[3] = 1000000;
+	table[4] = 950000;
+	table[5] = 900000;
+	table[6] = 850000;
+	table[7] = 806250;
+	table[8] = 768750;
+	table[9] = 725000;
+	table[10] = 687500;
+	table[11] = 675000;
+	table[12] = 662500;
+	table[13] = 631250;
+	table[14] = 587500;
+	table[15] = 550000;
+	table[16] = 531250;	
+	}
 
 	return max_lv;
 }
@@ -643,7 +663,27 @@ static int dvfscpucl1_get_asv_table(unsigned int *table)
 	max_lv = asv_dvfs_cpucl1->table->num_of_lv;
 
 	for (lv = 0; lv < max_lv; lv++)
-		table[lv] = get_asv_voltage(cal_asv_dvfs_cpucl1, lv);
+	{
+	/* CL1 Voltage Override
+	Define Needed Voltages manually */
+	table[0] = 1200000;
+	table[1] = 1325000;
+	table[2] = 1150000;
+	table[3] = 1000000;
+	table[4] = 950000;
+	table[5] = 900000;
+	table[6] = 850000;
+	table[7] = 806250;
+	table[8] = 768750;
+	table[9] = 725000;
+	table[10] = 687500;
+	table[11] = 675000;
+	table[12] = 662500;
+	table[13] = 631250;
+	table[14] = 587500;
+	table[15] = 550000;
+	table[16] = 531250;	
+	}
 
 	return max_lv;
 }
