@@ -37,6 +37,9 @@ CR_DATE=$(date +%Y%m%d)
 export CROSS_COMPILE=$CR_TC
 export ANDROID_MAJOR_VERSION=$CR_ANDROID
 export PLATFORM_VERSION=$CR_PLATFORM
+# J710X Specific
+export ANDROID_MAJOR_VERSION=$CR_ANDROID_J710X
+export PLATFORM_VERSION=$CR_PLATFORM_J710X
 export $CR_ARCH
 ##########################################
 # Device specific Variables [SM-J530_2GB (F/G/S/L/K)]
@@ -51,20 +54,11 @@ CR_VARIANT_J530M=J530Y_3GB
 CR_DTSFILES_J730F="exynos7870-j7y17lte_eur_open_00.dtb exynos7870-j7y17lte_eur_open_01.dtb exynos7870-j7y17lte_eur_open_02.dtb exynos7870-j7y17lte_eur_open_03.dtb exynos7870-j7y17lte_eur_open_04.dtb exynos7870-j7y17lte_eur_open_05.dtb exynos7870-j7y17lte_eur_open_06.dtb exynos7870-j7y17lte_eur_open_07.dtb"
 CR_CONFG_J730F=j7y17lte_eur_open_defconfig
 CR_VARIANT_J730F=J730F-G
-#####################################################
-################# TEST VERSION ######################
-#####################################################
-# Device specific Variables [TEST]
-CR_DTSFILES_TEST="exynos7870-j5y17lte_eur_open_00.dtb exynos7870-j5y17lte_eur_open_01.dtb exynos7870-j5y17lte_eur_open_02.dtb exynos7870-j5y17lte_eur_open_03.dtb exynos7870-j5y17lte_eur_open_05.dtb exynos7870-j5y17lte_eur_open_07.dtb"
-CR_CONFG_TEST=j5y17lte_TEST_defconfig
-CR_VARIANT_TEST=J530F
-CR_VERSION_TEST=V0.1
-CR_NAME_TEST=Helios_TEST
-CR_RAMDISK_TEST=$CR_DIR/Helios/Ramdisk_TEST
-#####################################################
-################# TEST VERSION ######################
-#####################################################
-
+# Device specific Variables [SM-J710X]
+CR_DTSFILES_J710X="exynos7870-j7xelte_eur_open_00.dtb exynos7870-j7xelte_eur_open_01.dtb exynos7870-j7xelte_eur_open_02.dtb exynos7870-j7xelte_eur_open_03.dtb exynos7870-j7xelte_eur_open_04.dtb"
+CR_CONFG_J710X=j7xelte_03_defconfig
+CR_VARIANT_J710X=J710X
+CR_RAMDISK_J710X=$CR_DIR/Helios/Ramdisk_J710X
 # Script functions
 CLEAN_SOURCE()
 {
@@ -141,32 +135,29 @@ PACK_BOOT_IMG()
 	mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT.img
 	$CR_AIK/cleanup.sh
 }
-#####################################################
-################# TEST VERSION ######################
-#####################################################
-TEST_KERNEL()
+J710X()
 {
 echo "Cleaning"
 # make clean
 # make mrproper
 # rm -r -f $CR_OUT/*
-CR_VARIANT=$CR_VARIANT_TEST
-CR_VERSION2=$CR_VERSION_TEST
-CR_NAME=$CR_NAME_TEST
+CR_VARIANT=$CR_VARIANT_J710X
+CR_NAME=$CR_NAME
 rm -r -f $CR_DTB
 rm -rf $CR_DTS/.*.tmp
 rm -rf $CR_DTS/.*.cmd
 rm -rf $CR_DTS/*.dtb
 echo "Building zImage for $CR_VARIANT"
-export LOCALVERSION=-$CR_NAME-$CR_VERSION2-$CR_VARIANT-$CR_DATE
-make  $CR_CONFG_TEST
+export LOCALVERSION=-$CR_NAME-$CR_VERSION-$CR_VARIANT-$CR_DATE
+make  $CR_CONFG_J710X
 make -j$CR_JOBS
 echo "Building DTB for $CR_VARIANT"
 export $CR_ARCH
 export CROSS_COMPILE=$CR_TC
-export ANDROID_MAJOR_VERSION=$CR_ANDROID
-make  $CR_CONFG_TEST
-make $CR_DTSFILES_TEST
+export ANDROID_MAJOR_VERSION=$CR_ANDROID_J710X
+export PLATFORM_VERSION=$CR_PLATFORM_J710X
+make $CR_CONFG_J710X
+make $CR_DTSFILES_J710X
 ./scripts/dtbTool/dtbTool -o ./boot.img-dtb -d $CR_DTS/ -s 2048
 du -k "./boot.img-dtb" | cut -f1 >sizT
 sizT=$(head -n 1 sizT)
@@ -175,25 +166,22 @@ echo "Combined DTB Size = $sizT Kb"
 rm -rf $CR_DTS/.*.tmp
 rm -rf $CR_DTS/.*.cmd
 rm -rf $CR_DTS/*.dtb
-echo "Building Boot.img for $CR_VARIANT_TEST"
-cp -rf $CR_RAMDISK_TEST/* $CR_AIK
+echo "Building Boot.img for $CR_VARIANT_J710X"
+cp -rf $CR_RAMDISK_J710X/* $CR_AIK
 mv $CR_KERNEL $CR_AIK/split_img/boot.img-zImage
 mv $CR_DTB $CR_AIK/split_img/boot.img-dtb
 $CR_AIK/repackimg.sh
 echo -n "SEANDROIDENFORCE" » $CR_AIK/image-new.img
-mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION2-$CR_DATE-$CR_VARIANT.img
+mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT.img
 $CR_AIK/cleanup.sh
 }
-#####################################################
-################# TEST VERSION ######################
-#####################################################
 # Main Menu
 clear
 echo "----------------------------------------------"
 echo "$CR_NAME $CR_VERSION Build Script"
 echo "----------------------------------------------"
 PS3='Please select your option (1-5): '
-menuvar=("SM-J530_2G" "SM-J530_3G" "SM-J730F-G" "Exit" "TEST")
+menuvar=("SM-J530_2G" "SM-J530_3G" "SM-J730F-G" "SM-J710X" "Exit")
 select menuvar in "${menuvar[@]}"
 do
     case $menuvar in
@@ -257,30 +245,24 @@ do
             read -n1 -r key
             break
             ;;
-#####################################################
-################# TEST VERSION ######################
-#####################################################
-        "TEST")
+        "SM-J710X")
             clear
             CLEAN_SOURCE
-            echo "Starting $CR_VARIANT_TEST kernel build..."
-            CR_VARIANT=$CR_VARIANT_TEST
-            CR_CONFG=$CR_CONFG_TEST
-            CR_DTSFILES=$CR_DTSFILES_TEST
-            TEST_KERNEL
+            echo "Starting $CR_VARIANT_J710X kernel build..."
+            CR_VARIANT=$CR_VARIANT_J710X
+            CR_CONFG=$CR_CONFG_J710X
+            CR_DTSFILES=$CR_DTSFILES_J710X
+            J710X
             echo " "
             echo "----------------------------------------------"
-            echo "$CR_VARIANT_TEST kernel build finished."
-            echo "$CR_VARIANT_TEST Ready at $CR_OUT"
+            echo "$CR_VARIANT_J710X kernel build finished."
+            echo "$CR_VARIANT_J710X Ready at $CR_OUT"
             echo "Combined DTB Size = $sizT Kb"
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
             break
             ;;
-#####################################################
-################# TEST VERSION ######################
-#####################################################
         "Exit")
             break
             ;;
