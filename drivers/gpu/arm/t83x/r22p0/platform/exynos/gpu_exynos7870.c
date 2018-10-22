@@ -73,8 +73,8 @@ void __iomem *g3d1_outstanding_regs;
 
 /*  clk,vol,abb,min,max,down stay, pm_qos mem, pm_qos int, pm_qos cpu_kfc_min, pm_qos cpu_egl_max */
 static gpu_dvfs_info gpu_dvfs_table_default[] = {
-	{1300, 900000, 0, 98, 100, 1, 0, 902000, 400000, 1586000, CPU_MAX},
-	{1246, 1350000, 0, 100, 100, 1, 0, 902000, 400000, 1586000, CPU_MAX},
+	{1300, 900000, 0, 99, 100, 1, 0, 902000, 400000, 1690000, CPU_MAX},
+	{1246, 900000, 0, 99, 100, 1, 0, 902000, 400000, 1690000, CPU_MAX},
 	{1146, 890000, 0, 99, 100, 1, 0, 902000, 400000, 1690000, CPU_MAX},
 	{1001, 880000, 0, 98, 100, 1, 0, 902000, 400000, 1586000, CPU_MAX},
 	{845,  860000, 0, 90,  95, 1, 0, 836000, 400000, 1248000, CPU_MAX},
@@ -126,7 +126,7 @@ static gpu_attribute gpu_config_attributes[] = {
 	{GPU_TEMP_THROTTLING3, 728},
 	{GPU_TEMP_THROTTLING4, 545},
 	{GPU_TEMP_THROTTLING5, 343},
-	{GPU_TEMP_TRIPPING, 343},
+	{GPU_TEMP_TRIPPING, 160},
 	{GPU_POWER_COEFF, 625}, /* all core on param */
 	{GPU_DVFS_TIME_INTERVAL, 5},
 	{GPU_DEFAULT_WAKEUP_LOCK, 1},
