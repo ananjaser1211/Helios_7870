@@ -91,17 +91,6 @@
 		gpu_control_set_voltage(kbdev, vol);			\
 	}			\
 })
-#else
-#define GPU_SET_CLK_VOL(kbdev, prev_clk, clk, vol)			\
-({			\
-	if (prev_clk < clk) {			\
-		gpu_control_set_voltage(kbdev, vol);			\
-		gpu_control_set_clock(kbdev, clk);			\
-	} else {			\
-		gpu_control_set_clock(kbdev, clk);			\
-		gpu_control_set_voltage(kbdev, vol);			\
-	}			\
-})
 #endif
 
 extern struct kbase_device *pkbdev;
@@ -213,14 +202,7 @@ int gpu_set_target_clk_vol(int clk, bool pending_is_allowed)
 	}
 	target_vol = MAX(gpu_dvfs_get_voltage(target_clk) + platform->voltage_margin, platform->cold_min_vol);
 
-#ifdef CONFIG_MALI_RT_PM
-	if (platform->exynos_pm_domain) {
-		mutex_lock(&platform->exynos_pm_domain->access_lock);
-		if (!platform->dvs_is_enabled && gpu_is_power_on())
-			prev_clk = gpu_get_cur_clock(platform);
-		mutex_unlock(&platform->exynos_pm_domain->access_lock);
-	}
-#endif
+	prev_clk = gpu_get_cur_clock(platform);
 
 #ifdef CONFIG_EXYNOS_CL_DVFS_G3D
 	level = gpu_dvfs_get_level(clk);
@@ -247,7 +229,7 @@ int gpu_set_target_clk_vol(int clk, bool pending_is_allowed)
 	mutex_unlock(&platform->gpu_clock_lock);
 
 	GPU_LOG(DVFS_INFO, DUMMY, 0u, 0u, "clk[%d -> %d], vol[%d (margin : %d)]\n",
-		prev_clk, target_clk, gpu_get_cur_voltage(platform), platform->voltage_margin);
+		prev_clk, gpu_get_cur_clock(platform), gpu_get_cur_voltage(platform), platform->voltage_margin);
 
 	return ret;
 }
@@ -274,15 +256,7 @@ int gpu_set_target_clk_vol_pending(int clk)
 
 	target_vol = MAX(gpu_dvfs_get_voltage(target_clk) + platform->voltage_margin, platform->cold_min_vol);
 
-#ifdef CONFIG_MALI_RT_PM
-	if (platform->exynos_pm_domain) {
-		mutex_lock(&platform->exynos_pm_domain->access_lock);
-		if (!platform->dvs_is_enabled && gpu_is_power_on())
-			prev_clk = gpu_get_cur_clock(platform);
-		mutex_unlock(&platform->exynos_pm_domain->access_lock);
-	}
-#endif
-
+	prev_clk = gpu_get_cur_clock(platform);
 #ifdef CONFIG_EXYNOS_CL_DVFS_G3D
 	level = gpu_dvfs_get_level(clk);
 #ifdef CONFIG_SOC_EXYNOS8890
@@ -304,7 +278,7 @@ int gpu_set_target_clk_vol_pending(int clk)
 #endif
 #endif
 	GPU_LOG(DVFS_INFO, DUMMY, 0u, 0u, "pending clk[%d -> %d], vol[%d (margin : %d)]\n",
-		prev_clk, target_clk, gpu_get_cur_voltage(platform), platform->voltage_margin);
+		prev_clk, gpu_get_cur_clock(platform), gpu_get_cur_voltage(platform), platform->voltage_margin);
 
 	return ret;
 }
