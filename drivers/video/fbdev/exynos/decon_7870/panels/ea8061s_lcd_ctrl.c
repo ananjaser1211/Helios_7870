@@ -15,6 +15,7 @@
 #include <linux/of_gpio.h>
 #include <linux/interrupt.h>
 #include <linux/lcd.h>
+#include <linux/display_state.h>
 #include <linux/backlight.h>
 
 #include "../dsim.h"
@@ -31,6 +32,12 @@
 #include "mdnie.h"
 #include "mdnie_lite_table_j7xe.h"
 #endif
+
+bool display_on = true;
+bool is_display_on()
+{
+	return display_on;
+}
 
 struct lcd_info {
 	unsigned int			connected;
@@ -1398,6 +1405,8 @@ static int dsim_panel_displayon(struct dsim_device *dsim)
 
 	lcd->state = PANEL_STATE_RESUMED;
 
+	display_on = true;
+
 	dsim_panel_set_brightness(lcd, 1);
 
 	return 0;
@@ -1413,6 +1422,8 @@ static int dsim_panel_suspend(struct dsim_device *dsim)
 		goto exit;
 
 	lcd->state = PANEL_STATE_SUSPENDING;
+
+	display_on = false;
 
 	ea8061s_exit(lcd);
 
