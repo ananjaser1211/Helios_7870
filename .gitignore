@@ -7506,4 +7506,4 @@ firmware/coreriver/tc350k_j7ve.fw.gen.o
 firmware/coreriver/tc350k_j7x.fw
 firmware/coreriver/tc350k_j7x.fw.gen.S
 firmware/coreriver/tc350k_j7x.fw.gen.o
-
+drivers/video/fbdev/exynos/decon_7870/decon_abd.o
