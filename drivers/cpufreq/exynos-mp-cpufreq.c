@@ -693,13 +693,13 @@ struct cpu_power_info {
 #define POWER_COEFF_7P		10 /* percore  param */
 
 #ifdef CONFIG_SOC_EXYNOS7870
-#define CL0_MAX_VOLT		900000
-#define CL1_MAX_VOLT		900000
-#define CL0_MIN_VOLT		720000
-#define CL1_MIN_VOLT		720000
+#define CL0_MAX_VOLT		1200000
+#define CL1_MAX_VOLT		1200000
+#define CL0_MIN_VOLT		500000
+#define CL1_MIN_VOLT		500000
 #define CL_MAX_VOLT(cl)		(cl == CL_ZERO ? CL0_MAX_VOLT : CL1_MAX_VOLT)
 #define CL_MIN_VOLT(cl)		(cl == CL_ZERO ? CL0_MIN_VOLT : CL1_MIN_VOLT)
-#define CL_VOLT_STEP		6250
+#define CL_VOLT_STEP		25000
 #else
 #error "Please define core voltage ranges for current SoC."
 #endif
