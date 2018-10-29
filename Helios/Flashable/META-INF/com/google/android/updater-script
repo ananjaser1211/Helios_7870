@@ -3,7 +3,7 @@ run_program("/sbin/busybox", "mount", "/data");
 ui_print("***********************");
 ui_print("* HeliosPro V2.5 Kernel");
 ui_print("* For Galaxy J5/J7 2017");
-ui_print("* Android 8.0");
+ui_print("* Android 8.0/8.1.1");
 ui_print("* By AnanJaser1211 @Xda");
 ui_print("***********************");
 ui_print("");
@@ -31,8 +31,40 @@ delete_recursive("/system/app/KnoxFolderContainer");
 delete_recursive("/system/priv-app/KLMSAgent");
 delete_recursive("/system/priv-app/SPDClient");
 ui_print("-- Detecting Device");
-if is_substring("J530", getprop("ro.boot.bootloader")) then
-    ui_print("@ J5 2017 detected, Installing...");
+if is_substring("J530Y", getprop("ro.boot.bootloader")) then
+    ui_print("@ J5 2017 3GB detected, Installing...");
+    package_extract_file("refined/j5y17ltextc/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
+endif;
+if is_substring("J530YM", getprop("ro.boot.bootloader")) then
+    ui_print("@ J5 2017 3GB detected, Installing...");
+    package_extract_file("refined/j5y17ltextc/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
+endif;
+if is_substring("J530FM", getprop("ro.boot.bootloader")) then
+    ui_print("@ J5 2017 3GB detected, Installing...");
+    package_extract_file("refined/j5y17ltextc/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
+endif;
+if is_substring("J530GM", getprop("ro.boot.bootloader")) then
+    ui_print("@ J5 2017 3GB detected, Installing...");
+    package_extract_file("refined/j5y17ltextc/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
+endif;
+if is_substring("J530F", getprop("ro.boot.bootloader")) then
+    ui_print("@ J5 2017 2GB detected, Installing...");
+    package_extract_file("refined/j5y17lte/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
+endif;
+if is_substring("J530G", getprop("ro.boot.bootloader")) then
+    ui_print("@ J5 2017 2GB detected, Installing...");
+    package_extract_file("refined/j5y17lte/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
+endif;
+if is_substring("J530S", getprop("ro.boot.bootloader")) then
+    ui_print("@ J5 2017 2GB detected, Installing...");
+    package_extract_file("refined/j5y17lte/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
+endif;
+if is_substring("J530L", getprop("ro.boot.bootloader")) then
+    ui_print("@ J5 2017 2GB detected, Installing...");
+    package_extract_file("refined/j5y17lte/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
+endif;
+if is_substring("J530K", getprop("ro.boot.bootloader")) then
+    ui_print("@ J5 2017 2GB detected, Installing...");
     package_extract_file("refined/j5y17lte/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
 endif;
 if is_substring("J730", getprop("ro.boot.bootloader")) then
