@@ -35,12 +35,9 @@ CR_ARCH=arm64
 CR_DATE=$(date +%Y%m%d)
 # Init build
 export CROSS_COMPILE=$CR_TC
-export ANDROID_MAJOR_VERSION=$CR_ANDROID
-export PLATFORM_VERSION=$CR_PLATFORM
 # J710X Specific
-export ANDROID_MAJOR_VERSION=$CR_ANDROID_J710X
-export PLATFORM_VERSION=$CR_PLATFORM_J710X
-export $CR_ARCH
+CR_ANDROID_J710X=n
+CR_PLATFORM_J710X=7.0.0
 ##########################################
 # Device specific Variables [SM-J530_2GB (F/G/S/L/K)]
 CR_DTSFILES_J530F="exynos7870-j5y17lte_eur_open_00.dtb exynos7870-j5y17lte_eur_open_01.dtb exynos7870-j5y17lte_eur_open_02.dtb exynos7870-j5y17lte_eur_open_03.dtb exynos7870-j5y17lte_eur_open_05.dtb exynos7870-j5y17lte_eur_open_07.dtb"
@@ -154,8 +151,8 @@ make -j$CR_JOBS
 echo "Building DTB for $CR_VARIANT"
 export $CR_ARCH
 export CROSS_COMPILE=$CR_TC
-export ANDROID_MAJOR_VERSION=$CR_ANDROID_J710X
-export PLATFORM_VERSION=$CR_PLATFORM_J710X
+#export ANDROID_MAJOR_VERSION=$CR_ANDROID_J710X
+#export PLATFORM_VERSION=$CR_PLATFORM_J710X
 make $CR_CONFG_J710X
 make $CR_DTSFILES_J710X
 ./scripts/dtbTool/dtbTool -o ./boot.img-dtb -d $CR_DTS/ -s 2048
@@ -189,10 +186,12 @@ do
             clear
             CLEAN_SOURCE
             echo "Starting $CR_VARIANT_J530F kernel build..."
-	    CR_VARIANT=$CR_VARIANT_J530F
-	    CR_CONFG=$CR_CONFG_J530F
+	        CR_VARIANT=$CR_VARIANT_J530F
+	        CR_CONFG=$CR_CONFG_J530F
             CR_DTSFILES=$CR_DTSFILES_J530F
-	    BUILD_ZIMAGE
+            export ANDROID_MAJOR_VERSION=$CR_ANDROID
+            export PLATFORM_VERSION=$CR_PLATFORM
+	        BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
             echo " "
@@ -200,7 +199,7 @@ do
             echo "$CR_VARIANT kernel build finished."
             echo "$CR_VARIANT Ready at $CR_OUT"
             echo "Combined DTB Size = $sizT Kb"
-	    echo "Press Any key to end the script"
+	        echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
             break
@@ -209,10 +208,12 @@ do
             clear
             CLEAN_SOURCE
             echo "Starting $CR_VARIANT_J530M kernel build..."
-	    CR_VARIANT=$CR_VARIANT_J530M
-	    CR_CONFG=$CR_CONFG_J530M
+	        CR_VARIANT=$CR_VARIANT_J530M
+	        CR_CONFG=$CR_CONFG_J530M
             CR_DTSFILES=$CR_DTSFILES_J530M
-	    BUILD_ZIMAGE
+            export ANDROID_MAJOR_VERSION=$CR_ANDROID
+            export PLATFORM_VERSION=$CR_PLATFORM            
+	        BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
             echo " "
@@ -230,9 +231,11 @@ do
             CLEAN_SOURCE
             echo "Starting $CR_VARIANT_J730F kernel build..."
             CR_VARIANT=$CR_VARIANT_J730F
-	    CR_CONFG=$CR_CONFG_J730F
+	        CR_CONFG=$CR_CONFG_J730F
             CR_DTSFILES=$CR_DTSFILES_J730F
-	    BUILD_ZIMAGE
+            export ANDROID_MAJOR_VERSION=$CR_ANDROID
+            export PLATFORM_VERSION=$CR_PLATFORM            
+	        BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
             echo " "
@@ -240,7 +243,7 @@ do
             echo "$CR_VARIANT kernel build finished."
             echo "$CR_VARIANT Ready at $CR_OUT"
             echo "Combined DTB Size = $sizT Kb"
-	    echo "Press Any key to end the script"
+	        echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
             break
