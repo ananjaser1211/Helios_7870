@@ -8,6 +8,7 @@
 
 on boot
     start cronos
+    start killer
 
 on property:sys.boot_completed=1
 	
@@ -20,6 +21,12 @@ service cronos /system/bin/sh /sbin/cronos.sh
 	oneshot
 	disabled
 	seclabel u:r:shell:s0
+
+service killer /sbin/killer.sh
+    user root
+    seclabel u:r:init:s0
+    oneshot
+    disabled	
 
 # PrivateMode Mountpoints     
    mkdir /mnt/shell/ 0750 shell shell
