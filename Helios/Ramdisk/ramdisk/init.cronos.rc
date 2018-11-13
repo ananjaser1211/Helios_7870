@@ -7,6 +7,7 @@
 #
 
 on boot
+    start cronos
 
 on property:sys.boot_completed=1
 	
