@@ -7507,3 +7507,14 @@ firmware/coreriver/tc350k_j7x.fw
 firmware/coreriver/tc350k_j7x.fw.gen.S
 firmware/coreriver/tc350k_j7x.fw.gen.o
 drivers/video/fbdev/exynos/decon_7870/decon_abd.o
+drivers/battery/.built-in.o.cmd
+drivers/battery/.s2mu005_charger.o.cmd
+drivers/battery/.s2mu005_fuelgauge.o.cmd
+drivers/battery/.sec_adc.o.cmd
+drivers/battery/.sec_battery.o.cmd
+drivers/battery/built-in.o
+drivers/battery/s2mu005_charger.o
+drivers/battery/s2mu005_fuelgauge.o
+drivers/battery/sec_adc.o
+drivers/battery/sec_battery.o
+

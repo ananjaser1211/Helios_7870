@@ -38,8 +38,6 @@ on post-fs-data
     restorecon /data/privatemode
 
 # Permissions for gnss
-    chmod 0660 /dev/gnss_ipc
-    chown system system /dev/gnss_ipc
     mkdir /data/system 0771 system system
     chown system system /data/system
     mkdir /data/system/gps 0771 system system
@@ -64,6 +62,8 @@ on post-fs-data
 # /efs/factory.prop for Dual / Single SIM settings
     chown radio radio /efs/factory.prop
     chmod 0600 /efs/factory.prop
+
+    restorecon /sys/kernel/debug/tracing/trace_marker
 
 # Audio I2C node for TFA amp
     chmod 0660 /dev/i2c-20
@@ -209,18 +209,8 @@ on boot
 # permissions for bluetooth.
     setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
     chown bluetooth bluetooth ro.bt.bdaddr_path
-# for BT MAC address
-    mkdir /efs/bluetooth 0770 system bluetooth
-# efs file alredy exist
-    chown system bluetooth /efs/bluetooth
-    chown system bluetooth /efs/bluetooth/bt_addr
-
-    chown bluetooth net_bt_stack ro.bt.bdaddr_path
-    chown radio net_bt_stack /efs/bluetooth/bt_addr
-
-    chmod 0770 /efs/bluetooth
+    chown radio bluetooth /efs/bluetooth/bt_addr
     chmod 0640 /efs/bluetooth/bt_addr
-
     chmod 0660 /sys/class/rfkill/rfkill0/state
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
@@ -230,7 +220,7 @@ on boot
     chmod 0660 /dev/ttySAC0
 
 #MST HW Support
-setprop ro.mst.support 1
+#setprop ro.mst.support 1
 
 #Secure OS migration
     chown radio system /sys/devices/system/sec_os_ctrl/migrate_os
@@ -695,6 +685,9 @@ on fs
     chmod 0660 /sys/class/ion_cma/ion_video_ext/isolated
     chown system system /sys/class/ion_cma/ion_video_ext/isolated
 
+# Permissions for gnss
+    chmod 0660 /dev/gnss_ipc
+    chown system system /dev/gnss_ipc
 # Permissions for backlight
     chown system system /sys/class/backlight/panel/brightness
 
@@ -705,7 +698,7 @@ on fs
     chown system system /sys/class/lcd/panel/temperature
     chown system radio /sys/class/lcd/panel/power_reduce
     chown system system /sys/class/lcd/panel/lux
-    chown system system /sys/class/lcd/panel/adaptive_control
+    chown system media_rw /sys/class/lcd/panel/adaptive_control
     chown system system /sys/class/lcd/panel/dpui
     chown system system /sys/class/lcd/panel/dpui_dbg
     chown system system /sys/devices/svc/OCTA/SVC_OCTA
@@ -828,7 +821,6 @@ service argos-daemon /system/bin/argosd
     user system
     group system radio
 	
-
 # GPS
 service gpsd /vendor/bin/hw/gpsd -c /vendor/etc/gnss/gps.cfg
     class main
@@ -981,7 +973,7 @@ on property:persist.sys.storage_preload=0
     start umount_service
 
 # SSWAP
-service swapon /sbin/sswap -s -f 1536
+service swapon /sbin/sswap -s
     class core
     user root
     group root
