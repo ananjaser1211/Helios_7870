@@ -155,46 +155,6 @@ PACK_BOOT_IMG_TREBLE()
     mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT.img
     $CR_AIK/cleanup.sh
 }
-J710X()
-{
-echo "Cleaning"
-# make clean
-# make mrproper
-# rm -r -f $CR_OUT/*
-CR_VARIANT=$CR_VARIANT_J710X
-CR_NAME=$CR_NAME
-rm -r -f $CR_DTB
-rm -rf $CR_DTS/.*.tmp
-rm -rf $CR_DTS/.*.cmd
-rm -rf $CR_DTS/*.dtb
-echo "Building zImage for $CR_VARIANT"
-export LOCALVERSION=-$CR_NAME-$CR_VERSION-$CR_VARIANT-$CR_DATE
-make  $CR_CONFG_J710X
-make -j$CR_JOBS
-echo "Building DTB for $CR_VARIANT"
-export $CR_ARCH
-export CROSS_COMPILE=$CR_TC
-#export ANDROID_MAJOR_VERSION=$CR_ANDROID_J710X
-#export PLATFORM_VERSION=$CR_PLATFORM_J710X
-make $CR_CONFG_J710X
-make $CR_DTSFILES_J710X
-./scripts/dtbTool/dtbTool -o ./boot.img-dtb -d $CR_DTS/ -s 2048
-du -k "./boot.img-dtb" | cut -f1 >sizT
-sizT=$(head -n 1 sizT)
-rm -rf sizT
-echo "Combined DTB Size = $sizT Kb"
-rm -rf $CR_DTS/.*.tmp
-rm -rf $CR_DTS/.*.cmd
-rm -rf $CR_DTS/*.dtb
-echo "Building Boot.img for $CR_VARIANT_J710X"
-cp -rf $CR_RAMDISK_J710X/* $CR_AIK
-mv $CR_KERNEL $CR_AIK/split_img/boot.img-zImage
-mv $CR_DTB $CR_AIK/split_img/boot.img-dtb
-$CR_AIK/repackimg.sh
-echo -n "SEANDROIDENFORCE" » $CR_AIK/image-new.img
-mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT.img
-$CR_AIK/cleanup.sh
-}
 # Main Menu
 clear
 echo "----------------------------------------------"
@@ -278,11 +238,15 @@ do
             CR_VARIANT=$CR_VARIANT_J710X
             CR_CONFG=$CR_CONFG_J710X
             CR_DTSFILES=$CR_DTSFILES_J710X
-            J710X
+            export ANDROID_MAJOR_VERSION=$CR_ANDROID
+            export PLATFORM_VERSION=$CR_PLATFORM            
+            BUILD_ZIMAGE
+            BUILD_DTB
+            PACK_BOOT_IMG
             echo " "
             echo "----------------------------------------------"
-            echo "$CR_VARIANT_J710X kernel build finished."
-            echo "$CR_VARIANT_J710X Ready at $CR_OUT"
+            echo "$CR_VARIANT kernel build finished."
+            echo "$CR_VARIANT Ready at $CR_OUT"
             echo "Combined DTB Size = $sizT Kb"
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
