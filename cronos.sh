@@ -23,6 +23,7 @@ CR_DTS=arch/arm64/boot/dts
 CR_OUT=$CR_DIR/Helios/Out
 CR_AIK=$CR_DIR/Helios/A.I.K
 CR_RAMDISK=$CR_DIR/Helios/Ramdisk
+CR_RAMDISK_TREBLE=$CR_DIR/Helios/Treble
 CR_KERNEL=$CR_DIR/arch/arm64/boot/Image
 CR_DTB=$CR_DIR/boot.img-dtb
 # Kernel Variables
@@ -60,6 +61,11 @@ CR_RAMDISK_J710X=$CR_DIR/Helios/Ramdisk_J710X
 CR_DTSFILES_G610X="exynos7870-on7xelte_swa_open_00.dtb exynos7870-on7xelte_swa_open_01.dtb exynos7870-on7xelte_swa_open_02.dtb"
 CR_CONFG_G610X=on7xelteswa_00_defconfig
 CR_VARIANT_G610X=G610X
+# Device specific Variables [SM-J600X]
+CR_DTSFILES_J600X="exynos7870-j6lte_ltn_00.dtb exynos7870-j6lte_ltn_02.dtb"
+CR_CONFG_J600X=j6lte_defconfig
+CR_VARIANT_J600X=J600X
+CR_RAMDISK_J600X=$CR_DIR/Helios/Treble
 # Script functions
 CLEAN_SOURCE()
 {
@@ -128,13 +134,26 @@ PACK_BOOT_IMG()
 	echo "----------------------------------------------"
 	echo " "
 	echo "Building Boot.img for $CR_VARIANT"
-	cp -rf $CR_RAMDISK/* $CR_AIK
+	cp -rf $CR_RAMDISK_TREBLE/* $CR_AIK
 	mv $CR_KERNEL $CR_AIK/split_img/boot.img-zImage
 	mv $CR_DTB $CR_AIK/split_img/boot.img-dtb
 	$CR_AIK/repackimg.sh
 	echo -n "SEANDROIDENFORCE" » $CR_AIK/image-new.img
 	mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT.img
 	$CR_AIK/cleanup.sh
+}
+PACK_BOOT_IMG_TREBLE()
+{
+    echo "----------------------------------------------"
+    echo " "
+    echo "Building Boot.img for $CR_VARIANT"
+    cp -rf $CR_RAMDISK/* $CR_AIK
+    mv $CR_KERNEL $CR_AIK/split_img/boot.img-zImage
+    mv $CR_DTB $CR_AIK/split_img/boot.img-dtb
+    $CR_AIK/repackimg.sh
+    echo -n "SEANDROIDENFORCE" » $CR_AIK/image-new.img
+    mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT.img
+    $CR_AIK/cleanup.sh
 }
 J710X()
 {
@@ -181,8 +200,8 @@ clear
 echo "----------------------------------------------"
 echo "$CR_NAME $CR_VERSION Build Script"
 echo "----------------------------------------------"
-PS3='Please select your option (1-5): '
-menuvar=("SM-J530_2G" "SM-J530_3G" "SM-J730F-G" "SM-J710X" "SM-G610X" "Exit")
+PS3='Please select your option (1-7): '
+menuvar=("SM-J530_2G" "SM-J530_3G" "SM-J730F-G" "SM-J710X" "SM-G610X" "SM-J600X" "Exit")
 select menuvar in "${menuvar[@]}"
 do
     case $menuvar in
@@ -225,7 +244,7 @@ do
             echo "$CR_VARIANT kernel build finished."
             echo "$CR_VARIANT Ready at $CR_OUT"
             echo "Combined DTB Size = $sizT Kb"
-	    echo "Press Any key to end the script"
+            echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
             break
@@ -270,6 +289,28 @@ do
             read -n1 -r key
             break
             ;;
+        "SM-J600X")
+            clear
+            CLEAN_SOURCE
+            echo "Starting $CR_VARIANT_J600X kernel build..."
+            CR_VARIANT=$CR_VARIANT_J600X
+            CR_CONFG=$CR_CONFG_J600X
+            CR_DTSFILES=$CR_DTSFILES_J600X
+            export ANDROID_MAJOR_VERSION=$CR_ANDROID
+            export PLATFORM_VERSION=$CR_PLATFORM            
+            BUILD_ZIMAGE
+            BUILD_DTB
+            PACK_BOOT_IMG_TREBLE
+            echo " "
+            echo "----------------------------------------------"
+            echo "$CR_VARIANT_J600X kernel build finished."
+            echo "$CR_VARIANT_J600X Ready at $CR_OUT"
+            echo "Combined DTB Size = $sizT Kb"
+            echo "Press Any key to end the script"
+            echo "----------------------------------------------"
+            read -n1 -r key
+            break
+            ;;            
         "SM-G610X")
             clear
             CLEAN_SOURCE
