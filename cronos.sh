@@ -134,7 +134,7 @@ PACK_BOOT_IMG()
 	echo "----------------------------------------------"
 	echo " "
 	echo "Building Boot.img for $CR_VARIANT"
-	cp -rf $CR_RAMDISK_TREBLE/* $CR_AIK
+	cp -rf $CR_RAMDISK/* $CR_AIK
 	mv $CR_KERNEL $CR_AIK/split_img/boot.img-zImage
 	mv $CR_DTB $CR_AIK/split_img/boot.img-dtb
 	$CR_AIK/repackimg.sh
@@ -147,7 +147,7 @@ PACK_BOOT_IMG_TREBLE()
     echo "----------------------------------------------"
     echo " "
     echo "Building Boot.img for $CR_VARIANT"
-    cp -rf $CR_RAMDISK/* $CR_AIK
+    cp -rf $CR_RAMDISK_TREBLE/* $CR_AIK
     mv $CR_KERNEL $CR_AIK/split_img/boot.img-zImage
     mv $CR_DTB $CR_AIK/split_img/boot.img-dtb
     $CR_AIK/repackimg.sh
