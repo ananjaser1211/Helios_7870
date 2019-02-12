@@ -56,6 +56,10 @@ CR_DTSFILES_J710X="exynos7870-j7xelte_eur_open_00.dtb exynos7870-j7xelte_eur_ope
 CR_CONFG_J710X=j7xelte_03_defconfig
 CR_VARIANT_J710X=J710X
 CR_RAMDISK_J710X=$CR_DIR/Helios/Ramdisk_J710X
+# Device specific Variables [SM-G610X]
+CR_DTSFILES_G610X="exynos7870-on7xelte_swa_open_00.dtb exynos7870-on7xelte_swa_open_01.dtb exynos7870-on7xelte_swa_open_02.dtb"
+CR_CONFG_G610X=on7xelteswa_00_defconfig
+CR_VARIANT_G610X=G610X
 # Script functions
 CLEAN_SOURCE()
 {
@@ -178,7 +182,7 @@ echo "----------------------------------------------"
 echo "$CR_NAME $CR_VERSION Build Script"
 echo "----------------------------------------------"
 PS3='Please select your option (1-5): '
-menuvar=("SM-J530_2G" "SM-J530_3G" "SM-J730F-G" "SM-J710X" "Exit")
+menuvar=("SM-J530_2G" "SM-J530_3G" "SM-J730F-G" "SM-J710X" "SM-G610X" "Exit")
 select menuvar in "${menuvar[@]}"
 do
     case $menuvar in
@@ -266,6 +270,28 @@ do
             read -n1 -r key
             break
             ;;
+        "SM-G610X")
+            clear
+            CLEAN_SOURCE
+            echo "Starting $CR_VARIANT_G610X kernel build..."
+            CR_VARIANT=$CR_VARIANT_G610X
+            CR_CONFG=$CR_CONFG_G610X
+            CR_DTSFILES=$CR_DTSFILES_G610X
+            export ANDROID_MAJOR_VERSION=$CR_ANDROID
+            export PLATFORM_VERSION=$CR_PLATFORM            
+            BUILD_ZIMAGE
+            BUILD_DTB
+            PACK_BOOT_IMG
+            echo " "
+            echo "----------------------------------------------"
+            echo "$CR_VARIANT kernel build finished."
+            echo "$CR_VARIANT Ready at $CR_OUT"
+            echo "Combined DTB Size = $sizT Kb"
+            echo "Press Any key to end the script"
+            echo "----------------------------------------------"
+            read -n1 -r key
+            break
+            ;;            
         "Exit")
             break
             ;;
