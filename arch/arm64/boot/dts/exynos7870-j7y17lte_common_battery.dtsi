@@ -346,8 +346,8 @@
 		battery,swelling_high_rechg_voltage = <4000>;
 		battery,swelling_low_rechg_voltage = <4000>;
 
-		battery,siop_input_limit_current = <1550>;
-		battery,siop_charging_limit_current = <1000>;
+		battery,siop_input_limit_current = <2050>;
+		battery,siop_charging_limit_current = <2000>;
 
 		/* cycle, chg_float_voltage, recharge_condition_vcell, full_condition_vcell, full_condition_soc */
         battery,age_data = <0 4350 4250 4250 93
@@ -370,6 +370,6 @@
 		battery,chg_polarity_en = <0>;
 		battery,chg_gpio_status = <0>;
 		battery,chg_polarity_status = <0>;
-		battery,chg_float_voltage = <4380>;
+		battery,chg_float_voltage = <4400>;
 	};
 };
