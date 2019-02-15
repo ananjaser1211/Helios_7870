@@ -37,6 +37,10 @@ on post-fs-data
     chown system system /data/privatemode
     restorecon /data/privatemode
 
+# Audio I2C node for TFA amp
+    chmod 0660 /dev/i2c-20
+    chown audio audio /dev/i2c-20
+
 # Permissions for gnss
     chmod 0660 /dev/gnss_ipc
     chown system system /dev/gnss_ipc
@@ -745,6 +749,20 @@ on fs
 # Permissions for TouchScreen
     chown system radio /sys/class/sec/tsp/cmd
     chown system system /sys/class/sec/tsp/input/enabled
+
+# Permission for flashlight control for HAL3.3
+    chmod 0660 /sys/class/camera/flash/rear_torch_flash
+    chown media system /sys/class/camera/flash/rear_torch_flash
+    chmod 0660 /sys/class/camera/flash/front_torch_flash
+    chown media system /sys/class/camera/flash/front_torch_flash
+
+# Permissions for SVC LED
+    chown system system /sys/class/sec/led/led_blink
+    chown system system /sys/class/sec/led/led_r
+    chown system system /sys/class/sec/led/led_g
+    chown system system /sys/class/sec/led/led_b
+    chown system system /sys/class/sec/led/led_lowpower
+    chown system system /sys/class/sec/led/led_pattern
 
 # Permissions for input_booster
     chown system radio /sys/class/input_booster/level
