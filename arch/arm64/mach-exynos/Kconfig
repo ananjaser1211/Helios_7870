@@ -1,0 +1,31 @@
+# arch/arm64/mach-exynos/Kconfig
+#
+# Copyright (c) 2016 Samsung Electronics Co., Ltd.
+#		http://www.samsung.com/
+#
+# Licensed under GPLv2
+
+# Configuration options for the EXYNOS7
+
+if ARCH_EXYNOS
+
+menu "SAMSUNG EXYNOS SoCs Support"
+
+config SKIP_HW_BREAKPOINT
+	bool "support skip hw breakpoint"
+	default n
+	help
+	  Support early param for T32 onchip breakpoint
+
+config SEC_BAT_AUT
+	bool "Samsung TN Bat Automation Test Feature"
+	default n
+	help
+	  Samsung TN Bat Automation Test
+
+config SAMSUNG_PRODUCT_SHIP
+	bool "set up for product shipping"
+	default n	  
+endmenu
+
+endif

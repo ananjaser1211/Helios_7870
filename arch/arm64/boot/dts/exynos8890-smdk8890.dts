@@ -1,0 +1,80 @@
+/*
+ * SAMSUNG EXYNOS8890 board device tree source
+ *
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
+
+/dts-v1/;
+#include "exynos8890-board-common.dtsi"
+
+/ {
+	model = "Samsung SMDK8890 board based on EXYNOS8890";
+	compatible = "samsung,exynos8890", "samsung,SMDK8890";
+
+	ect {
+		parameter_address = <0x90000000>;
+		parameter_size = <0x19000>;
+	};
+
+	pinctrl@10580000 {
+		muic_irq: muic-irq {
+			samsung,pins = "gpa1-1";
+			samsung,pin-function = <0x0>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
+		};
+	};
+
+	pinctrl@14CC0000 {
+		dwc3_vbus_en: dwc3-vbus-en {
+		    samsung,pins ="gpe4-3";
+		    samsung,pin-function = <1>;
+		    samsung,pin-pud = <0>;
+		    samsung,pin-drv = <0>;
+	    };
+	};
+
+	pcie0@157A0000 {
+		pcie,wlan-gpio = <&gpj1 3 0x1 /* WLAN_EN */ >;
+		pcie,bt-gpio = <&gpe7 1 0x1 /* BT_EN */ >;
+		status = "okay";
+	};
+
+	pcie1@157B0000 {
+		pcie,wlan-gpio = <&gpf1 2 0x1 /* WLAN_EN */ >;
+		pcie,bt-gpio = <&gpe7 2 0x1 /* BT_EN */ >;
+		status = "okay";
+	};
+
+	hsi2c@14E60000 {
+		status = "okay";
+		muic-tsu6721@25 {
+			compatible = "tsu6721-muic,i2c";
+			reg = <0x25>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&muic_irq>;
+			muic,muic_int = <&gpa1 1 0>;
+			gpios = <&gpi2 3 0x1>;
+		};
+	};
+
+	dwc3_vbus: regulator-usb300 {
+		compatible = "regulator-fixed";
+		regulator-name = "UHOST_VBUS_EN";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpe4 3 1>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&dwc3_vbus_en>;
+		enable-active-high;
+	};
+
+	usb@15400000 {
+		dwc3-vbus-supply = <&dwc3_vbus>;
+	};
+};

@@ -1,0 +1,18 @@
+#
+#
+#
+config SEC_VIB
+	tristate "SEC DC Vibrator"
+	default n
+	depends on ANDROID_TIMED_OUTPUT
+	help
+		If you say yes here you will get support for the
+		SEC DC Vibrator.
+
+config ISA1000
+	tristate "IMAGIS ISA1000"
+	default n
+	depends on ANDROID_TIMED_OUTPUT
+	help
+		If you say yes here you will get support for the
+		haptic driver of IMAGIS ISA1000.

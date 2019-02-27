@@ -1,0 +1,9 @@
+#
+# Magnetometer sensors
+#
+
+config SENSORS_YAS_INPUT_MAGNETOMETER
+	tristate "Yamaha 3-Axis Magnetometer"
+	depends on IIO
+	help
+	  Say Y here to add support for the Yamaha 3-Axis Magnetometer.

@@ -1,0 +1,27 @@
+/*
+ * SAMSUNG UNIVERSAL5433 board device tree source
+ *
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include "exynos7870-j6lte_common_battery.dtsi"
+/ {
+	battery {
+		battery,input_current_limit = <1550 500 500 1550 500 900 1000 500 1550 0 820 820 820 1550 1550 0 0 400 700 1300 300 1000 1000 0 1550 1550 1000 1550 80 1000 1000 1400 1000 1000 820 820>;
+		battery,fast_charging_current = <1750 0 0 1750 500 1200 1000 500 1750 0 1200 1200 1200 1750 1750 0 0 400 700 1300 300 1000 1500 0 1750 1750 1000 1750 80 1200 1000 1400 0 1000 1200 1200>;
+		battery,full_check_current_1st = <300 0 0 300 300 300 300 300 300 0 300 300 300 300 300 0 0 300 300 300 300 300 300 0 300 300 300 300 0 300 300 300 0 300 300 300>;
+		battery,full_check_current_2nd = <150 0 0 150 150 150 150 150 150 0 150 150 150 150 150 0 0 150 150 150 150 150 150 0 150 150 150 150 0 150 150 150 0 150 150 150>;
+
+		battery,expired_time = <12600>; /* 150 min + 60 min */
+		battery,recharging_expired_time = <5400>;
+		battery,standard_curr = <1750>;
+
+		battery,swelling_low_temp_current = <700>;
+		battery,swelling_high_temp_current = <1050>;
+	};
+};

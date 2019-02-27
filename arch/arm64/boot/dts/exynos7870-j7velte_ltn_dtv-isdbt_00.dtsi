@@ -1,0 +1,59 @@
+ /* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/{
+	pinctrl@139B0000 {
+		spi4_idle: spi4-idle {
+			samsung,pins = "gpf4-3", "gpf4-2", "gpf4-1", "gpf4-0";
+			samsung,pin-function = <0>;
+			samsung,pin-pud = <1>;
+			samsung,pin-drv = <0>;
+		};
+	};
+	spi_4: spi@13910000 {
+		num-cs = <1>;
+		status = "ok";
+
+		dma-mode;
+		dmas = <&pdma0 21
+			&pdma0 20>;
+
+		swap-mode;
+		spi-clkoff-time = <100>;
+
+		pinctrl-names = "default","idle";
+		pinctrl-0 = <&spi4_bus &spi4_cs_0>;
+		pinctrl-1 = <&spi4_idle>;
+
+		isdbt@0 {
+			compatible = "isdbt_spi_comp";
+			reg = <0>;
+			spi-max-frequency = <50000000>;
+			controller-data {
+				cs-gpio = <&gpf4 1 0>;
+				samsung,spi-feedback-delay = <3>;
+			};
+		};
+	};
+
+	isdbt_data {
+		 compatible = "isdbt_pdata";
+		 isdbt_spi_clk = <&gpf4 0 0>;
+		 isdbt_spi_cs = <&gpf4 1 0>;
+		 isdbt_spi_miso = <&gpf4 2 0>;
+		 isdbt_spi_mosi = <&gpf4 3 0>;
+		 isdbt_pwr_en = <&gpd3 7 0>;
+		 isdbt_rst = <&gpa0 7 0>;
+		 isdbt_irq = <&gpa1 5 0>;
+		 isdbt_ant_ctrl = <&gpd4 6 0x1>;
+	};
+};

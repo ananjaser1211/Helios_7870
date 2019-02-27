@@ -1,0 +1,97 @@
+/*
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/ {
+	pinctrl@139F0000 {
+		acc_int: acc_int {
+			samsung,pins = "gpa2-3";
+			samsung,pin-function = <0xf>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
+		};
+
+		prox_int: prox_int {
+			samsung,pins = "gpa0-5";
+			samsung,pin-function = <0xf>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
+		};
+	};
+
+	pinctrl@139B0000 {
+		accel_i2c: accel_i2c {
+			samsung,pins = "gpc1-2", "gpc1-3";
+			samsung,pin-function = <2>;
+			samsung,pin-pud = <0>;
+		};
+
+		proxy_i2c: proxy_i2c {
+			samsung,pins = "gpf4-3", "gpf4-2";
+			samsung,pin-function = <2>;
+			samsung,pin-pud = <0>;
+		};
+	};
+
+	i2c@13880000 {
+		samsung,i2c-sda-delay = <100>;
+		samsung,i2c-max-bus-freq = <400000>;
+		status = "okay";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&accel_i2c>;
+
+		lis2ds@1D {
+			compatible = "st,lis2ds";
+			reg = <0x1D>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&acc_int>;
+			interrupt-parent = <&gpa2>;
+			interrupts = <3 0 0>;
+			st,orientation = <2 1 1 1 0 1 1 1 2>;
+			st,drdy-int-pin = <1>;
+			st,irq_gpio = <&gpa2 3 0x00>;
+		};
+	};
+
+	i2c@17 {
+		compatible = "i2c-gpio";
+		gpios = <&gpf4 3 0 /* sda */
+				&gpf4 2 0 /* scl */>;
+		i2c-gpio,delay-us = <2>;
+		i2c-gpio,scl-output-only;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "okay";
+		pinctrl-names = "default";
+		pinctrl-0 = <&proxy_i2c>;
+
+		gp2a@39 {
+			compatible = "sharp,gp2ap110s";
+			reg = <0x39>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&prox_int>;
+			interrupt-parent = <&gpa0>;
+			interrupts = <5 0 0>;
+			gp2ap110s,led_reg_val_1 = <0x14>;
+			gp2ap110s,ps_high_th_1 = <500>;
+			gp2ap110s,ps_low_th_1 = <350>;
+			gp2ap110s,led_reg_val_2 = <0x24>; /* If proximity close detection test fails */
+			gp2ap110s,ps_high_th_2 = <550>;
+			gp2ap110s,ps_low_th_2 = <380>;
+			gp2ap110s,settings_thd_low = <130>;
+			gp2ap110s,settings_thd_high = <500>;
+			gp2ap110s,gpio_int = <&gpa0 5 0>;
+		};
+	};
+};

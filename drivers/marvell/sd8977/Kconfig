@@ -1,0 +1,5 @@
+config MRVL_SDIO_OOB_IRQ
+	depends on MRVL_WL_SD8977
+	bool "SDIO OOB IRQ"
+	---help---
+	  SDIO OOB interrupt support

@@ -1,0 +1,91 @@
+#
+# MUIC devices
+#
+
+comment "MUIC configs"
+
+config USE_MUIC
+	bool "Using MUIC device driver"
+	depends on I2C
+	default n
+	help
+	  If you say yes here you will get support for
+	  the MUIC device driver.
+
+config MUIC_NOTIFIER
+	bool "MUIC notifier support"
+	depends on USE_MUIC
+	default n
+	help
+	  If you say yes here you will get support for
+	  the MUIC attached device status change notification.
+
+config MUIC_SUPPORT_CCIC
+	bool "MUIC supports CCIC chip interface"
+	depends on USE_MUIC
+	default n
+	help
+	  If you say yes here you will get support for the CCIC chip.
+
+config MUIC_S2MU004
+	bool "Using S2MU004 MUIC"
+	depends on USE_MUIC && MFD_S2MU004
+	default n
+	help
+	  If you say yes here you will get support for
+	  for the S2MU004 MUIC chip.
+
+config MUIC_S2MU004_NON_USB_C_TYPE
+	bool "Using S2MU005 MUIC with non usb-c type"
+	depends on MUIC_S2MU004
+	default n
+	help
+	  If you say yes here you will get support for
+	  for the S2MU004 MUIC non usb-c type chip.
+
+config HV_MUIC_S2MU004_AFC
+	bool "Using S2MU005 MUIC AFC"
+	depends on MUIC_S2MU004
+	default n
+	help
+	  If you say yes here you will get support for
+	  for the S2MU004 MUIC AFC chip.
+
+config HV_MUIC_VOLTAGE_CTRL
+	bool "Using AFC voltage control functionality"
+	depends on HV_MUIC_S2MU004_AFC
+	default n
+	help
+	  If you say yes here you will get support for
+	  for the AFC voltage control functionality.
+
+config NEW_SEC_FACTORY
+	bool "Using NEW SEC FACTORY"
+	depends on USE_MUIC
+	default n
+	help
+		If you say yes here you will get support for
+		for the NEW SEC FACTORY feature.
+
+config MUIC_MANAGER
+	bool "MUIC Manager supports CCIC chip interface"
+	depends on USE_MUIC && MFD_S2MU004
+	default n
+	help
+		If you say yes here you will get support manager for the CCIC chip.
+
+config MUIC_VOLTAGE_CTRL
+	bool "Using AFC Voltage control functionality"
+	depends on MUIC_S2MU004_AFC
+	default n
+	help
+		If you say yes here you will get support for
+		the AFC voltage control functionality.
+
+config HICCUP_CHARGER
+	bool "Using HICCUP charger"
+	depends on USE_MUIC
+	default n
+	help
+		If you say yes here you will get support for
+		for the hiccup charger feature.

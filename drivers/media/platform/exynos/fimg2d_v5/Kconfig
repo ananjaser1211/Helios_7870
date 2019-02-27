@@ -1,0 +1,19 @@
+#
+# Copyright (c) 2015 Samsung Electronics Co., Ltd.
+#		http://www.samsung.com/
+#
+# Licensed under GPLv2
+
+config VIDEO_EXYNOS_FIMG2D_V5
+	bool "Samsung Graphics 2D Driver v5"
+	depends on VIDEO_EXYNOS && ARCH_EXYNOS8
+	default n
+	---help---
+	  This is a legacy driver for graphics 2D in Samsung ARM based SoC.
+
+config FIMG2D_CCI_SNOOP
+	bool "Enables CCI snoop control"
+	depends on VIDEO_EXYNOS_FIMG2D_V5
+	default n
+	---help---
+	  This enables a CCI snoop control for cache coherency.
