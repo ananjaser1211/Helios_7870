@@ -212,10 +212,16 @@ on boot
     chown system system /efs/sec_efs/ssp_data
     chmod 0644 /efs/sec_efs/ssp_data
 
+
+# for BT MAC address
+    mkdir /efs/bluetooth 0770 system bluetooth
+# efs file alredy exist
+    chown system bluetooth /efs/bluetooth
+	
 # permissions for bluetooth.
     setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
     chown bluetooth bluetooth ro.bt.bdaddr_path
-    chown radio bluetooth /efs/bluetooth/bt_addr
+    chown system bluetooth /efs/bluetooth/bt_addr
     chmod 0640 /efs/bluetooth/bt_addr
 
     chmod 0660 /sys/class/rfkill/rfkill0/state
@@ -258,6 +264,9 @@ on boot
     chown system radio /sys/class/sensors/proximity_sensor/barcode_emul_en
     chown system radio /sys/class/sensors/proximity_sensor/prox_offset_pass
     chown system radio /sys/class/sensors/proximity_sensor/prox_trim
+    chown system radio /sys/class/sensors/proximity_sensor/modify_settings
+    chown system radio /sys/class/sensors/proximity_sensor/settings_thd_low
+    chown system radio /sys/class/sensors/proximity_sensor/settings_thd_high
 
 # Light_sensor
     chown system radio /sys/class/sensors/light_sensor/lux
@@ -686,7 +695,13 @@ service extSdUFSVold /system/bin/extSDCardServiceVold
 on fs
     mount_all /fstab.samsungexynos7870
     setprop ro.crypto.fuse_sdcard true
+
+    restorecon_recursive /efs
+    restorecon_recursive /cpefs
+
     chown radio system /efs
+    chown radio system /cpefs
+    chmod 0771 /cpefs
 
 # Permissions for ION
     chmod 0660 /sys/class/ion_cma/ion_video_ext/isolated
@@ -695,6 +710,7 @@ on fs
 # Permissions for gnss
     chmod 0660 /dev/gnss_ipc
     chown system system /dev/gnss_ipc
+
 # Permissions for backlight
     chown system system /sys/class/backlight/panel/brightness
 
@@ -772,6 +788,10 @@ on fs
     chmod 0664 /sys/class/input_booster/head
     chmod 0664 /sys/class/input_booster/tail
 
+# Permissions for TouchScreen
+    chown system radio /sys/class/sec/tsp/cmd
+    chown system system /sys/class/sec/tsp/input/enabled
+
 # Permissions for Touchkey
     chown system radio /sys/class/sec/sec_touchkey/brightness
     chown system radio /sys/class/sec/sec_touchkey/touchkey_firm_update
@@ -828,20 +848,36 @@ on fs
     chown system radio /sys/class/camera/ois/ois_exif
     chown system system /sys/devices/svc/Camera/SVC_rear_module
     chown system system /sys/devices/svc/Camera/SVC_front_module
+    
+# Rear2 camera permission
+    chown system radio /sys/class/camera/rear/rear2_camfw
+    chown system radio /sys/class/camera/rear/rear2_camfw_full
+    chown system radio /sys/class/camera/rear/rear2_checkfw_user
+    chown system radio /sys/class/camera/rear/rear2_checkfw_factory
+    chown system system /sys/class/camera/rear/rear2_hwparam
+    chown cameraserver cameraserver /sys/class/camera/rear/rear2_sensorid_exif
+    chown cameraserver cameraserver /sys/class/camera/rear/rear2_sensorid
+    chown system radio /sys/class/camera/rear/rear2_moduleid
 
 # FM Radio
     chown system audio /dev/radio0
     chmod 0660 /dev/radio0
-    chown bluetooth bluetooth /sys/devices/bluetooth/lna_en
+    chown bluetooth bluetooth /sys/devices/bluetooth/lna_en 
 
 #ARGOSD network_throughput
     chown system system /dev/network_throughput
 # ARGOSD
-service argos-daemon /system/bin/argosd
+service argos-daemon /vendor/bin/argosd
     class main
     user system
     group system radio
-	
+
+# faced
+service faced /system/bin/faced
+    class late_start
+    user system
+    group system
+
 # GPS
 service gpsd /vendor/bin/hw/gpsd -c /vendor/etc/gnss/gps.cfg
     class main
@@ -902,12 +938,6 @@ on property:ro.multisim.simslotcount=2
 
 # FINGERPRINT FRAMEWORK : starts fingerprintd
 service fingerprintd /system/bin/fingerprintd
-    class late_start
-    user system
-    group system
-
-# faced
-service faced /system/bin/faced
     class late_start
     user system
     group system
@@ -1015,14 +1045,3 @@ on property:sys.boot_completed=1
 on property:security.semdaemonfinish=1
     stop sem_daemon
 
-# WSM service startup
-service wsmd /system/bin/wsmd
-    class core
-    user system
-    group system
-    disabled
-on property:ro.wsmd.enable=true
-    mkdir /dev/socket/wsm_socket 
-    chmod 0711 /dev/socket/wsm_socket
-    chown system system /dev/socket/wsm_socket
-    start wsmd
