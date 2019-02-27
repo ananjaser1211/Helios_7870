@@ -255,9 +255,11 @@ static void nf_ct_add_to_dying_list(struct nf_conn *ct)
 	/* START_OF_KNOX_NPA */
 	del_timer(&ct->npa_timeout);
 	/* send dying conntrack entry to collect data */
+#ifdef CONFIG_KNOX_NCM
 	if ( (check_ncm_flag()) && (ct != NULL) && (atomic_read(&ct->startFlow)) ) {
 		knox_collect_conntrack_data(ct, NCM_FLOW_TYPE_CLOSE, 10);
 	}
+#endif
 	/* END_OF_KNOX_NPA */
 
 	/* add this conntrack to the (per cpu) dying list */
@@ -391,7 +393,7 @@ bool nf_ct_delete(struct nf_conn *ct, u32 portid, int report)
 	return true;
 }
 EXPORT_SYMBOL_GPL(nf_ct_delete);
-
+#ifdef CONFIG_KNOX_NCM
 /* START_OF_KNOX_NPA */
 /* Use this function only if struct nf_conn->timeout is of type struct timer_list */
 static void death_by_timeout_npa(unsigned long ul_conntrack)
@@ -412,7 +414,7 @@ static void death_by_timeout_npa(unsigned long ul_conntrack)
 	return;
 }
 /* END_OF_KNOX_NPA */
-
+#endif
 static void death_by_timeout(unsigned long ul_conntrack)
 {
 	/* START_OF_KNOX_NPA */
@@ -863,6 +865,7 @@ __nf_conntrack_alloc(struct net *net, u16 zone,
 		atomic_dec(&net->ct.count);
 		return ERR_PTR(-ENOMEM);
 	}
+	#ifdef CONFIG_KNOX_NCM
 	/* START_OF_KNOX_NPA */
 	/* initialize the conntrack structure members when memory is allocated */
 	if (ct != NULL) {
@@ -885,7 +888,7 @@ __nf_conntrack_alloc(struct net *net, u16 zone,
 		atomic_set(&ct->intermediateFlow, 0);
 	}
 	/* END_OF_KNOX_NPA */
-	
+	#endif
 	/*
 	 * Let ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode.next
 	 * and ct->tuplehash[IP_CT_DIR_REPLY].hnnode.next unchanged.
