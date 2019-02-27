@@ -1,0 +1,37 @@
+# Copyright (C) 2012 The Android Open Source Project
+#
+# IMPORTANT: Do not create world writable files or directories.
+# This is a common source of Android security bugs.
+#
+# HeliosKernel 2018
+#
+
+on boot
+    start cronos
+    start killer
+
+on property:sys.boot_completed=1
+	
+on post-fs-data
+
+service cronos /system/bin/sh /sbin/cronos.sh
+    class late_start
+    user root
+	group root
+	oneshot
+	disabled
+	seclabel u:r:shell:s0
+
+service killer /sbin/killer.sh
+    user root
+    seclabel u:r:init:s0
+    oneshot
+    disabled	
+
+# PrivateMode Mountpoints     
+   mkdir /mnt/shell/ 0750 shell shell
+   mkdir /mnt/shell/privatemode 0700 system system
+   mkdir /storage/Private 0000 system system
+   mkdir /data/privatemode 0770 system system
+   chown system system /data/privatemode
+   restorecon /data/privatemode
