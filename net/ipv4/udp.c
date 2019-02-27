@@ -1781,6 +1781,7 @@ int __udp4_lib_rcv(struct sk_buff *skb, struct udp_table *udptable,
 
 		/* START_OF_KNOX_NPA */
 		/* function to handle open flows with incoming udp packets */
+#ifdef CONFIG_KNOX_NCM					
 		if (check_ncm_flag()) {
 			if ( (sk) && (sk->sk_protocol == IPPROTO_UDP) ) {
 				ct = nf_ct_get(skb, &ctinfo);
@@ -1804,6 +1805,7 @@ int __udp4_lib_rcv(struct sk_buff *skb, struct udp_table *udptable,
 				}
 			}
 		}
+#endif		
 		/* END_OF_KNOX_NPA */
 
 		ret = udp_queue_rcv_skb(sk, skb);
@@ -1836,6 +1838,7 @@ int __udp4_lib_rcv(struct sk_buff *skb, struct udp_table *udptable,
 
 		/* START_OF_KNOX_NPA */
 		/* function to handle open flows with incoming udp packets */
+#ifdef CONFIG_KNOX_NCM	
 		if (check_ncm_flag()) {
 			if ( (sk) && (sk->sk_protocol == IPPROTO_UDP) ) {
 				ct = nf_ct_get(skb, &ctinfo);
@@ -1859,6 +1862,7 @@ int __udp4_lib_rcv(struct sk_buff *skb, struct udp_table *udptable,
 				}
 			}
 		}
+#endif		
 		/* END_OF_KNOX_NPA */
 
 		ret = udp_queue_rcv_skb(sk, skb);
