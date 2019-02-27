@@ -55,7 +55,6 @@ subsystem sound
 /dev/vndbinder            0666   root       root
 /dev/ovr*                 0664   root       system
 /dev/tvr*                 0664   root       system
-
 /dev/pmsg0                0222   root       log
 
 # the msm hw3d client device node is world writable/readable.
@@ -75,11 +74,13 @@ subsystem sound
 /dev/uinput               0660   system     bluetooth
 /dev/alarm                0664   system     radio
 /dev/power_on_alarm       0660   system     radio
-/dev/rtc0                 0640   system     system
+/dev/rtc0                 0660   system     system
 /dev/tty0                 0660   root       system
+/dev/ttySAC0              0660   root       radio
 /dev/graphics/*           0660   root       graphics
 /dev/msm_hw3dm            0660   system     graphics
 /dev/input/*              0660   root       input
+/dev/v4l-touch*           0660   root       input
 /dev/eac                  0660   root       audio
 /dev/cam                  0660   root       camera
 /dev/pmem                 0660   system     graphics
@@ -122,6 +123,7 @@ subsystem sound
 /dev/mtp_usb              0660   root       mtp
 /dev/usb_accessory        0660   root       usb
 /dev/tun                  0660   system     vpn
+/dev/input/event*         0660   system     input
 
 # CDMA radio interface MUX
 /dev/ts0710mux*           0640   radio      radio
@@ -129,8 +131,8 @@ subsystem sound
 
 # sysfs properties
 /sys/devices/platform/trusty.*      trusty_version        0440  root   log
-/sys/devices/virtual/input/input*   enable      0660  root   input
-/sys/devices/virtual/input/input*   poll_delay  0660  root   input
+/sys/devices/virtual/input/input*   enable      0660  system   input
+/sys/devices/virtual/input/input*   poll_delay  0660  system   input
 /sys/devices/virtual/usb_composite/*   enable      0664  root   system
 /sys/devices/system/cpu/cpu*   cpufreq/scaling_max_freq   0664  system system
 /sys/devices/system/cpu/cpu*   cpufreq/scaling_min_freq   0664  system system
@@ -146,6 +148,12 @@ subsystem sound
 /dev/vfsspi               0660   system     system
 /dev/esfp0                0660   system     system
 /dev/goodix_fp            0660   system     system
+/dev/qbt2000_fd           0660   system     system
+/dev/qbt2000_ipc          0660   system     system
+/dev/qbtspi               0660   system     system
 
 # DVB API device nodes
 /dev/dvb*                 0660   root       system
+
+# USB 
+/dev/ttyGS*                 0660   system       system

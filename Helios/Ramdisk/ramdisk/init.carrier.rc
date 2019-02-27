@@ -1,7 +1,10 @@
 on boot
 
-# Move 2 SD card
-service extSdUFSVold /system/bin/extSDCardServiceVold
+# tdmb
+    chown system system /dev/tdmb
+    chmod 0660 /dev/tdmb
+
+service dmb /system/bin/dmbserver
     class main
-    user system
-    group system mount radio net_bt sdcard_rw shell media media_rw
+    user media
+    group system radio inet misc audio graphics net_bt net_bt_admin sdcard_rw sdcard_r shell media_rw

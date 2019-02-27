@@ -3,6 +3,7 @@ import init.baseband.rc
 import init.carrier.rc
 import init.wifi.rc
 import init.fac.rc
+import init.gps.rc
 
 on early-init
     mkdir /efs 0771 radio system
@@ -25,6 +26,10 @@ on init
     symlink /data/app /factory
     symlink /dev/block/platform/13540000.dwmmc0/by-name/PERSISTENT /dev/block/persistent
     symlink /dev/block/platform/13540000.dwmmc0/by-name/STEADY /dev/block/steady
+
+on post-fs
+    # set RLIMIT_MEMLOCK to 64MB
+    setrlimit 8 67108864 67108864
 
 on post-fs-data
 # Log data folder
@@ -62,14 +67,44 @@ on post-fs-data
     chown system system /data/cache/backup_stage
     chmod 0711 /data/cache/backup_stage
 
-# Magnetic sensor YAS537 lib
-    mkdir /data/system/yas_lib 0770 system system
+    setprop vold.post_fs_data_done 1
 
 # /efs/factory.prop for Dual / Single SIM settings
     chown radio radio /efs/factory.prop
     chmod 0600 /efs/factory.prop
 
     restorecon /sys/kernel/debug/tracing/trace_marker
+
+# Permissions for audio
+    chown system radio /sys/class/audio/earjack/select_jack
+    chown system radio /sys/class/audio/earjack/key_state
+    chown system radio /sys/class/audio/earjack/state
+    chown system radio /sys/class/audio/earjack/mic_adc
+
+    chown system audio /sys/class/cirrus/cirrus_cal/status
+    chown system audio /sys/class/cirrus/cirrus_cal/rdc
+    chown system audio /sys/class/cirrus/cirrus_cal/temp
+
+    chown system audio /sys/class/cirrus/cirrus_bd/max_exc
+    chown system audio /sys/class/cirrus/cirrus_bd/over_exc_count
+    chown system audio /sys/class/cirrus/cirrus_bd/max_temp
+    chown system audio /sys/class/cirrus/cirrus_bd/over_temp_count
+
+    mkdir /efs/cirrus 0770 audioserver audio
+    chown audioserver audio /efs/cirrus/rdc_cal
+    chown audioserver audio /efs/cirrus/temp_cal
+    chmod 0660 /efs/cirrus/rdc_cal
+    chmod 0660 /efs/cirrus/temp_cal
+
+# for WIFI MAC address
+    mkdir /efs/wifi 0775 wifi root
+    chown wifi root /efs/wifi/.mac.info
+    chmod 0664 /efs/wifi/.mac.info
+    chown wifi root /efs/wifi/.mac.cob
+    chmod 0664 /efs/wifi/.mac.cob
+
+# Magnetic sensor YAS539 lib
+    mkdir /data/system/yas_lib 0770 system system
 
 # Audio I2C node for TFA amp
     chmod 0660 /dev/i2c-20
@@ -89,6 +124,10 @@ on boot
 	chmod 755 /sys/kernel/debug
     chown system system /sys/kernel/debug
 #   setprop ro.radio.noril yes
+	
+	# Set permissions for ttysac2
+	chown system system /dev/ttySAC2
+	chmod 0660 /dev/ttySAC2
 
     # Assign TCP buffer thresholds to be ceiling value of technology maximums
     # Increased technology maximums should be reflected here.
@@ -116,6 +155,8 @@ on boot
     chmod 0664 /sys/class/sec/sec_nad/nad_all
     chown system radio /sys/class/sec/sec_nad/nad_support
     chmod 0664 /sys/class/sec/sec_nad/nad_support
+    chown system radio /sys/class/sec/sec_nad/nad_api
+    chmod 0664 /sys/class/sec/sec_nad/nad_api
     chown system radio /dev/block/NAD_REFER
     chmod 0664 /dev/block/NAD_REFER
 
@@ -130,7 +171,11 @@ on boot
     chmod 0664 /sys/power/cpuhotplug/min_online_cpu
     chown system system /sys/power/cpuhotplug/max_online_cpu
     chmod 0664 /sys/power/cpuhotplug/max_online_cpu
-    
+
+    # CPU C-state node
+    chown radio system /sys/module/cpuidle/parameters/off
+    chmod 0664 /sys/module/cpuidle/parameters/off
+
     # GPU dvfs node
     chown radio system /sys/devices/11400000.mali/dvfs_table
     chmod 0664 /sys/devices/11400000.mali/dvfs_table
@@ -201,6 +246,15 @@ on boot
     chmod 0660 /sys/devices/system/cpu/cpu4/cpufreq/interactive/boostpulse_duration
     chown system system /sys/devices/system/cpu/cpu4/cpufreq/interactive/io_is_busy
     chmod 0660 /sys/devices/system/cpu/cpu4/cpufreq/interactive/io_is_busy
+	
+	# MSP Core Status
+    chown system system /sys/devices/system/cpu/cpu1/online
+    chown system system /sys/devices/system/cpu/cpu2/online
+    chown system system /sys/devices/system/cpu/cpu3/online
+    chown system system /sys/devices/system/cpu/cpu4/online
+    chown system system /sys/devices/system/cpu/cpu5/online
+    chown system system /sys/devices/system/cpu/cpu6/online
+    chown system system /sys/devices/system/cpu/cpu7/online
 
     # RTC status
     chown system system /sys/power/rtc_status
@@ -212,25 +266,17 @@ on boot
     chown system system /efs/sec_efs/ssp_data
     chmod 0644 /efs/sec_efs/ssp_data
 
-
-# for BT MAC address
-    mkdir /efs/bluetooth 0770 system bluetooth
-# efs file alredy exist
-    chown system bluetooth /efs/bluetooth
-	
+#Bluetooth
+    chown bluetooth bluetooth /dev/ttySAC0
+    chmod 0660 /dev/ttySAC0
 # permissions for bluetooth.
     setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
     chown bluetooth bluetooth ro.bt.bdaddr_path
-    chown system bluetooth /efs/bluetooth/bt_addr
+    chown radio bluetooth /efs/bluetooth/bt_addr
     chmod 0640 /efs/bluetooth/bt_addr
-
     chmod 0660 /sys/class/rfkill/rfkill0/state
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
-
-# Bluetooth
-    chown bluetooth bluetooth /dev/ttySAC0
-    chmod 0660 /dev/ttySAC0
 
 #MST HW Support
 #setprop ro.mst.support 1
@@ -280,6 +326,7 @@ on boot
     chown system radio /sys/class/sensors/gyro_sensor/temperature
     chown system radio /sys/class/sensors/gyro_sensor/selftest
     chown system radio /sys/class/sensors/gyro_sensor/selftest_dps
+    chown system radio /sys/class/sensors/gyro_sensor/selftest_revised
     chown system radio /sys/class/sensors/gyro_sensor/vendor
     chown system radio /sys/class/sensors/gyro_sensor/name
 
@@ -322,13 +369,13 @@ on boot
     chown system radio /sys/class/sensors/grip_sensor/grip_earjack
     chown system radio /sys/class/sensors/grip_sensor/grip_gain
     chown system radio /sys/class/sensors/grip_sensor/grip_raw
-    chown system radio /sys/class/sensors/grip_sensor/grip_raw_d
+	chown system radio /sys/class/sensors/grip_sensor/grip_raw_d
     chown system radio /sys/class/sensors/grip_sensor/grip_sw_reset
     chown system radio /sys/class/sensors/grip_sensor/grip_threshold
     chown system radio /sys/class/sensors/grip_sensor/grip_total_cap
     chown system radio /sys/class/sensors/grip_sensor/grip_check
     chown system radio /sys/class/sensors/grip_sensor/grip
-    chown system radio /sys/class/sensors/grip_sensor/grip_diff_d
+	chown system radio /sys/class/sensors/grip_sensor/grip_diff_d
     chown system radio /sys/class/sensors/grip_sensor/grip_baseline
     chown system radio /sys/class/sensors/grip_sensor/grip_irq_count
 
@@ -695,13 +742,7 @@ service extSdUFSVold /system/bin/extSDCardServiceVold
 on fs
     mount_all /fstab.samsungexynos7870
     setprop ro.crypto.fuse_sdcard true
-
-    restorecon_recursive /efs
-    restorecon_recursive /cpefs
-
     chown radio system /efs
-    chown radio system /cpefs
-    chmod 0771 /cpefs
 
 # Permissions for ION
     chmod 0660 /sys/class/ion_cma/ion_video_ext/isolated
@@ -739,6 +780,10 @@ on fs
     chown system system /sys/class/mdnie/mdnie/whiteRGB
     chown system system /sys/class/mdnie/mdnie/night_mode
     chown system system /sys/class/mdnie/mdnie/mdnie_ldu
+    chown system system /sys/class/mdnie/mdnie/night_mode
+    chown system system /sys/class/mdnie/mdnie/whiteRGB
+    chown system system /sys/class/mdnie/mdnie/light_notification
+    chown system system /sys/class/mdnie/mdnie/color_lens
 
 # For cpefs partition
     check_fs /dev/block/platform/13540000.dwmmc0/by-name/CPEFS ext4
@@ -811,6 +856,7 @@ on fs
 
 # Permissions Camera
     mkdir /data/camera 0770 cameraserver system
+    chown cameraserver cameraserver /sys/kernel/mm/vmscan/mem_boost_mode
     chown system radio /sys/class/camera/rear/rear_camfw
     chown system radio /sys/class/camera/rear/rear_camfw_full
     chown system radio /sys/class/camera/rear/rear_checkfw_user
@@ -900,6 +946,7 @@ on property:ro.bootmode=charger
     mount ext4 /dev/block/platform/13540000.dwmmc0/by-name/EFS /efs nosuid nodev noatime noauto_da_alloc,discard,journal_async_commit
 
 on property:ro.bootmode=charger
+   mkdir /efs/lpm 0775 system system
    class_start sec-charger
 
 # MobiCore startup
@@ -1045,3 +1092,8 @@ on property:sys.boot_completed=1
 on property:security.semdaemonfinish=1
     stop sem_daemon
 
+on property:ro.multisim.simslotcount=1
+    setprop persist.radio.multisim.config ss
+
+on property:ro.multisim.simslotcount=2
+    setprop persist.radio.multisim.config dsds
