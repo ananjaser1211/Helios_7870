@@ -1314,7 +1314,7 @@ static int security_context_to_sid_core(const char *scontext, u32 scontext_len,
 				      scontext_len, &context, def_sid);
 	if (rc == -EINVAL && force) {
 		context.str = str;
-		context.len = strlen(str) + 1;
+		context.len = scontext_len;
 		str = NULL;
 	} else if (rc)
 		goto out_unlock;
