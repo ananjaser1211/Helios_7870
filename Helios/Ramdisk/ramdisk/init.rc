@@ -24,19 +24,16 @@ on early-init
     # Set the security context of /adb_keys if present.
     restorecon /adb_keys
 
-    # Shouldn't be necessary, but sdcard won't start without it. http://b/22568628.
-    mkdir /mnt 0775 root system
-
     # Set the security context of /postinstall if present.
     restorecon /postinstall
 
     # Mount cgroup mount point for cpu accounting
-    mount cgroup none /acct cpuacct
+    mount cgroup none /acct nodev noexec nosuid cpuacct
     mkdir /acct/uid
 
     # root memory control cgroup, used by lmkd
     mkdir /dev/memcg 0700 root system
-    mount cgroup none /dev/memcg memory
+    mount cgroup none /dev/memcg nodev noexec nosuid memory
     # app mem cgroups, used by activity manager, lmkd and zygote
     mkdir /dev/memcg/apps/ 0755 system system
     # cgroup for system_server and surfaceflinger
@@ -136,7 +133,7 @@ on init
     symlink /storage/self/primary /sdcard
     symlink /storage/self/primary /mnt/sdcard
     symlink /mnt/user/0/primary /mnt/runtime/default/self/primary
-	
+
     write /proc/sys/kernel/panic_on_oops 1
     write /proc/sys/kernel/hung_task_timeout_secs 0
     write /proc/cpu/alignment 4
@@ -478,6 +475,10 @@ on late-fs
     chmod 0440 /data/log/remaining_olog
 
 on post-fs-data
+# [ SEC_SELINUX_PORTING_COMMON
+    # sec_efs_file
+    mkdir /efs/sec_efs 0775 radio system
+# ] SEC_SELINUX_PORTING_COMMON
 
     # We chown/chmod /data again so because mount is run as root + defaults
     chown system system /data
@@ -520,6 +521,9 @@ on post-fs-data
     chmod 0660 /dev/t-base-tui
     chown system system /dev/t-base-tui
     start mobicore
+
+    mkdir /efs/prov 0770 system system
+    mkdir /efs/prov_data 0770 system system
 
     # icd
     check_icd
@@ -609,8 +613,6 @@ on post-fs-data
     # Fix the access permissions and group ownership for 'bt_config.conf'
     chmod 0660 /data/misc/bluedroid/bt_config.conf
     chown bluetooth bluetooth /data/misc/bluedroid/bt_config.conf
-    mkdir /data/log 0775 system log
-    mkdir /data/log/bt 0770 bluetooth bluetooth
     mkdir /data/misc/bluetooth 0770 bluetooth bluetooth
     mkdir /data/misc/bluetooth/logs 0770 bluetooth bluetooth
     mkdir /data/log 0775 system log
@@ -629,19 +631,12 @@ on post-fs-data
     mkdir /data/misc/vpn 0770 system vpn
     mkdir /data/misc/shared_relro 0771 shared_relro shared_relro
     mkdir /data/misc/systemkeys 0700 system system
-    mkdir /data/misc/wifi 0770 wifi wifi
-    mkdir /data/misc/wifi/sockets 0770 wifi wifi
-    mkdir /data/misc/wifi/wpa_supplicant 0770 wifi wifi
-    mkdir /data/misc/wifi_hostapd 0771 wifi system
     mkdir /data/misc/ethernet 0770 system system
     mkdir /data/misc/dhcp 0770 dhcp dhcp
     mkdir /data/misc/user 0771 root root
     mkdir /data/misc/perfprofd 0775 root root
-    # give system access to wpa_supplicant.conf for backup and restore
-    chmod 0660 /data/misc/wifi/wpa_supplicant.conf
     mkdir /data/local 0751 root root
     mkdir /data/misc/media 0700 media media
-    mkdir /data/misc/mediacodec 0700 mediacodec mediacodec
     mkdir /data/misc/audioserver 0700 audioserver audioserver
     mkdir /data/misc/cameraserver 0700 cameraserver cameraserver
     mkdir /data/misc/vold 0700 root root
@@ -797,18 +792,6 @@ on post-fs-data
 
     mkdir /data/anr 0775 system system
 
-    # Create all remaining /data root dirs so that they are made through init
-    # and get proper encryption policy installed
-    mkdir /data/backup 0700 system system
-    mkdir /data/ss 0700 system system
-
-    # Permission for Fingerprint sensor
-    chown system radio /sys/class/fingerprint/fingerprint/type_check
-    chown system radio /sys/class/fingerprint/fingerprint/name
-    chown system radio /sys/class/fingerprint/fingerprint/vendor
-    chown system radio /sys/class/fingerprint/fingerprint/adm
-    chown system radio /sys/class/fingerprint/fingerprint/bfs_values
-
     # Samsung Pay
     # mkdir /efs/pfw_data 0760 spay spay
 
@@ -891,23 +874,6 @@ on post-fs-data
 
     # Samsung font
     mkdir /data/app_fonts 0775 system system
-
-    # NFC
-    mkdir /data/nfc 0700 nfc nfc
-    mkdir /data/nfc/param 0700 nfc nfc
-    mkdir /efs/sec_efs/nfc 0700 nfc nfc
-
-    # NFC KEY
-    mkdir /data/nfc_log 0750 nfc system
-    copy /system/etc/nfc_key /data/nfc/Key
-    chmod 660 /data/nfc/Key
-    chown nfc nfc /data/nfc/Key
-
-    # OCF Key Service
-    mkdir /data/system/ocf_key_service 0700 system system
-
-    # Magnetic sensor AK09916C lib
-    mkdir /data/system/akmd_set 0770 system system
 
     init_user0
 
@@ -1027,10 +993,6 @@ on boot
     chmod 0664 /sys/module/lowmemorykiller/parameters/adj
     chown root system /sys/module/lowmemorykiller/parameters/minfree
     chmod 0664 /sys/module/lowmemorykiller/parameters/minfree
-    chown root system /sys/module/lowmemorykiller/parameters/direct_adj
-    chmod 0664 /sys/module/lowmemorykiller/parameters/direct_adj
-    chown root system /sys/module/lowmemorykiller/parameters/direct_minfree
-    chmod 0664 /sys/module/lowmemorykiller/parameters/direct_minfree
 
     # terminal mode
     chmod 0660 /sys/class/android_usb/android0/terminal_version
@@ -1093,7 +1055,6 @@ on boot
     # usb whitelist
     chown system usb /sys/class/usb_notify/usb_control/whitelist_for_mdm
     chmod 0664 /sys/class/usb_notify/usb_control/whitelist_for_mdm
-
 
     # ccic UVDM permission
     chown system usb /dev/ccic_misc
@@ -1481,7 +1442,6 @@ on boot
     chown system system /sys/class/sec/tsp/wet_mode
     chown system system /sys/class/sec/tsp/noise_mode
     chown system system /sys/class/sec/tsp/comm_err_count
-    chown system system /sys/class/sec/tsp/module_id
     chown system system /sys/class/sec/tsp/checksum
     chown system system /sys/class/sec/tsp/holding_time
     chown system system /sys/class/sec/tsp/all_touch_count
@@ -1512,7 +1472,6 @@ on boot
     chown system radio /sys/class/sec/sec_touchkey/touchkey_light_update
     chown system radio /sys/class/sec/sec_touchkey/touchkey_light_id_compare
     chown system radio /sys/class/sec/sec_touchkey/touchkey_light_table_write
-    chown system radio /sys/class/sec/sec_touchkey/touchkey_irq_count
 
     # Wacom
     chown system system /sys/class/sec/sec_epen/input/enabled

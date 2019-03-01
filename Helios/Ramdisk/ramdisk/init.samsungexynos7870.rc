@@ -27,10 +27,6 @@ on init
     symlink /dev/block/platform/13540000.dwmmc0/by-name/PERSISTENT /dev/block/persistent
     symlink /dev/block/platform/13540000.dwmmc0/by-name/STEADY /dev/block/steady
 
-on post-fs
-    # set RLIMIT_MEMLOCK to 64MB
-    setrlimit 8 67108864 67108864
-
 on post-fs-data
 # Log data folder
 #   mkdir /data/log 0771 radio system
@@ -72,8 +68,6 @@ on post-fs-data
 # /efs/factory.prop for Dual / Single SIM settings
     chown radio radio /efs/factory.prop
     chmod 0600 /efs/factory.prop
-
-    restorecon /sys/kernel/debug/tracing/trace_marker
 
 # Permissions for audio
     chown system radio /sys/class/audio/earjack/select_jack
@@ -286,6 +280,7 @@ on boot
     chmod 664 /sys/devices/system/sec_os_ctrl/migrate_os
 
 # Sensors permissions
+
 # Accelerometer_sensor
     chown system radio /sys/class/sensors/accelerometer_sensor/raw_data
     chown system radio /sys/class/sensors/accelerometer_sensor/calibration
@@ -910,19 +905,20 @@ on fs
     chmod 0660 /dev/radio0
     chown bluetooth bluetooth /sys/devices/bluetooth/lna_en 
 
-#ARGOSD network_throughput
+# ARGOSD network_throughput
     chown system system /dev/network_throughput
+
 # ARGOSD
 service argos-daemon /vendor/bin/argosd
     class main
     user system
     group system radio
 
-# faced
-service faced /system/bin/faced
-    class late_start
+service cp_vername /vendor/bin/cp_vername.sh /sys/class/nfc_test/test
+    class core
     user system
     group system
+    oneshot
 
 # GPS
 service gpsd /vendor/bin/hw/gpsd -c /vendor/etc/gnss/gps.cfg
@@ -989,10 +985,10 @@ service fingerprintd /system/bin/fingerprintd
     user system
     group system
 
-# VC daemon
-    service VC-daemon /system/bin/vcd
-    class main
-    user root
+# faced
+service faced /system/bin/faced
+    class late_start
+    user system
     group system
 
 # SCE daemon
@@ -1031,31 +1027,13 @@ on property:ro.debuggable=1
     write /sys/module/kgdboc/parameters/kgdboc ttyFIQ1
     write /sys/module/fiq_debugger/parameters/kgdb_enable 1
 
+# Sysscope
 service prepare_param /system/bin/prepare_param.sh /dev/block/platform/13540000.dwmmc0/by-name/PARAM
     class core
     user root
     group root
     seclabel u:r:prepare_param:s0
     oneshot
-
-# Secure Storage startup
-service secure_storage /system/bin/secure_storage_daemon
-    class core
-    user system
-    group system
-    disabled
-on property:ro.securestorage.knox=true
-    mkdir /dev/.secure_storage
-    chmod 0711 /dev/.secure_storage
-    chown system system /dev/.secure_storage
-    restorecon -R /dev/.secure_storage
-    start secure_storage
-on property:ro.securestorage.support=true
-    mkdir /dev/.secure_storage
-    chmod 0711 /dev/.secure_storage
-    chown system system /dev/.secure_storage
-    restorecon -R /dev/.secure_storage
-    start secure_storage
 
 # umount service
 service umount_service /system/bin/umount -D /preload
