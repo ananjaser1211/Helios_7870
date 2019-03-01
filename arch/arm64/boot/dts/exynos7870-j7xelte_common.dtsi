@@ -43,21 +43,6 @@
 			clock-frequency = <26000000>;
 		};
 	};
-	firmware {
-	   android {
-		 compatible = "android,firmware";
-		  fstab {
-			 compatible = "android,fstab";
-			 system {
-				  compatible = "android,system";
-				  dev = "/dev/block/platform/13540000.dwmmc0/by-name/SYSTEM";
-				  type = "ext4";
-				  mnt_flags = "ro,barrier=1,discard";
-				  fsmgr_flags = "wait,verify";
-				 };
-		   };
-	  };
-	};
 
 	reserved-memory {
 		#address-cells = <2>;
