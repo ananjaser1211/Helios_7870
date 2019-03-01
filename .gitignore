@@ -132,3 +132,11 @@ net/wireless/regdb.c
 security/selinux_n/av_permissions.h
 security/selinux_n/flask.h
 usr/gen_init_cpio
+arch/arm64/configs/smt.txt
+crypto/asymmetric_keys/x509-asn1.c
+crypto/asymmetric_keys/x509-asn1.h
+crypto/asymmetric_keys/x509_rsakey-asn1.c
+crypto/asymmetric_keys/x509_rsakey-asn1.h
+lib/oid_registry_data.c
+scripts/asn1_compiler
+
