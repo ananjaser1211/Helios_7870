@@ -302,18 +302,15 @@ static int dma_hw_params(struct snd_pcm_substream *substream,
 static int dma_hw_free(struct snd_pcm_substream *substream)
 {
 	struct runtime_data *prtd = substream->runtime->private_data;
-	int ret;
 
-	pr_info("Entered %s\n", __func__);
+	pr_debug("Entered %s\n", __func__);
 
 	snd_pcm_set_runtime_buffer(substream, NULL);
 
 	if (prtd->params) {
-		ret = prtd->params->ops->flush(prtd->params->ch);
-		pr_info("%s:DMA flush retrun value:%d\n", __func__, ret);
-		ret = prtd->params->ops->release(prtd->params->ch,
+		prtd->params->ops->flush(prtd->params->ch);
+		prtd->params->ops->release(prtd->params->ch,
 					prtd->params->client);
-		pr_info("%s:DMA release retrun value:%d\n", __func__, ret);
 		prtd->params = NULL;
 	}
 
