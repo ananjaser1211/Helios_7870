@@ -48,10 +48,10 @@
 /dev/video31              0660   media      graphics
 
 # mscalers
-/dev/video50              0660   mediacodec drmrpc
+/dev/video50              0660   media      graphics
 /dev/video51              0660   media      graphics
 /dev/m2m1shot_scaler0     0660   mediacodec drmrpc
-/dev/m2m1shot_scaler1     0660   cameraserver   cameraserver
+/dev/m2m1shot_scaler1     0660   mediacodec drmrpc
 
 /dev/video55              0666   system     graphics
 /dev/fimg2d               0666   system     graphics
@@ -116,7 +116,7 @@
 # SIPC RIL
 /dev/umts_boot0           0660   radio      radio
 /dev/umts_ipc0            0660   radio      radio
-/dev/umts_ipc1            0660   radio      radio
+# /dev/umts_ipc1            0660   radio      radio
 /dev/umts_rfs0            0660   radio      radio
 
 # Modem Interface

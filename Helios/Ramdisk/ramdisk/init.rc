@@ -1313,6 +1313,12 @@ on boot
 	chmod 0660 /sys/class/power_supply/battery/cisd_cable_data_json
 	chown system system /efs/FactoryApp/cisd_cable_data
 	chmod 0660 /efs/FactoryApp/cisd_cable_data
+	chown system radio /sys/class/power_supply/battery/cisd_tx_data
+	chmod 0660 /sys/class/power_supply/battery/cisd_tx_data
+	chown system radio /sys/class/power_supply/battery/cisd_tx_data_json
+	chmod 0660 /sys/class/power_supply/battery/cisd_tx_data_json
+	chown system system /efs/FactoryApp/cisd_tx_data
+	chmod 0660 /efs/FactoryApp/cisd_tx_data
 	chown system radio /sys/class/power_supply/battery/batt_capacity_max
 	chmod 0660 /sys/class/power_supply/battery/batt_capacity_max
 	chown system system /efs/Battery/batt_capacity_max
@@ -1741,6 +1747,8 @@ on charger
     chmod 0660 /sys/class/power_supply/battery/cisd_data_efs_path
     chown system system /efs/FactoryApp/cisd_data
     chmod 0640 /efs/FactoryApp/cisd_data
+    chown system system /efs/FactoryApp/cisd_tx_data
+    chmod 0640 /efs/FactoryApp/cisd_tx_data
     chown radio system /efs
     chmod 0771 /efs
     mkdir /efs/Battery 0775 radio system

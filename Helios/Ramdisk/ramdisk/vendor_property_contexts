@@ -1,3 +1,32 @@
+#line 1 "device/samsung/sepolicy/property_contexts"
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/P_review_request/view/23226493/?page=1
+# No use
+#persist.debug_level       u:object_r:vendor_rild_prop:s0
+#persist.ril.              u:object_r:vendor_rild_prop:s0
+#radio.ril.                u:object_r:vendor_rild_prop:s0
+#sys.rild_reset            u:object_r:vendor_rild_prop:s0
+
+# for ims service
+persist.config.ims.       u:object_r:vendor_ims_prop:s0
+
+# for silentlog
+persist.vendor.dev.silentlog     u:object_r:vendor_slog_prop:s0
+persist.vendor.dev.silentlog.    u:object_r:vendor_slog_prop:s0
+
+# for camera hal
+persist.vendor.sys.camera.       u:object_r:vendor_camera_prop:s0
+persist.vendor.hifills.          u:object_r:vendor_camera_prop:s0
+persist.vendor.dualCam.          u:object_r:vendor_camera_prop:s0
+persist.vendor.camera.           u:object_r:vendor_camera_prop:s0
+vendor.hal.camera.               u:object_r:vendor_camera_prop:s0
+
+# more vendor properties
+vendor.ddk.set.afbc              u:object_r:vendor_hwc_prop:s0
+ro.vendor.cscsupported  u:object_r:vendor_default_prop:s0
+vendor.sys.mobicoredaemon.enable  u:object_r:vendor_mobicoredaemon_prop:s0
+
+# need to check
+sat.test.monkey.pid       u:object_r:vendor_prop:s0
 #line 1 "vendor/samsung/system/sepolicy/samsung/property_contexts"
 # http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/P_review_request/view/23265980
 vendor.bluetooth_fw_ver                     u:object_r:vendor_bluetooth_prop:s0
@@ -122,35 +151,6 @@ vendor.cbd.                                 u:object_r:vendor_cbd_prop:s0
 # http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/P_review_request/view/23402289
 vendor.TEEGRIS.                             u:object_r:vendor_teegris_prop:s0
 
-#line 1 "device/samsung/sepolicy/property_contexts"
-# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/P_review_request/view/23226493/?page=1
-# No use
-#persist.debug_level       u:object_r:vendor_rild_prop:s0
-#persist.ril.              u:object_r:vendor_rild_prop:s0
-#radio.ril.                u:object_r:vendor_rild_prop:s0
-#sys.rild_reset            u:object_r:vendor_rild_prop:s0
-
-# for ims service
-persist.config.ims.       u:object_r:vendor_ims_prop:s0
-
-# for silentlog
-persist.vendor.dev.silentlog     u:object_r:vendor_slog_prop:s0
-persist.vendor.dev.silentlog.    u:object_r:vendor_slog_prop:s0
-
-# for camera hal
-persist.vendor.sys.camera.       u:object_r:vendor_camera_prop:s0
-persist.vendor.hifills.          u:object_r:vendor_camera_prop:s0
-persist.vendor.dualCam.          u:object_r:vendor_camera_prop:s0
-persist.vendor.camera.           u:object_r:vendor_camera_prop:s0
-vendor.hal.camera.               u:object_r:vendor_camera_prop:s0
-
-# more vendor properties
-vendor.ddk.set.afbc              u:object_r:vendor_hwc_prop:s0
-ro.vendor.cscsupported  u:object_r:vendor_default_prop:s0
-vendor.sys.mobicoredaemon.enable  u:object_r:vendor_mobicoredaemon_prop:s0
-
-# need to check
-sat.test.monkey.pid       u:object_r:vendor_prop:s0
 #line 1 "system/sepolicy/reqd_mask/property_contexts"
 # empty property_contexts file - this file is used to generate an empty
 # non-platform property context for devices without any property_contexts

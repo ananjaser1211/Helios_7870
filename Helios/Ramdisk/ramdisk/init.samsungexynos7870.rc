@@ -37,10 +37,6 @@ on post-fs-data
     chown system system /data/privatemode
     restorecon /data/privatemode
 
-# Audio I2C node for TFA amp
-    chmod 0660 /dev/i2c-20
-    chown audio audio /dev/i2c-20
-
 # Directory for GPS
     chmod 0660 /dev/gnss_ipc
     chown system system /dev/gnss_ipc
@@ -64,7 +60,8 @@ on post-fs-data
     chown system system /data/cache/backup_stage
     chmod 0711 /data/cache/backup_stage
 
-    setprop vold.post_fs_data_done 1
+# Magnetic sensor YAS537 lib
+    mkdir /data/system/yas_lib 0770 system system
 
 # /efs/factory.prop for Dual / Single SIM settings
     chown radio radio /efs/factory.prop
@@ -97,9 +94,6 @@ on post-fs-data
     chmod 0664 /efs/wifi/.mac.info
     chown wifi root /efs/wifi/.mac.cob
     chmod 0664 /efs/wifi/.mac.cob
-
-# Magnetic sensor YAS539 lib
-    mkdir /data/system/yas_lib 0770 system system
 
 # Audio I2C node for TFA amp
     chmod 0660 /dev/i2c-20
@@ -261,17 +255,19 @@ on boot
     chown system system /efs/sec_efs/ssp_data
     chmod 0644 /efs/sec_efs/ssp_data
 
-#Bluetooth
-    chown bluetooth bluetooth /dev/ttySAC0
-    chmod 0660 /dev/ttySAC0
 # permissions for bluetooth.
     setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
     chown bluetooth bluetooth ro.bt.bdaddr_path
     chown radio bluetooth /efs/bluetooth/bt_addr
     chmod 0640 /efs/bluetooth/bt_addr
+
     chmod 0660 /sys/class/rfkill/rfkill0/state
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
+
+# Bluetooth
+    chown bluetooth bluetooth /dev/ttySAC0
+    chmod 0660 /dev/ttySAC0
 
 #MST HW Support
 #setprop ro.mst.support 1
@@ -904,7 +900,7 @@ on fs
 # FM Radio
     chown system audio /dev/radio0
     chmod 0660 /dev/radio0
-    chown bluetooth bluetooth /sys/devices/bluetooth/lna_en 
+    chown bluetooth bluetooth /sys/devices/bluetooth/lna_en
 
 # ARGOSD network_throughput
     chown system system /dev/network_throughput
@@ -914,14 +910,8 @@ service argos-daemon /vendor/bin/argosd
     class main
     user system
     group system radio
-
-service cp_vername /vendor/bin/cp_vername.sh /sys/class/nfc_test/test
-    class core
-    user system
-    group system
-    oneshot
-
-# GPS
+	
+# GPS daemon
 service gpsd /vendor/bin/hw/gpsd -c /vendor/etc/gnss/gps.cfg
     class main
     user gps
@@ -929,6 +919,7 @@ service gpsd /vendor/bin/hw/gpsd -c /vendor/etc/gnss/gps.cfg
     capabilities BLOCK_SUSPEND
     ioprio be 0
     
+
 # LPM
 service lpm /system/bin/lpm
     class sec-charger
@@ -990,6 +981,12 @@ service fingerprintd /system/bin/fingerprintd
 service faced /system/bin/faced
     class late_start
     user system
+    group system
+
+# VC daemon
+    service VC-daemon /system/bin/vcd
+    class main
+    user root
     group system
 
 # SCE daemon
@@ -1071,8 +1068,14 @@ on property:sys.boot_completed=1
 on property:security.semdaemonfinish=1
     stop sem_daemon
 
-on property:ro.multisim.simslotcount=1
-    setprop persist.radio.multisim.config ss
-
-on property:ro.multisim.simslotcount=2
-    setprop persist.radio.multisim.config dsds
+# WSM service startup
+service wsmd /system/bin/wsmd
+    class core
+    user system
+    group system
+    disabled
+on property:ro.wsmd.enable=true
+    mkdir /dev/socket/wsm_socket 
+    chmod 0711 /dev/socket/wsm_socket
+    chown system system /dev/socket/wsm_socket
+    start wsmd
