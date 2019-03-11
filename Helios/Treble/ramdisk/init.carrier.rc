@@ -1,3 +1,10 @@
+on post-fs-data
+ 
+# HD-DMB CAS Key Data
+    mkdir /data/.dmbca 0771
+    chown media system /data/.dmbca
+    chmod 0771 /data/.dmbca
+
 on boot
 
 # Move 2 SD card
@@ -5,3 +12,14 @@ service extSdUFSVold /system/bin/extSDCardServiceVold
     class main
     user system
     group system mount radio net_bt sdcard_rw shell media media_rw
+
+# tdmb
+    chown system system /dev/tdmb
+    chmod 0660 /dev/tdmb
+ 
+on fs
+ 
+service dmb /system/bin/dmbserver
+    class main
+    user media
+    group system radio inet misc audio graphics net_bt net_bt_admin sdcard_rw sdcard_r shell media_rw oem_5432

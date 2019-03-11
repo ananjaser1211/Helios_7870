@@ -95,8 +95,6 @@ auditfilter idmap dalvikcache_data_file:file write;
 auditfilter init proc:dir write;
 auditfilter init qti-testscripts:process transition;
 auditfilter init sysfs_devices_system_cpu:dir write;
-auditfilter init system_file:dir relabelto;
-auditfilter init system_file:file execute_no_trans;
 auditfilter init vendor_file:file execute;
 auditfilter init_system_shell vendor_file:file read;
 auditfilter installd installd:capability { ipc_lock sys_resource };
@@ -642,6 +640,8 @@ auditfilter dumpstate app_data_file:file read;
 auditfilter system_app system_app_data_file:file execute;
 
 # OS 8.1 (Crown)
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/22989217
+auditfilter dumpstate sysfs_vnswap:file read;
 
 # http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23001124
 auditfilter dumpstate sysfs_mmc_host:file read;
@@ -684,6 +684,9 @@ auditfilter mediaserver graphics_vulkan_prop:file read;
 
 # http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23117570
 auditfilter system_server zygote:process getpgid;
+
+# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23120419
+auditfilter hal_drm_default mediaprovider:fd use;
 
 # http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23121946
 auditfilter system_app configfs:lnk_file getattr;
@@ -844,21 +847,9 @@ auditfilter platform_app mba_debug_dev:blk_file getattr;
 # http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-350
 auditfilter platform_app firmware_file:lnk_file read;
 
-# P181015-01041
-auditfilter platform_app graphics_config_prop:file read;
-
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-596
-auditfilter at_distributor system_file:dir setattr;
-
-# http://mobilerndhub.sec.samsung.net/hub/site/seandroid/board/O_review_request/view/23730240/?page=1 
-auditfilter mtk_hal_audio system_app:fd use;
-
 # DEV P181025-06269
 auditfilter idmap sdcardfs:file { read write };
 
 # http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-774
 auditfilter radio omr_file:file open;
-
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1115
-auditfilter wlbtd property_socket:sock_file write;
 

@@ -65,7 +65,29 @@ on post-fs-data
     chown radio radio /efs/factory.prop
     chmod 0600 /efs/factory.prop
 
-    restorecon /sys/kernel/debug/tracing/trace_marker
+# Permissions for audio
+    chown system radio /sys/class/audio/earjack/select_jack
+    chown system radio /sys/class/audio/earjack/key_state
+    chown system radio /sys/class/audio/earjack/state
+    chown system radio /sys/class/audio/earjack/mic_adc
+
+    chown system audio /sys/class/cirrus/cirrus_cal/status
+    chown system audio /sys/class/cirrus/cirrus_cal/rdc
+    chown system audio /sys/class/cirrus/cirrus_cal/temp
+
+    chown system audio /sys/class/cirrus/cirrus_bd/max_exc
+    chown system audio /sys/class/cirrus/cirrus_bd/over_exc_count
+    chown system audio /sys/class/cirrus/cirrus_bd/max_temp
+    chown system audio /sys/class/cirrus/cirrus_bd/over_temp_count
+
+    mkdir /efs/cirrus 0770 audioserver audio
+    chown audioserver audio /efs/cirrus/rdc_cal
+    chown audioserver audio /efs/cirrus/temp_cal
+    chmod 0660 /efs/cirrus/rdc_cal
+    chmod 0660 /efs/cirrus/temp_cal
+
+# Magnetic sensor YAS539 lib
+    mkdir /data/system/yas_lib 0770 system system
 
 # Audio I2C node for TFA amp
     chmod 0660 /dev/i2c-20
@@ -118,6 +140,8 @@ on boot
     chmod 0664 /sys/class/sec/sec_nad/nad_all
     chown system radio /sys/class/sec/sec_nad/nad_support
     chmod 0664 /sys/class/sec/sec_nad/nad_support
+    chown system radio /sys/class/sec/sec_nad/nad_api
+    chmod 0664 /sys/class/sec/sec_nad/nad_api
     chown system radio /dev/block/NAD_REFER
     chmod 0664 /dev/block/NAD_REFER
 
@@ -223,33 +247,27 @@ on boot
     chown system system /efs/sec_efs/ssp_data
     chmod 0644 /efs/sec_efs/ssp_data
 
-
-# for BT MAC address
-    mkdir /efs/bluetooth 0770 system bluetooth
-# efs file alredy exist
-    chown system bluetooth /efs/bluetooth
-	
+#Bluetooth
+    chown bluetooth bluetooth /dev/ttySAC0
+    chmod 0660 /dev/ttySAC0
 # permissions for bluetooth.
     setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
     chown bluetooth bluetooth ro.bt.bdaddr_path
-    chown system bluetooth /efs/bluetooth/bt_addr
+    chown radio bluetooth /efs/bluetooth/bt_addr
     chmod 0640 /efs/bluetooth/bt_addr
     chmod 0660 /sys/class/rfkill/rfkill0/state
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
     chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
 
-# Bluetooth
-    chown bluetooth bluetooth /dev/ttySAC0
-    chmod 0660 /dev/ttySAC0
-
 #MST HW Support
-setprop ro.mst.support 0
+#setprop ro.mst.support 1
 
 #Secure OS migration
     chown radio system /sys/devices/system/sec_os_ctrl/migrate_os
     chmod 664 /sys/devices/system/sec_os_ctrl/migrate_os
 
 # Sensors permissions
+
 # Accelerometer_sensor
     chown system radio /sys/class/sensors/accelerometer_sensor/raw_data
     chown system radio /sys/class/sensors/accelerometer_sensor/calibration
@@ -739,6 +757,8 @@ on fs
     chown system media_rw /sys/class/mdnie/mdnie/scenario
     chown system system /sys/class/mdnie/mdnie/accessibility
     chown system system /sys/class/mdnie/mdnie/sensorRGB
+    chown system system /sys/class/mdnie/mdnie/mdnie_ldu
+    chown system system /sys/class/mdnie/mdnie/night_mode
     chown system system /sys/class/mdnie/mdnie/whiteRGB
     chown system system /sys/class/mdnie/mdnie/night_mode
     chown system system /sys/class/mdnie/mdnie/mdnie_ldu
@@ -932,6 +952,12 @@ service fingerprintd /system/bin/fingerprintd
     user system
     group system
 
+# faced
+service faced /system/bin/faced
+    class late_start
+    user system
+    group system
+
 # VC daemon
     service VC-daemon /system/bin/vcd
     class main
@@ -1035,3 +1061,20 @@ on property:sys.boot_completed=1
 on property:security.semdaemonfinish=1
     stop sem_daemon
 
+# WSM service startup
+service wsmd /system/bin/wsmd
+    class core
+    user system
+    group system
+    disabled
+on property:ro.wsmd.enable=true
+    mkdir /dev/socket/wsm_socket 
+    chmod 0711 /dev/socket/wsm_socket
+    chown system system /dev/socket/wsm_socket
+    start wsmd
+
+on property:ro.multisim.simslotcount=1
+    setprop persist.radio.multisim.config ss
+
+on property:ro.multisim.simslotcount=2
+    setprop persist.radio.multisim.config dsds
