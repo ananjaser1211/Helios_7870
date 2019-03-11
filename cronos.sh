@@ -34,7 +34,7 @@ CR_KERNEL=$CR_DIR/arch/arm64/boot/Image
 # Compiled dtb by dtbtool
 CR_DTB=$CR_DIR/boot.img-dtb
 # Kernel Name and Version
-CR_VERSION=V2.6
+CR_VERSION=V2.7
 CR_NAME=HeliosPro_Kernel
 # Thread count
 CR_JOBS=5
