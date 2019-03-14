@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Proprietary,Open:>>
  *
- * $Id: bcmsdh_sdmmc.c 761914 2018-05-10 02:02:30Z $
+ * $Id: bcmsdh_sdmmc.c 731653 2017-11-14 03:29:19Z $
  */
 #include <typedefs.h>
 
@@ -59,7 +59,7 @@ mmc_host_clk_release(struct mmc_host *host)
 #include <linux/mmc/host.h>
 #endif /* (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 0, 0)) */
 
-#if defined(CONFIG_SOC_EXYNOS7885) || defined(CONFIG_GALILEO)
+#ifdef CONFIG_SOC_EXYNOS7885
 void
 mmc_host_clk_hold(struct mmc_host *host)
 {
@@ -77,7 +77,7 @@ mmc_host_clk_rate(struct mmc_host *host)
 {
 	return host->ios.clock;
 }
-#endif	/* CONFIG_SOC_EXYNOS7885 || CONFIG_GALILEO */
+#endif	/* CONFIG_SOC_EXYNOS7885 */
 
 #include <linux/mmc/card.h>
 #include <linux/mmc/sdio_func.h>

@@ -25,7 +25,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_linux.c 786339 2018-10-25 13:23:08Z $
+ * $Id: dhd_linux.c 755939 2018-04-05 12:05:28Z $
  */
 
 #include <typedefs.h>
@@ -52,14 +52,10 @@
 #include <linux/ip.h>
 #include <linux/reboot.h>
 #include <linux/notifier.h>
-#if defined(CONFIG_TIZEN)
-#include <linux/net_stat_tizen.h>
-#endif /* CONFIG_TIZEN */
 #include <net/addrconf.h>
 #ifdef ENABLE_ADAPTIVE_SCHED
 #include <linux/cpufreq.h>
 #endif /* ENABLE_ADAPTIVE_SCHED */
-#include <linux/rtc.h>
 #ifdef DHD_DUMP_MNGR
 #include <linux/namei.h>
 #endif /* DHD_DUMP_MNGR */
@@ -94,12 +90,9 @@
 #ifdef CONFIG_HAS_WAKELOCK
 #include <linux/wakelock.h>
 #endif
-#if defined(WL_CFG80211)
+#ifdef WL_CFG80211
 #include <wl_cfg80211.h>
-#ifdef WL_BAM
-#include <wl_bam.h>
-#endif	/* WL_BAM */
-#endif	/* WL_CFG80211 */
+#endif
 #ifdef PNO_SUPPORT
 #include <dhd_pno.h>
 #endif
@@ -317,10 +310,6 @@ static bool dhd_inet6addr_notifier_registered = FALSE;
 #include <linux/suspend.h>
 volatile bool dhd_mmc_suspend = FALSE;
 DECLARE_WAIT_QUEUE_HEAD(dhd_dpc_wait);
-#ifdef ENABLE_WAKEUP_PKT_DUMP
-volatile bool dhd_mmc_wake = FALSE;
-long long temp_raw;
-#endif /* ENABLE_WAKEUP_PKT_DUMP */
 #endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)) && defined(CONFIG_PM_SLEEP) */
 
 #if defined(OOB_INTR_ONLY) || defined(BCMSPI_ANDROID)
@@ -386,10 +375,6 @@ extern wl_iw_extra_params_t  g_wl_iw_params;
 #include <linux/earlysuspend.h>
 #endif /* defined(CONFIG_HAS_EARLYSUSPEND) && defined(DHD_USE_EARLYSUSPEND) */
 #endif /* CONFIG_PARTIALSUSPEND_SLP */
-
-#ifdef CONFIG_IRQ_HISTORY
-#include <linux/power/irq_history.h>
-#endif /* CONFIG_IRQ_HISTORY */
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0))
 #include <linux/nl80211.h>
@@ -514,9 +499,6 @@ void traffic_mgmt_pkt_set_prio(dhd_pub_t *dhdp, void * pktbuf);
 #endif 
 
 #ifdef DHD_FW_COREDUMP
-#ifdef BCMSDIO
-int dhdsdio_read_dongle_memory_from_bus(dhd_pub_t *dhdp, uint8 *buf, int size);
-#endif /* BCMSDIO */
 static void dhd_mem_dump(void *dhd_info, void *event_info, u8 event);
 #endif /* DHD_FW_COREDUMP */
 #ifdef DHD_LOG_DUMP
@@ -3680,11 +3662,8 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 #endif /* CUSTOM_ROAM_TIME_THRESH_IN_SUSPEND */
 #ifndef ENABLE_FW_ROAM_SUSPEND
 				roamvar = dhd_roam_disable;
-				ret = dhd_iovar(dhd, 0, "roam_off", (char *)&roamvar,
-						sizeof(roamvar), NULL, 0, TRUE);
-				if (ret < 0) {
-					DHD_ERROR(("%s: roam_off fail:%d\n", __FUNCTION__, ret));
-				}
+				dhd_iovar(dhd, 0, "roam_off", (char *)&roamvar, sizeof(roamvar),
+						NULL, 0, TRUE);
 #endif /* ENABLE_FW_ROAM_SUSPEND */
 #ifdef ENABLE_BCN_LI_BCN_WAKEUP
 				bcn_li_bcn = 1;
@@ -4672,14 +4651,6 @@ __dhd_sendpkt(dhd_pub_t *dhdp, int ifidx, void *pktbuf)
 	}
 #endif /* PCIE_FULL_DONGLE */
 
-	/* Reject if pktlen > MAX_MTU_SZ */
-	if (PKTLEN(dhdp->osh, pktbuf) > MAX_MTU_SZ) {
-		/* free the packet here since the caller won't */
-		dhdp->tx_big_packets++;
-		PKTCFREE(dhdp->osh, pktbuf, TRUE);
-		return BCME_ERROR;
-	}
-
 #ifdef DHD_L2_FILTER
 	/* if dhcp_unicast is enabled, we need to convert the */
 	/* broadcast DHCP ACK/REPLY packets to Unicast. */
@@ -5437,88 +5408,6 @@ dhd_event_logtrace_flush_queue(dhd_pub_t *dhdp)
 }
 #endif /* SHOW_LOGTRACE */
 
-#ifdef ENABLE_WAKEUP_PKT_DUMP
-static void
-update_wake_pkt_info(struct sk_buff *skb, uint len)
-{
-	struct iphdr *ip_header;
-	struct ipv6hdr *ipv6_header;
-	struct udphdr *udp_header;
-	struct tcphdr *tcp_header;
-	uint16 dport = 0;
-
-	ip_header = (struct iphdr *)(skb->data);
-
-	temp_raw |= ((long long)ntoh16(skb->protocol)) << 48;
-
-	DHD_INFO(("eth_hdr(skb)->h_dest : %pM\n", eth_hdr(skb)->h_dest));
-	if (eth_hdr(skb)->h_dest[0] & 0x01) {
-		temp_raw |= (long long)1 << 39;
-	}
-
-	if (ntoh16(skb->protocol) == ETHER_TYPE_BRCM) {
-		wl_event_msg_t event;
-		bcm_event_msg_u_t evu;
-		int ret;
-		uint event_type;
-
-		ret = wl_host_event_get_data(
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 22)
-				skb_mac_header(skb),
-#else
-				skb->mac.raw,
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 22) */
-				len, &evu);
-		if (ret != BCME_OK) {
-			DHD_ERROR(("%s: wl_host_event_get_data err = %d\n",
-				__FUNCTION__, ret));
-		}
-
-		memcpy(&event, &evu.event, sizeof(wl_event_msg_t));
-		event_type = ntoh32_ua((void *)&event.event_type);
-
-		temp_raw |= (long long)event_type << 40;
-	} else if (ntoh16(skb->protocol) == ETHER_TYPE_IP ||
-			ntoh16(skb->protocol) == ETHER_TYPE_IPV6) {
-		if (ip_header->version == 6) {
-			ipv6_header = (struct ipv6hdr *)ip_header;
-			temp_raw |= ((long long)ipv6_header->nexthdr) << 40;
-			dport = 0;
-
-			if (ipv6_header->daddr.s6_addr[0] & 0xff) {
-				temp_raw |= (long long)1 << 38;
-			}
-
-			DHD_INFO(("IPv6 [%x]%pI6c > %pI6c:%d\n",
-				ip_header->protocol, &(ipv6_header->saddr.s6_addr),
-				&(ipv6_header->daddr.s6_addr), dport));
-		} else if (ip_header->version == 4) {
-			temp_raw |= ((long long)ip_header->protocol) << 40;
-
-#define IP_HDR_OFFSET	((char *)ip_header + IPV4_HLEN(ip_header))
-			if (ip_header->protocol == IPPROTO_TCP) {
-				tcp_header = (struct tcphdr *)IP_HDR_OFFSET;
-				dport = ntohs(tcp_header->dest);
-			}
-			else if (ip_header->protocol == IPPROTO_UDP) {
-				udp_header = (struct udphdr *)IP_HDR_OFFSET;
-				dport = ntohs(udp_header->dest);
-			}
-
-			if (ipv4_is_multicast(ip_header->daddr)) {
-				temp_raw |= (long long)1 << 38;
-			}
-
-			DHD_INFO(("IP [%x] %pI4 > %pI4:%d\n",
-				ip_header->protocol, &(ip_header->saddr),
-				&(ip_header->daddr), dport));
-		}
-
-		temp_raw |= (long long)dport << 16;
-	}
-}
-#endif /* ENABLE_WAKEUP_PKT_DUMP */
-
 /** Called when a frame is received by the dongle on interface 'ifidx' */
 void
 dhd_rx_frame(dhd_pub_t *dhdp, int ifidx, void *pktbuf, int numpkt, uint8 chan)
@@ -5596,38 +5485,15 @@ dhd_rx_frame(dhd_pub_t *dhdp, int ifidx, void *pktbuf, int numpkt, uint8 chan)
 		}
 #endif /* DHD_WAKE_STATUS */
 
-		eh = (struct ether_header *)PKTDATA(dhdp->osh, pktbuf);
-
-		if (ifidx >= DHD_MAX_IFS) {
-			DHD_ERROR(("%s: ifidx(%d) Out of bound. drop packet\n",
-				__FUNCTION__, ifidx));
-			if (ntoh16(eh->ether_type) == ETHER_TYPE_BRCM) {
-#ifdef DHD_USE_STATIC_CTRLBUF
-				PKTFREE_STATIC(dhdp->osh, pktbuf, FALSE);
-#else
-				PKTFREE(dhdp->osh, pktbuf, FALSE);
-#endif /* DHD_USE_STATIC_CTRLBUF */
-			} else {
-				PKTCFREE(dhdp->osh, pktbuf, FALSE);
-			}
-			continue;
-		}
-
 		ifp = dhd->iflist[ifidx];
 		if (ifp == NULL) {
 			DHD_ERROR(("%s: ifp is NULL. drop packet\n",
 				__FUNCTION__));
-			if (ntoh16(eh->ether_type) == ETHER_TYPE_BRCM) {
-#ifdef DHD_USE_STATIC_CTRLBUF
-				PKTFREE_STATIC(dhdp->osh, pktbuf, FALSE);
-#else
-				PKTFREE(dhdp->osh, pktbuf, FALSE);
-#endif /* DHD_USE_STATIC_CTRLBUF */
-			} else {
-				PKTCFREE(dhdp->osh, pktbuf, FALSE);
-			}
+			PKTCFREE(dhdp->osh, pktbuf, FALSE);
 			continue;
 		}
+
+		eh = (struct ether_header *)PKTDATA(dhdp->osh, pktbuf);
 
 		/* Dropping only data packets before registering net device to avoid kernel panic */
 #ifndef PROP_TXSTATUS_VSDB
@@ -5847,23 +5713,6 @@ dhd_rx_frame(dhd_pub_t *dhdp, int ifidx, void *pktbuf, int numpkt, uint8 chan)
 #endif /* DHD_PKT_LOGGING */
 		/* Strip header, count, deliver upward */
 		skb_pull(skb, ETH_HLEN);
-
-#ifdef ENABLE_WAKEUP_PKT_DUMP
-		if (dhd_mmc_wake) {
-			DHD_INFO(("wake_pkt %s(%d)\n", __FUNCTION__, __LINE__));
-			if (DHD_INFO_ON()) {
-				prhex("wake_pkt", (char*) eth, MIN(len, 48));
-			}
-			update_wake_pkt_info(skb, len);
-			DHD_ERROR(("wake_pkt %s(%d), raw_info=0x%016llx\n",
-				__FUNCTION__, __LINE__, temp_raw));
-			temp_raw = 0;
-#ifdef CONFIG_IRQ_HISTORY
-			add_irq_history(0, "WIFI");
-#endif
-			dhd_mmc_wake = FALSE;
-		}
-#endif /* ENABLE_WAKEUP_PKT_DUMP */
 
 		/* Process special event packets and then discard them */
 		memset(&event, 0, sizeof(event));
@@ -7230,18 +7079,19 @@ static const struct net_device_ops netdev_monitor_ops =
 };
 
 static void
-dhd_add_monitor_if(dhd_info_t *dhd)
+dhd_add_monitor_if(void *handle, void *event_info, u8 event)
 {
+	dhd_info_t *dhd = handle;
 	struct net_device *dev;
 	char *devname;
 
-	if (!dhd) {
-		DHD_ERROR(("%s: dhd info not available \n", __FUNCTION__));
+	if (event != DHD_WQ_WORK_IF_ADD) {
+		DHD_ERROR(("%s: unexpected event \n", __FUNCTION__));
 		return;
 	}
 
-	if (dhd->monitor_dev) {
-		DHD_ERROR(("%s: monitor i/f already exists", __FUNCTION__));
+	if (!dhd) {
+		DHD_ERROR(("%s: dhd info not available \n", __FUNCTION__));
 		return;
 	}
 
@@ -7273,7 +7123,7 @@ dhd_add_monitor_if(dhd_info_t *dhd)
 	dev->netdev_ops = &netdev_monitor_ops;
 #endif
 
-	if (register_netdevice(dev)) {
+	if (register_netdev(dev)) {
 		DHD_ERROR(("%s, register_netdev failed for %s\n",
 			__FUNCTION__, dev->name));
 		free_netdev(dev);
@@ -7284,29 +7134,30 @@ dhd_add_monitor_if(dhd_info_t *dhd)
 }
 
 static void
-dhd_del_monitor_if(dhd_info_t *dhd)
+dhd_del_monitor_if(void *handle, void *event_info, u8 event)
 {
+	dhd_info_t *dhd = handle;
+
+	if (event != DHD_WQ_WORK_IF_DEL) {
+		DHD_ERROR(("%s: unexpected event \n", __FUNCTION__));
+		return;
+	}
+
 	if (!dhd) {
 		DHD_ERROR(("%s: dhd info not available \n", __FUNCTION__));
 		return;
 	}
 
-	if (!dhd->monitor_dev) {
-		DHD_ERROR(("%s: monitor i/f doesn't exist", __FUNCTION__));
-		return;
-	}
-
 	if (dhd->monitor_dev) {
-		if (dhd->monitor_dev->reg_state == NETREG_UNINITIALIZED) {
+		unregister_netdev(dhd->monitor_dev);
+
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24))
-			MFREE(dhd->osh, dhd->monitor_dev->priv, DHD_MON_DEV_PRIV_SIZE);
-			MFREE(dhd->osh, dhd->monitor_dev, sizeof(struct net_device));
+		MFREE(dhd->osh, dhd->monitor_dev->priv, DHD_MON_DEV_PRIV_SIZE);
+		MFREE(dhd->osh, dhd->monitor_dev, sizeof(struct net_device));
 #else
-			free_netdev(dhd->monitor_dev);
+		free_netdev(dhd->monitor_dev);
 #endif /* 2.6.24 */
-		} else {
-			unregister_netdevice(dhd->monitor_dev);
-		}
+
 		dhd->monitor_dev = NULL;
 	}
 
@@ -7317,22 +7168,28 @@ dhd_del_monitor_if(dhd_info_t *dhd)
 }
 
 static void
-dhd_set_monitor(dhd_pub_t *pub, int ifidx, int val)
+dhd_set_monitor(dhd_pub_t *dhd, int ifidx, int val)
 {
-	dhd_info_t *dhd = pub->info;
+	dhd_info_t *info = dhd->info;
 
 	DHD_TRACE(("%s: val %d\n", __FUNCTION__, val));
-
-	dhd_net_if_lock_local(dhd);
-	if (!val) {
-			/* Delete monitor */
-			dhd_del_monitor_if(dhd);
-	} else {
-			/* Add monitor */
-			dhd_add_monitor_if(dhd);
+	if ((val && info->monitor_dev) || (!val && !info->monitor_dev)) {
+		DHD_ERROR(("%s: Mismatched params, return\n", __FUNCTION__));
+		return;
 	}
-	dhd->monitor_type = val;
-	dhd_net_if_unlock_local(dhd);
+
+	/* Delete monitor */
+	if (!val) {
+		info->monitor_type = val;
+		dhd_deferred_schedule_work(info->dhd_deferred_wq, NULL, DHD_WQ_WORK_IF_DEL,
+			dhd_del_monitor_if, DHD_WQ_WORK_PRIORITY_LOW);
+		return;
+	}
+
+	/* Add monitor */
+	info->monitor_type = val;
+	dhd_deferred_schedule_work(info->dhd_deferred_wq, NULL, DHD_WQ_WORK_IF_ADD,
+		dhd_add_monitor_if, DHD_WQ_WORK_PRIORITY_LOW);
 }
 #endif /* WL_MONITOR */
 
@@ -7444,17 +7301,7 @@ int dhd_ioctl_process(dhd_pub_t *pub, int ifidx, dhd_ioctl_t *ioc, void *data_bu
 #ifdef WL_MONITOR
 	/* Intercept monitor ioctl here, add/del monitor if */
 	if (bcmerror == BCME_OK && ioc->cmd == WLC_SET_MONITOR) {
-		int val = 0;
-		if (data_buf != NULL && buflen != 0) {
-			if (buflen >= 4) {
-				val = *(int*)data_buf;
-			} else if (buflen >= 2) {
-				val = *(short*)data_buf;
-			} else {
-				val = *(char*)data_buf;
-			}
-		}
-		dhd_set_monitor(pub, ifidx, val);
+		dhd_set_monitor(pub, ifidx, *(int32*)data_buf);
 	}
 #endif
 
@@ -7549,11 +7396,7 @@ dhd_ioctl_entry(struct net_device *net, struct ifreq *ifr, int cmd)
 	memset(&ioc, 0, sizeof(ioc));
 
 #ifdef CONFIG_COMPAT
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 6, 0))
-	if (in_compat_syscall()) {
-#else
 	if (is_compat_task()) {
-#endif /* LINUX_VER >= 4.6 */
 		compat_wl_ioctl_t compat_ioc;
 		if (copy_from_user(&compat_ioc, ifr->ifr_data, sizeof(compat_wl_ioctl_t))) {
 			bcmerror = BCME_BADADDR;
@@ -8416,12 +8259,12 @@ dhd_open(struct net_device *net)
 #endif
 
 exit:
-	DHD_PERIM_UNLOCK(&dhd->pub);
-	DHD_OS_WAKE_UNLOCK(&dhd->pub);
-
 	if (ret) {
 		dhd_stop(net);
 	}
+
+	DHD_PERIM_UNLOCK(&dhd->pub);
+	DHD_OS_WAKE_UNLOCK(&dhd->pub);
 
 #if defined(MULTIPLE_SUPPLICANT)
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 25)) && defined(BCMSDIO)
@@ -8574,9 +8417,6 @@ dhd_allocate_if(dhd_pub_t *dhdpub, int ifidx, const char *name,
 			/* in unregister_netdev case, the interface gets freed by net->destructor
 			 * (which is set to free_netdev)
 			 */
-#if defined(CONFIG_TIZEN)
-			net_stat_tizen_unregister(ifp->net);
-#endif /* CONFIG_TIZEN */
 			if (ifp->net->reg_state == NETREG_UNINITIALIZED) {
 				free_netdev(ifp->net);
 			} else {
@@ -9301,12 +9141,6 @@ dhd_attach(osl_t *osh, struct dhd_bus *bus, uint bus_hdrlen)
 #ifdef DHD_PKT_LOGGING
 	dhd_os_attach_pktlog(&dhd->pub);
 #endif /* DHD_PKT_LOGGING */
-#ifdef WL_CFGVENDOR_SEND_HANG_EVENT
-	dhd->pub.hang_info = MALLOCZ(osh, VENDOR_SEND_HANG_EXT_INFO_LEN);
-	if (dhd->pub.hang_info == NULL) {
-		DHD_ERROR(("%s: alloc hang_info failed\n", __FUNCTION__));
-	}
-#endif /* WL_CFGVENDOR_SEND_HANG_EVENT */
 
 	if (dhd_sta_pool_init(&dhd->pub, DHD_MAX_STA) != BCME_OK) {
 		DHD_ERROR(("%s: Initializing %u sta\n", __FUNCTION__, DHD_MAX_STA));
@@ -9886,7 +9720,7 @@ bool dhd_validate_chipid(dhd_pub_t *dhdp)
 #if defined(BT_OVER_SDIO)
 wlan_bt_handle_t dhd_bt_get_pub_hndl(void)
 {
-	DHD_INFO(("%s: g_dhd_pub %p\n", __FUNCTION__, g_dhd_pub));
+	DHD_ERROR(("%s: g_dhd_pub %p\n", __FUNCTION__, g_dhd_pub));
 	/* assuming that dhd_pub_t type pointer is available from a global variable */
 	return (wlan_bt_handle_t) g_dhd_pub;
 } EXPORT_SYMBOL(dhd_bt_get_pub_hndl);
@@ -10414,44 +10248,6 @@ dhd_preinit_aibss_ioctls(dhd_pub_t *dhd, char *iov_buf_smlen)
 #endif /* WLAIBSS */
 
 #if defined(WLADPS) || defined(WLADPS_PRIVATE_CMD)
-#ifdef WL_BAM
-static int
-dhd_check_adps_bad_ap(dhd_pub_t *dhd)
-{
-	struct net_device *ndev;
-	struct bcm_cfg80211 *cfg;
-	struct wl_profile *profile;
-	struct ether_addr bssid;
-
-	if (!dhd_is_associated(dhd, 0, NULL)) {
-		DHD_ERROR(("%s - not associated\n", __FUNCTION__));
-		return BCME_OK;
-	}
-
-	ndev = dhd_linux_get_primary_netdev(dhd);
-	if (!ndev) {
-		DHD_ERROR(("%s: Cannot find primary netdev\n", __FUNCTION__));
-		return -ENODEV;
-	}
-
-	cfg = wl_get_cfg(ndev);
-	if (!cfg) {
-		DHD_ERROR(("%s: Cannot find cfg\n", __FUNCTION__));
-		return -EINVAL;
-	}
-
-	profile = wl_get_profile_by_netdev(cfg, ndev);
-	memcpy(bssid.octet, profile->bssid, ETHER_ADDR_LEN);
-	if (wl_adps_bad_ap_check(cfg, &bssid)) {
-		if (wl_adps_enabled(cfg, ndev)) {
-			wl_adps_set_suspend(cfg, ndev, ADPS_SUSPEND);
-		}
-	}
-
-	return BCME_OK;
-}
-#endif	/* WL_BAM */
-
 int
 dhd_enable_adps(dhd_pub_t *dhd, uint8 on)
 {
@@ -10496,12 +10292,6 @@ dhd_enable_adps(dhd_pub_t *dhd, uint8 on)
 			}
 		}
 	}
-
-#ifdef WL_BAM
-	if (on) {
-		dhd_check_adps_bad_ap(dhd);
-	}
-#endif	/* WL_BAM */
 
 exit:
 	if (iov_buf) {
@@ -11583,11 +11373,11 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 			"109 1 6 ETH_H:14 0xFFFFFF 0x0001AF";
 
 		dhd->pktfilter_count = 10;
-#ifdef DISCARD_UDPNETBIOS_FLTR
+#ifdef DISCARD_UDPNETBIOS
 		/* Immediately pkt filter TYPE 6 Dicard Broadcast IP packet */
 		dhd->pktfilter[DHD_UDPNETBIOS_DROP_FILTER_NUM] = DISCARD_UDPNETBIOS;
 		dhd->pktfilter_count++;
-#endif /* DISCARD_UDPNETBIOS_FLTR */
+#endif /* DISCARD_UDPNETBIOS */
 	}
 
 #ifdef GAN_LITE_NAT_KEEPALIVE_FILTER
@@ -12451,10 +12241,6 @@ dhd_register_if(dhd_pub_t *dhdp, int ifidx, bool need_rtnl_lock)
 
 
 
-#if defined(CONFIG_TIZEN)
-	net_stat_tizen_register(net);
-#endif /* CONFIG_TIZEN */
-
 	printf("Register interface [%s]  MAC: "MACDBG"\n\n", net->name,
 #if defined(CUSTOMER_HW4_DEBUG)
 		MAC2STRDBG(dhd->pub.mac.octet));
@@ -12817,12 +12603,6 @@ void dhd_detach(dhd_pub_t *dhdp)
 #ifdef DHD_PKT_LOGGING
 	dhd_os_detach_pktlog(dhdp);
 #endif /* DHD_PKT_LOGGING */
-
-#ifdef WL_CFGVENDOR_SEND_HANG_EVENT
-	if (dhd->pub.hang_info) {
-		MFREE(dhd->pub.osh, dhd->pub.hang_info, VENDOR_SEND_HANG_EXT_INFO_LEN);
-	}
-#endif /* WL_CFGVENDOR_SEND_HANG_EVENT */
 	/* Release the skbs from queue for WLC_E_TRACE event */
 	dhd_event_logtrace_flush_queue(dhdp);
 
@@ -12927,7 +12707,7 @@ void dhd_detach(dhd_pub_t *dhdp)
 	dhd_mw_list_delete(dhdp, &(dhdp->mw_list_head));
 #endif /* DHD_DEBUG */
 #ifdef WL_MONITOR
-	dhd_del_monitor_if(dhd);
+	dhd_del_monitor_if(dhd, NULL, DHD_WQ_WORK_IF_DEL);
 #endif /* WL_MONITOR */
 
 	/* Prefer adding de-init code above this comment unless necessary.
@@ -13142,12 +12922,12 @@ dhd_reboot_callback(struct notifier_block *this, unsigned long code, void *unuse
 #if defined(CONFIG_DEFERRED_INITCALLS) && !defined(EXYNOS_PCIE_MODULE_PATCH)
 #if defined(CONFIG_MACH_UNIVERSAL7420) || defined(CONFIG_SOC_EXYNOS8890) || \
 	defined(CONFIG_ARCH_MSM8996) || defined(CONFIG_SOC_EXYNOS8895) || \
-	defined(CONFIG_ARCH_MSM8998) || defined(CONFIG_ARCH_SDM845)
+	defined(CONFIG_ARCH_MSM8998)
 deferred_module_init_sync(dhd_module_init);
 #else
 deferred_module_init(dhd_module_init);
 #endif /* CONFIG_MACH_UNIVERSAL7420 || CONFIG_SOC_EXYNOS8890 ||
-	* CONFIG_ARCH_MSM8996 || CONFIG_SOC_EXYNOS8895 || CONFIG_ARCH_MSM8998 || CONFIG_ARCH_SDM845
+	* CONFIG_ARCH_MSM8996 || CONFIG_SOC_EXYNOS8895 || CONFIG_ARCH_MSM8998
 	*/
 #elif defined(USE_LATE_INITCALL_SYNC)
 late_initcall_sync(dhd_module_init);
@@ -13671,11 +13451,19 @@ dhd_os_sdunlock_txq(dhd_pub_t *pub)
 void
 dhd_os_sdlock_rxq(dhd_pub_t *pub)
 {
+	dhd_info_t *dhd;
+
+	dhd = (dhd_info_t *)(pub->info);
+	spin_lock_bh(&dhd->rxqlock);
 }
 
 void
 dhd_os_sdunlock_rxq(dhd_pub_t *pub)
 {
+	dhd_info_t *dhd;
+
+	dhd = (dhd_info_t *)(pub->info);
+	spin_unlock_bh(&dhd->rxqlock);
 }
 
 static void
@@ -14067,11 +13855,8 @@ int net_os_set_suspend_bcn_li_dtim(struct net_device *dev, int val)
 {
 	dhd_info_t *dhd = DHD_DEV_INFO(dev);
 
-	if (dhd) {
-		DHD_ERROR(("%s: Set bcn_li_dtim in suspend %d\n",
-			__FUNCTION__, val));
+	if (dhd)
 		dhd->pub.suspend_bcn_li_dtim = val;
-	}
 
 	return 0;
 }
@@ -14223,9 +14008,7 @@ dhd_dev_get_feature_set(struct net_device *dev)
 #ifdef KEEP_ALIVE
 	feature_set |= WIFI_FEATURE_MKEEP_ALIVE;
 #endif /* KEEP_ALIVE */
-#ifdef SUPPORT_RANDOM_MAC_SCAN
-	feature_set |= WIFI_FEATURE_SCAN_RAND;
-#endif /* SUPPORT_RANDOM_MAC_SCAN */
+
 	return feature_set;
 }
 
@@ -17422,7 +17205,6 @@ void dhd_get_memdump_info(dhd_pub_t *dhd)
 {
 	struct file *fp = NULL;
 	uint32 mem_val = DUMP_MEMFILE_MAX;
-	char *p_mem_val = NULL;
 	int ret = 0;
 	char *filepath = MEMDUMPINFO;
 
@@ -17449,16 +17231,14 @@ void dhd_get_memdump_info(dhd_pub_t *dhd)
 	}
 
 	/* Handle success case */
-	ret = kernel_read(fp, 0, (char *)&mem_val, sizeof(uint32));
+	ret = kernel_read(fp, 0, (char *)&mem_val, 4);
 	if (ret < 0) {
 		DHD_ERROR(("%s: File read error, ret=%d\n", __FUNCTION__, ret));
 		filp_close(fp, NULL);
 		goto done;
 	}
 
-	p_mem_val = (char*)&mem_val;
-	p_mem_val[sizeof(uint32) - 1] = '\0';
-	mem_val = bcm_atoi(p_mem_val);
+	mem_val = bcm_atoi((char *)&mem_val);
 
 	filp_close(fp, NULL);
 
@@ -17488,17 +17268,13 @@ void dhd_schedule_memdump(dhd_pub_t *dhdp, uint8 *buf, uint32 size)
 	dump->buf = buf;
 	dump->bufsize = size;
 
-	if ((dhdp->memdump_enabled == DUMP_MEMONLY) ||
-		(dhdp->memdump_enabled == DUMP_MEMFILE_BUGON)) {
 #if defined(CONFIG_ARM64)
-		DHD_ERROR(("%s: buf(va)=%llx, buf(pa)=%llx, bufsize=%d\n", __FUNCTION__,
-			(uint64)buf, (uint64)__virt_to_phys((ulong)buf), size));
+	DHD_ERROR(("%s: buf(va)=%llx, buf(pa)=%llx, bufsize=%d\n", __FUNCTION__,
+		(uint64)buf, (uint64)__virt_to_phys((ulong)buf), size));
 #elif defined(__ARM_ARCH_7A__)
-		DHD_ERROR(("%s: buf(va)=%x, buf(pa)=%x, bufsize=%d\n", __FUNCTION__,
-			(uint32)buf, (uint32)__virt_to_phys((ulong)buf), size));
+	DHD_ERROR(("%s: buf(va)=%x, buf(pa)=%x, bufsize=%d\n", __FUNCTION__,
+		(uint32)buf, (uint32)__virt_to_phys((ulong)buf), size));
 #endif /* __ARM_ARCH_7A__ */
-	}
-
 	if (dhdp->memdump_enabled == DUMP_MEMONLY) {
 		BUG_ON(1);
 	}
@@ -17532,10 +17308,6 @@ dhd_mem_dump(void *handle, void *event_info, u8 event)
 		DHD_ERROR(("%s: dump is NULL\n", __FUNCTION__));
 		return;
 	}
-
-#ifdef BCMSDIO
-	dhdsdio_read_dongle_memory_from_bus(&dhd->pub, dump->buf, dump->bufsize);
-#endif /* BCMSDIO */
 
 	if (write_dump_to_file(&dhd->pub, dump->buf, dump->bufsize, "mem_dump")) {
 		DHD_ERROR(("%s: writing SoC_RAM dump to the file failed\n", __FUNCTION__));
@@ -17783,7 +17555,6 @@ void dhd_get_assert_info(dhd_pub_t *dhd)
 	struct file *fp = NULL;
 	char *filepath = ASSERTINFO;
 	int mem_val = -1;
-	char *p_mem_val = NULL;
 
 	/*
 	 * Read assert info from the file
@@ -17796,13 +17567,11 @@ void dhd_get_assert_info(dhd_pub_t *dhd)
 	if (IS_ERR(fp)) {
 		DHD_ERROR(("%s: File [%s] doesn't exist\n", __FUNCTION__, filepath));
 	} else {
-		int ret = kernel_read(fp, 0, (char *)&mem_val, sizeof(uint32));
+		int ret = kernel_read(fp, 0, (char *)&mem_val, 4);
 		if (ret < 0) {
 			DHD_ERROR(("%s: File read error, ret=%d\n", __FUNCTION__, ret));
 		} else {
-			p_mem_val = (char *)&mem_val;
-			p_mem_val[sizeof(uint32) - 1] = '\0';
-			mem_val = bcm_atoi(p_mem_val);
+			mem_val = bcm_atoi((char *)&mem_val);
 			DHD_ERROR(("%s: ASSERT ENABLED = %d\n", __FUNCTION__, mem_val));
 		}
 		filp_close(fp, NULL);
@@ -19665,7 +19434,7 @@ dhd_make_hang_with_reason(struct net_device *dev, const char *string_num)
 			dhdp->req_hang_type = 0;
 			DHD_ERROR(("Does not support requested HANG(0x%x)\n", reason));
 			break;
-		case HANG_REASON_IFACE_DEL_FAILURE:
+		case HANG_REASON_IFACE_OP_FAILURE:
 			DHD_ERROR(("Make HANG!!!: P2P inrerface delete failure(0x%x)\n", reason));
 			dhdp->req_hang_type = reason;
 			break;
@@ -19877,35 +19646,3 @@ dhd_get_chiprev_id(dhd_pub_t *dhdp)
 	return dhd_bus_chiprev_id(dhdp);
 }
 #endif /* BCMSDIO || BCMPCIE */
-
-void
-get_debug_dump_time(char *str)
-{
-	struct timeval curtime;
-	unsigned long local_time;
-	struct rtc_time tm;
-
-	if (!strlen(str)) {
-		do_gettimeofday(&curtime);
-		local_time = (u32)(curtime.tv_sec -
-			(sys_tz.tz_minuteswest * DHD_LOG_DUMP_TS_MULTIPLIER_VALUE));
-		rtc_time_to_tm(local_time, &tm);
-
-		snprintf(str, DEBUG_DUMP_TIME_BUF_LEN, DHD_LOG_DUMP_TS_FMT_YYMMDDHHMMSSMSMS,
-			tm.tm_year - 100, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min,
-			tm.tm_sec, (int)(curtime.tv_usec/NSEC_PER_USEC));
-	}
-}
-
-void
-clear_debug_dump_time(char *str)
-{
-	memset(str, 0, DEBUG_DUMP_TIME_BUF_LEN);
-}
-#if defined(WL_CFGVENDOR_SEND_HANG_EVENT) || defined(DHD_PKT_LOGGING)
-void
-copy_debug_dump_time(char *dest, char *src)
-{
-	memcpy(dest, src, DEBUG_DUMP_TIME_BUF_LEN);
-}
-#endif /* WL_CFGVENDOR_SEND_HANG_EVENT || DHD_PKT_LOGGING */
