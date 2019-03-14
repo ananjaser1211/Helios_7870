@@ -244,6 +244,8 @@ do
             clear
             echo "Starting $CR_VARIANT_J710X kernel build..."
             CR_VARIANT=$CR_VARIANT_J710X
+            export ANDROID_MAJOR_VERSION=$CR_ANDROID_J710X
+            export PLATFORM_VERSION=$CR_PLATFORM_J710X
             CR_CONFG=$CR_CONFG_J710X
             CR_DTSFILES=$CR_DTSFILES_J710X
             BUILD_ZIMAGE
