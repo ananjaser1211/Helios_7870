@@ -28,6 +28,7 @@ CR_OUT=$CR_DIR/Helios/Out
 CR_AIK=$CR_DIR/Helios/A.I.K
 # Main Ramdisk Location
 CR_RAMDISK=$CR_DIR/Helios/Ramdisk
+CR_RAMDISK_TREBLE=$CR_DIR/Helios/Treble
 # Compiled image name and location (Image/zImage)
 CR_KERNEL=$CR_DIR/arch/arm64/boot/Image
 # Compiled dtb by dtbtool
@@ -70,7 +71,6 @@ CR_VARIANT_J730F=J730F-G
 CR_DTSFILES_J710X="exynos7870-j7xelte_eur_open_00.dtb exynos7870-j7xelte_eur_open_01.dtb exynos7870-j7xelte_eur_open_02.dtb exynos7870-j7xelte_eur_open_03.dtb exynos7870-j7xelte_eur_open_04.dtb"
 CR_CONFG_J710X=j7xelte_defconfig
 CR_VARIANT_J710X=J710X
-CR_RAMDISK_J710X=$CR_DIR/Helios/Ramdisk_J710X
 # Device specific Variables [SM-G610X]
 CR_DTSFILES_G610X="exynos7870-on7xelte_swa_open_00.dtb exynos7870-on7xelte_swa_open_01.dtb exynos7870-on7xelte_swa_open_02.dtb"
 CR_CONFG_G610X=on7xelteswa_defconfig
@@ -79,7 +79,6 @@ CR_VARIANT_G610X=G610X
 CR_DTSFILES_J600X="exynos7870-j6lte_ltn_00.dtb exynos7870-j6lte_ltn_02.dtb"
 CR_CONFG_J600X=j6lte_defconfig
 CR_VARIANT_J600X=J600X
-CR_RAMDISK_J600X=$CR_DIR/Helios/Treble
 # Script functions
 
 read -p "Clean source (y/n) > " yn
@@ -162,16 +161,30 @@ PACK_BOOT_IMG()
 }
 PACK_BOOT_IMG_TREBLE()
 {
-    echo "----------------------------------------------"
-    echo " "
-    echo "Building Boot.img for $CR_VARIANT"
+	echo "----------------------------------------------"
+	echo " "
+	echo "Building Boot.img for $CR_VARIANT"
+	cp -rf $CR_RAMDISK_TREBLE/* $CR_AIK
+	# To avoid any permission issues
+	echo "Fix Ramdisk Permissions"
+	cd $CR_RAMDISK_TREBLE
+	find -type d -exec chmod 755 {} \;
+	find -type f -exec chmod 644 {} \;
+	find -name "*.rc" -exec chmod 750 {} \;
+	find -name "*.sh" -exec chmod 750 {} \;
+	chmod -Rf 750 init sbin
+    # Copy Ramdisk
     cp -rf $CR_RAMDISK_TREBLE/* $CR_AIK
-    mv $CR_KERNEL $CR_AIK/split_img/boot.img-zImage
-    mv $CR_DTB $CR_AIK/split_img/boot.img-dtb
-    $CR_AIK/repackimg.sh
-    echo -n "SEANDROIDENFORCE" » $CR_AIK/image-new.img
-    mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT.img
-    $CR_AIK/cleanup.sh
+	# Move Compiled kernel and dtb to A.I.K Folder
+	mv $CR_KERNEL $CR_AIK/split_img/boot.img-zImage
+	mv $CR_DTB $CR_AIK/split_img/boot.img-dtb
+	# Create boot.img
+	$CR_AIK/repackimg.sh
+	# Remove red warning at boot
+	echo -n "SEANDROIDENFORCE" » $CR_AIK/image-new.img
+	# Move boot.img to out dir
+	mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT-Treble.img
+	$CR_AIK/cleanup.sh
 }
 # Main Menu
 clear
