@@ -71,6 +71,10 @@ CR_VARIANT_J730F=J730F-G
 CR_DTSFILES_J710X="exynos7870-j7xelte_eur_open_00.dtb exynos7870-j7xelte_eur_open_01.dtb exynos7870-j7xelte_eur_open_02.dtb exynos7870-j7xelte_eur_open_03.dtb exynos7870-j7xelte_eur_open_04.dtb"
 CR_CONFG_J710X=j7xelte_defconfig
 CR_VARIANT_J710X=J710X
+# Device specific Variables [SM-J701X]
+CR_DTSFILES_J701X="exynos7870-j7velte_sea_open_00.dtb exynos7870-j7velte_sea_open_01.dtb exynos7870-j7velte_sea_open_03.dtb"
+CR_CONFG_J701X=j7veltesea_defconfig
+CR_VARIANT_J701X=J701X
 # Device specific Variables [SM-G610X]
 CR_DTSFILES_G610X="exynos7870-on7xelte_swa_open_00.dtb exynos7870-on7xelte_swa_open_01.dtb exynos7870-on7xelte_swa_open_02.dtb"
 CR_CONFG_G610X=on7xelteswa_defconfig
@@ -192,7 +196,7 @@ echo "----------------------------------------------"
 echo "$CR_NAME $CR_VERSION Build Script"
 echo "----------------------------------------------"
 PS3='Please select your option (1-7): '
-menuvar=("SM-J530_2G" "SM-J530_3G" "SM-J730F-G" "SM-J710X" "SM-G610X" "SM-J600X" "Exit")
+menuvar=("SM-J530_2G" "SM-J530_3G" "SM-J730F-G" "SM-J710X" "SM-J701X" "SM-G610X" "SM-J600X" "Exit")
 select menuvar in "${menuvar[@]}"
 do
     case $menuvar in
@@ -274,6 +278,27 @@ do
             read -n1 -r key
             break
             ;;
+        "SM-J701X")
+            clear
+            echo "Starting $CR_VARIANT_J701X kernel build..."
+            CR_VARIANT=$CR_VARIANT_J701X
+            export ANDROID_MAJOR_VERSION=$CR_ANDROID_J710X
+            export PLATFORM_VERSION=$CR_PLATFORM_J710X
+            CR_CONFG=$CR_CONFG_J701X
+            CR_DTSFILES=$CR_DTSFILES_J701X
+            BUILD_ZIMAGE
+            BUILD_DTB
+            PACK_BOOT_IMG
+            echo " "
+            echo "----------------------------------------------"
+            echo "$CR_VARIANT kernel build finished."
+            echo "$CR_VARIANT Ready at $CR_OUT"
+            echo "Combined DTB Size = $sizT Kb"
+            echo "Press Any key to end the script"
+            echo "----------------------------------------------"
+            read -n1 -r key
+            break
+            ;;            
         "SM-J600X")
             clear
             echo "Starting $CR_VARIANT_J600X kernel build..."
