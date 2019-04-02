@@ -1,3 +1,5 @@
+
+
 on init
     write /sys/class/android_usb/android0/iSerial $ro.serialno
     write /sys/class/android_usb/android0/f_rndis/manufacturer Samsung
@@ -299,3 +301,4 @@ on property:sys.usb.ffs.ready=1 && property:sys.usb.config=mtp,conn_gadget,adb
     write /sys/class/android_usb/android0/bDeviceClass 0
     write /sys/class/android_usb/android0/enable 1
     setprop sys.usb.state ${sys.usb.config}
+

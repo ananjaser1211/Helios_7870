@@ -1,5 +1,37 @@
 subsystem adf
-	devname uevent_devname
+    devname uevent_devname
+
+subsystem graphics
+    devname uevent_devpath
+    dirname /dev/graphics
+
+subsystem drm
+    devname uevent_devpath
+    dirname /dev/dri
+
+subsystem oncrpc
+    devname uevent_devpath
+    dirname /dev/oncrpc
+
+subsystem adsp
+    devname uevent_devpath
+    dirname /dev/adsp
+
+subsystem msm_camera
+    devname uevent_devpath
+    dirname /dev/msm_camera
+
+subsystem input
+    devname uevent_devpath
+    dirname /dev/input
+
+subsystem mtd
+    devname uevent_devpath
+    dirname /dev/mtd
+
+subsystem sound
+    devname uevent_devpath
+    dirname /dev/snd
 
 # ueventd can only set permissions on device nodes and their associated
 # sysfs attributes, not on arbitrary paths.
@@ -23,10 +55,6 @@ subsystem adf
 /dev/vndbinder            0666   root       root
 /dev/ovr*                 0664   root       system
 /dev/tvr*                 0664   root       system
-
-# Anyone can read the logs, but if they're not in the "logs"
-# group, then they'll only see log entries for their UID.
-/dev/log/*                0666   root       log
 /dev/pmsg0                0222   root       log
 
 # the msm hw3d client device node is world writable/readable.
@@ -42,15 +70,17 @@ subsystem adf
 /dev/diag                 0660   radio      radio
 /dev/diag_arm9            0660   radio      radio
 /dev/ttyMSM0              0600   bluetooth  bluetooth
-/dev/uhid                 0660   system     bluetooth
+/dev/uhid                 0660   uhid       uhid
 /dev/uinput               0660   system     bluetooth
 /dev/alarm                0664   system     radio
 /dev/power_on_alarm       0660   system     radio
-/dev/rtc0                 0640   system     system
+/dev/rtc0                 0660   system     system
 /dev/tty0                 0660   root       system
+/dev/ttySAC0              0660   root       radio
 /dev/graphics/*           0660   root       graphics
 /dev/msm_hw3dm            0660   system     graphics
 /dev/input/*              0660   root       input
+/dev/v4l-touch*           0660   root       input
 /dev/eac                  0660   root       audio
 /dev/cam                  0660   root       camera
 /dev/pmem                 0660   system     graphics
@@ -93,6 +123,7 @@ subsystem adf
 /dev/mtp_usb              0660   root       mtp
 /dev/usb_accessory        0660   root       usb
 /dev/tun                  0660   system     vpn
+/dev/input/event*         0660   system     input
 
 # CDMA radio interface MUX
 /dev/ts0710mux*           0640   radio      radio
@@ -100,8 +131,8 @@ subsystem adf
 
 # sysfs properties
 /sys/devices/platform/trusty.*      trusty_version        0440  root   log
-/sys/devices/virtual/input/input*   enable      0660  root   input
-/sys/devices/virtual/input/input*   poll_delay  0660  root   input
+/sys/devices/virtual/input/input*   enable      0660  system   input
+/sys/devices/virtual/input/input*   poll_delay  0660  system   input
 /sys/devices/virtual/usb_composite/*   enable      0664  root   system
 /sys/devices/system/cpu/cpu*   cpufreq/scaling_max_freq   0664  system system
 /sys/devices/system/cpu/cpu*   cpufreq/scaling_min_freq   0664  system system
@@ -117,6 +148,15 @@ subsystem adf
 /dev/vfsspi               0660   system     system
 /dev/esfp0                0660   system     system
 /dev/goodix_fp            0660   system     system
+/dev/qbt2000_fd           0660   system     system
+/dev/qbt2000_ipc          0660   system     system
+/dev/qbtspi               0660   system     system
 
 # DVB API device nodes
 /dev/dvb*                 0660   root       system
+
+# USB 
+/dev/ttyGS*                 0660   system       system
+
+# MPSD
+/dev/mpsd    0660    system    system

@@ -1,7 +1,0 @@
-on boot
-
-# Move 2 SD card
-service extSdUFSVold /system/bin/extSDCardServiceVold
-    class main
-    user system
-    group system mount radio net_bt sdcard_rw shell media media_rw
