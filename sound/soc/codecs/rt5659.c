@@ -2772,14 +2772,14 @@ static int rt5659_spk_event(struct snd_soc_dapm_widget *w,
 		snd_soc_update_bits(codec, RT5659_DIG_MISC, 0x8000, 0x8000);
 		snd_soc_update_bits(codec, RT5659_CLASSD_CTRL_1, 0x0200,
 			0x0200);
-		snd_soc_update_bits(codec, RT5659_CLASSD_2, 0x0400, 0x0400);
+		snd_soc_update_bits(codec, RT5659_CLASSD_2, 0x0404, 0x0404);
 		snd_soc_write(codec, RT5659_CLASSD_1, 0x0803);
 		snd_soc_write(codec, RT5659_SPK_DC_CAILB_CTRL_3, 0x0000);
 		break;
 
 	case SND_SOC_DAPM_POST_PMD:
 		snd_soc_write(codec, RT5659_CLASSD_1, 0x0011);
-		snd_soc_update_bits(codec, RT5659_CLASSD_2, 0x0400, 0x0000);
+		snd_soc_update_bits(codec, RT5659_CLASSD_2, 0x0404, 0x0000);
 		snd_soc_write(codec, RT5659_SPK_DC_CAILB_CTRL_3, 0x0003);
 		snd_soc_update_bits(codec, RT5659_CLASSD_CTRL_1, 0x0200,
 			0x0000);
@@ -3085,8 +3085,10 @@ static int rt5659_sto1_filter_event(struct snd_soc_dapm_widget *w,
 		break;
 
 	case SND_SOC_DAPM_POST_PMU:
-		schedule_delayed_work(&rt5659->dac1_depop_work,
-			msecs_to_jiffies(10));
+		if ((rt5659->dac1_sto_dac_mixer & 0xa0a0) != 0xa0a0 ||
+			(rt5659->dac1_mono_dac_mixer & 0xa0a0) != 0xa0a0)
+			schedule_delayed_work(&rt5659->dac1_depop_work,
+				msecs_to_jiffies(0));
 		break;
 
 	default:
@@ -3120,8 +3122,10 @@ static int rt5659_monol_filter_event(struct snd_soc_dapm_widget *w,
 		break;
 
 	case SND_SOC_DAPM_POST_PMU:
-		schedule_delayed_work(&rt5659->dac2l_depop_work,
-			msecs_to_jiffies(10));
+		if ((rt5659->dac2l_sto_dac_mixer & 0x0808) != 0x0808 ||
+			(rt5659->dac2l_mono_dac_mixer & 0x0808) != 0x0808)
+			schedule_delayed_work(&rt5659->dac2l_depop_work,
+				msecs_to_jiffies(0));
 		break;
 
 	default:
@@ -3155,8 +3159,10 @@ static int rt5659_monor_filter_event(struct snd_soc_dapm_widget *w,
 		break;
 
 	case SND_SOC_DAPM_POST_PMU:
-		schedule_delayed_work(&rt5659->dac2r_depop_work,
-			msecs_to_jiffies(10));
+		if ((rt5659->dac2r_sto_dac_mixer & 0x0202) != 0x0202 ||
+			(rt5659->dac2r_mono_dac_mixer & 0x0202) != 0x0202)
+			schedule_delayed_work(&rt5659->dac2r_depop_work,
+				msecs_to_jiffies(0));
 		break;
 
 	default:
@@ -5227,6 +5233,9 @@ static void rt5659_dac1_depop_work(struct work_struct *work)
 		container_of(work, struct rt5659_priv, dac1_depop_work.work);
 	struct snd_soc_codec *codec = rt5659->codec;
 
+	mutex_lock(&rt5659->codec->component.card->dapm_mutex);
+	usleep_range(10000, 10000);
+
 	snd_soc_update_bits(codec, RT5659_STO_DAC_MIXER,
 		RT5659_M_DAC_L1_STO_L | RT5659_M_DAC_R1_STO_L |
 		RT5659_M_DAC_L1_STO_R | RT5659_M_DAC_R1_STO_R,
@@ -5235,6 +5244,8 @@ static void rt5659_dac1_depop_work(struct work_struct *work)
 		RT5659_M_DAC_L1_MONO_L | RT5659_M_DAC_R1_MONO_L |
 		RT5659_M_DAC_L1_MONO_R | RT5659_M_DAC_R1_MONO_R,
 		rt5659->dac1_mono_dac_mixer);
+
+	mutex_unlock(&rt5659->codec->component.card->dapm_mutex);
 }
 
 static void rt5659_dac2l_depop_work(struct work_struct *work)
@@ -5243,12 +5254,17 @@ static void rt5659_dac2l_depop_work(struct work_struct *work)
 		container_of(work, struct rt5659_priv, dac2l_depop_work.work);
 	struct snd_soc_codec *codec = rt5659->codec;
 
+	mutex_lock(&rt5659->codec->component.card->dapm_mutex);
+	usleep_range(10000, 10000);
+
 	snd_soc_update_bits(codec, RT5659_STO_DAC_MIXER,
 		RT5659_M_DAC_L2_STO_L | RT5659_M_DAC_L2_STO_R,
 		rt5659->dac2l_sto_dac_mixer);
 	snd_soc_update_bits(codec, RT5659_MONO_DAC_MIXER,
 		RT5659_M_DAC_L2_MONO_L | RT5659_M_DAC_L2_MONO_R,
 		rt5659->dac2l_mono_dac_mixer);
+
+	mutex_unlock(&rt5659->codec->component.card->dapm_mutex);
 }
 
 static void rt5659_dac2r_depop_work(struct work_struct *work)
@@ -5257,12 +5273,17 @@ static void rt5659_dac2r_depop_work(struct work_struct *work)
 		container_of(work, struct rt5659_priv, dac2r_depop_work.work);
 	struct snd_soc_codec *codec = rt5659->codec;
 
+	mutex_lock(&rt5659->codec->component.card->dapm_mutex);
+	usleep_range(10000, 10000);
+
 	snd_soc_update_bits(codec, RT5659_STO_DAC_MIXER,
 		RT5659_M_DAC_R2_STO_L | RT5659_M_DAC_R2_STO_R,
 		rt5659->dac2r_sto_dac_mixer);
 	snd_soc_update_bits(codec, RT5659_MONO_DAC_MIXER,
 		RT5659_M_DAC_R2_MONO_L | RT5659_M_DAC_R2_MONO_R,
 		rt5659->dac2r_mono_dac_mixer);
+
+	mutex_unlock(&rt5659->codec->component.card->dapm_mutex);
 }
 
 static void rt5659_calibrate_handler(struct work_struct *work)

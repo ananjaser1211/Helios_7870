@@ -2260,7 +2260,8 @@ static int cod3026x_jack_in_chk_more(struct cod3026x_priv *cod3026x)
 	int gdet_adc = 0;
 	bool jack_in_det = 1;
 
-	snd_soc_write(cod3026x->codec, COD3026X_84_JACK_DET2, 0x01);
+	snd_soc_update_bits(cod3026x->codec, COD3026X_84_JACK_DET2,
+			CTRV_JD_POP_MASK, (CTRV_JD_POP_500K << CTRV_JD_POP_SHIFT));
 	snd_soc_update_bits(cod3026x->codec, COD3026X_81_DET_ON,
 			EN_PDB_JD_MASK, EN_PDB_JD_MASK);
 
@@ -2296,7 +2297,8 @@ static int cod3026x_water_finish_chk_more(struct cod3026x_priv *cod3026x)
 	int gdet_adc = 0;
 	bool water_finish_det = 1;
 
-	snd_soc_write(cod3026x->codec, COD3026X_84_JACK_DET2, 0x01);
+	snd_soc_update_bits(cod3026x->codec, COD3026X_84_JACK_DET2,
+			CTRV_JD_POP_MASK, (CTRV_JD_POP_500K << CTRV_JD_POP_SHIFT));
 	snd_soc_update_bits(cod3026x->codec, COD3026X_81_DET_ON,
 			EN_PDB_JD_MASK, EN_PDB_JD_MASK);
 
@@ -2340,7 +2342,8 @@ static void cod3026x_water_polling_work(struct work_struct *work)
 	if (cod3026x->is_suspend)
 		regcache_cache_only(cod3026x->regmap, false);
 
-	snd_soc_write(codec, COD3026X_84_JACK_DET2, 0x01);
+	snd_soc_update_bits(codec, COD3026X_84_JACK_DET2,
+			CTRV_JD_POP_MASK, (CTRV_JD_POP_500K << CTRV_JD_POP_SHIFT));
 	snd_soc_update_bits(codec, COD3026X_81_DET_ON,
 			EN_PDB_JD_MASK, EN_PDB_JD_MASK);
 
@@ -2354,7 +2357,8 @@ static void cod3026x_water_polling_work(struct work_struct *work)
 
 	dev_dbg(cod3026x->dev, "%s gdet adc %d\n", __func__, gdet_adc);
 	waterdet->gdet_adc_val = gdet_adc;
-	snd_soc_write(codec, COD3026X_84_JACK_DET2, 0x0D);
+	snd_soc_update_bits(codec, COD3026X_84_JACK_DET2,
+			CTRV_JD_POP_MASK, (CTRV_JD_POP_2000K << CTRV_JD_POP_SHIFT));
 
 	/* do not jack det power off when jack inserted */
 	if (waterdet->water_det == COD3026X_DET_WATER)
@@ -2404,7 +2408,8 @@ static void cod3026x_water_polling_work(struct work_struct *work)
 				/* cancel the polling work */
 				cancel_delayed_work(&cod3026x->water_det_polling_work);
 
-				snd_soc_write(codec, COD3026X_84_JACK_DET2, 0x0d);
+				snd_soc_update_bits(codec, COD3026X_84_JACK_DET2,
+						CTRV_JD_POP_MASK, (CTRV_JD_POP_2000K << CTRV_JD_POP_SHIFT));
 				snd_soc_update_bits(codec, COD3026X_07_IRQ2M,
 						IRQ2M_MASK_ALL, 0xC0);
 				snd_soc_update_bits(codec, COD3026X_08_IRQ3M,
@@ -2454,7 +2459,8 @@ static void cod3026x_water_polling_work(struct work_struct *work)
 			/* cancel the polling work */
 			cancel_delayed_work(&cod3026x->water_det_polling_work);
 
-			snd_soc_write(codec, COD3026X_84_JACK_DET2, 0x0d);
+			snd_soc_update_bits(codec, COD3026X_84_JACK_DET2,
+					CTRV_JD_POP_MASK, (CTRV_JD_POP_2000K << CTRV_JD_POP_SHIFT));
 			snd_soc_update_bits(codec, COD3026X_07_IRQ2M,
 					IRQ2M_MASK_ALL, 0xC0);
 			snd_soc_update_bits(codec, COD3026X_08_IRQ3M,
@@ -2486,7 +2492,8 @@ static void cod3026x_water_det_work(struct work_struct *work)
 	if (cod3026x->is_suspend)
 		regcache_cache_only(cod3026x->regmap, false);
 
-	snd_soc_write(codec, COD3026X_84_JACK_DET2, 0x01);
+	snd_soc_update_bits(codec, COD3026X_84_JACK_DET2,
+			CTRV_JD_POP_MASK, (CTRV_JD_POP_500K << CTRV_JD_POP_SHIFT));
 	/* read adc for water detection */
 	if (cod3026x->use_det_gdet_adc_mode == 1) {
 		gdet_adc = cod3026x_gdet_adc_get_value(cod3026x);
@@ -2497,7 +2504,8 @@ static void cod3026x_water_det_work(struct work_struct *work)
 
 	dev_dbg(cod3026x->dev, "%s gdet adc: %d\n", __func__, gdet_adc);
 	waterdet->gdet_adc_val = gdet_adc;
-	snd_soc_write(codec, COD3026X_84_JACK_DET2, 0x0d);
+	snd_soc_update_bits(codec, COD3026X_84_JACK_DET2,
+			CTRV_JD_POP_MASK, (CTRV_JD_POP_2000K << CTRV_JD_POP_SHIFT));
 
 	if (cod3026x->is_suspend)
 		regcache_cache_only(cod3026x->regmap, true);
@@ -2602,7 +2610,8 @@ static void cod3026x_jack_det_work(struct work_struct *work)
 		/* read gdet adc for wrong jack interrupt check */
 		if (cod3026x->is_suspend)
 			regcache_cache_only(cod3026x->regmap, false);
-		snd_soc_write(codec, COD3026X_84_JACK_DET2, 0x01);
+		snd_soc_update_bits(codec, COD3026X_84_JACK_DET2,
+				CTRV_JD_POP_MASK, (CTRV_JD_POP_500K << CTRV_JD_POP_SHIFT));
 
 		if (cod3026x->use_det_gdet_adc_mode == 1) {
 			gdet_adc = cod3026x_gdet_adc_get_value(cod3026x);
@@ -2611,7 +2620,8 @@ static void cod3026x_jack_det_work(struct work_struct *work)
 			gdet_adc = cod3026x_adc_get_value(cod3026x);
 		}
 
-		snd_soc_write(codec, COD3026X_84_JACK_DET2, 0x0d);
+		snd_soc_update_bits(codec, COD3026X_84_JACK_DET2,
+				CTRV_JD_POP_MASK, (CTRV_JD_POP_2000K << CTRV_JD_POP_SHIFT));
 		if (cod3026x->is_suspend)
 			regcache_cache_only(cod3026x->regmap, true);
 
@@ -2674,6 +2684,21 @@ static void cod3026x_jack_det_work(struct work_struct *work)
 				PDB_MIC_BST3_MASK, 0);
 	}
 
+	/*
+	 * If set MODEL_FLAG_LDET_VTH_ENABLE,
+	 * LDET VTH need to be set depending on the state of jack.
+	 * Jack in: 1.56V(0.15M)
+	 * Jack out: 1.125V(0.6M)
+	 */
+	if (cod3026x->model_feature_flag & MODEL_FLAG_LDET_VTH_ENABLE) {
+		if (jackdet->jack_det)
+			snd_soc_update_bits(codec, COD3026X_84_JACK_DET2,
+					CTRV_JD_VTH_MASK, CTRV_JD_VTH_150K);
+		else
+			snd_soc_update_bits(codec, COD3026X_84_JACK_DET2,
+					CTRV_JD_VTH_MASK, CTRV_JD_VTH_600K);
+	}
+
 	if (cod3026x->is_suspend)
 		regcache_cache_only(cod3026x->regmap, true);
 
@@ -2733,7 +2758,8 @@ static void cod3026x_jack_det_work(struct work_struct *work)
 		if (cod3026x->is_suspend)
 			regcache_cache_only(cod3026x->regmap, false);
 
-		snd_soc_write(codec, COD3026X_84_JACK_DET2, 0x01);
+		snd_soc_update_bits(codec, COD3026X_84_JACK_DET2,
+				CTRV_JD_POP_MASK, (CTRV_JD_POP_500K << CTRV_JD_POP_SHIFT));
 
 		if (cod3026x->use_det_gdet_adc_mode == 1) {
 			gdet_adc = cod3026x_gdet_adc_get_value(cod3026x);
@@ -2742,7 +2768,8 @@ static void cod3026x_jack_det_work(struct work_struct *work)
 			gdet_adc = cod3026x_adc_get_value(cod3026x);
 		}
 
-		snd_soc_write(codec, COD3026X_84_JACK_DET2, 0x0d);
+		snd_soc_update_bits(codec, COD3026X_84_JACK_DET2,
+				CTRV_JD_POP_MASK, (CTRV_JD_POP_2000K << CTRV_JD_POP_SHIFT));
 		if (cod3026x->is_suspend)
 			regcache_cache_only(cod3026x->regmap, true);
 
@@ -3487,7 +3514,13 @@ static void cod3026x_post_fw_update_failure(void *context)
 	snd_soc_write(codec, COD3026X_87_LDO_DIG, 0x0f);
 	snd_soc_write(codec, COD3026X_88_KEY_TIME, 0xf2);
 	snd_soc_write(codec, COD3026X_8B_MICBIAS2, 0x0B);
-	snd_soc_write(codec, COD3026X_84_JACK_DET2, 0x0d);
+	snd_soc_update_bits(codec, COD3026X_84_JACK_DET2,
+			CTRV_JD_POP_MASK | CTRV_JD_VTH_MASK,
+			(CTRV_JD_POP_2000K << CTRV_JD_POP_SHIFT) | cod3026x->ctrl_thd_vol);
+
+	if (cod3026x->model_feature_flag & MODEL_FLAG_LDET_VTH_ENABLE)
+		snd_soc_update_bits(codec, COD3026X_84_JACK_DET2,
+				CTRV_JD_VTH_MASK, CTRV_JD_VTH_600K);
 
 	/* Default value, enabling HPF and setting freq at 100Hz */
 	snd_soc_write(codec, COD3026X_42_ADC1, 0x0c);
@@ -3655,8 +3688,10 @@ static void cod3026x_i2c_parse_dt(struct cod3026x_priv *cod3026x)
 	struct device *dev = cod3026x->dev;
 	struct device_node *np = dev->of_node;
 	unsigned int bias_v_conf;
+	unsigned int feature_flag;
 	int mic_range, mic_delay, btn_rel_val, btn_delay;
 	int water_threshold_min1, water_threshold_min2, water_threshold_max;
+	int ctrl_jd_vth;
 #ifdef CONFIG_SND_SOC_COD30XX_EXT_ANT
 	int ant_range;
 #endif
@@ -3761,6 +3796,12 @@ static void cod3026x_i2c_parse_dt(struct cod3026x_priv *cod3026x)
 	else
 		cod3026x->water_threshold_adc_max = COD3026X_WATER_DET_THRESHOLD_MAX;
 
+	ret = of_property_read_u32(dev->of_node, "ctrl-jd-vth", &ctrl_jd_vth);
+	if (!ret)
+		cod3026x->ctrl_thd_vol = CTRV_JD_VTH_MASK & ctrl_jd_vth;
+	else
+		cod3026x->ctrl_thd_vol = CTRV_JD_VTH_150K;
+
 	ret = of_property_read_u32(dev->of_node,
 			"mic-bias-ldo-voltage", &bias_v_conf);
 	if ((!ret) && ((bias_v_conf >= MIC_BIAS_LDO_VO_2_8V) &&
@@ -3795,6 +3836,16 @@ static void cod3026x_i2c_parse_dt(struct cod3026x_priv *cod3026x)
 		dev_dbg(dev, "%s : cod3026x->use_det_gdet_adc_mode: %d\n",
 				__func__, cod3026x->use_det_gdet_adc_mode);
 	}
+
+	/*
+	 * In order to implement various requirments by MCD model
+	 * 0x01: set ldet vth threshold depending on the state of jack
+	 */
+	ret = of_property_read_u32(dev->of_node, "use-feature-flag", &feature_flag);
+	if (!ret)
+		cod3026x->model_feature_flag = feature_flag;
+	else
+		cod3026x->model_feature_flag = 0;
 
 	dev_err(dev, "Using %s for jack/button detection\n",
 			cod3026x->use_det_adc_mode ? "GPADC" : "internal h/w");

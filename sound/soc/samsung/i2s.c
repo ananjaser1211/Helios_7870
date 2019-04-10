@@ -290,8 +290,9 @@ static inline unsigned get_rfs(struct i2s_dai *i2s)
 /* Write RCLK of I2S (in multiples of LRCLK) */
 static inline void set_rfs(struct i2s_dai *i2s, unsigned rfs)
 {
-	u32 mod = readl(i2s->addr + I2SMOD);
+	u32 mod;
 	u32 val;
+	unsigned long flags;
 
 	switch (rfs) {
 	case 768:
@@ -320,9 +321,12 @@ static inline void set_rfs(struct i2s_dai *i2s, unsigned rfs)
 		break;
 	}
 
+	spin_lock_irqsave(&lock, flags);
+	mod = readl(i2s->addr + I2SMOD);
 	mod &= ~(i2s->rfs_msk << i2s->rfs_sht);
 	mod |= val << i2s->rfs_sht;
 	writel(mod, i2s->addr + I2SMOD);
+	spin_unlock_irqrestore(&lock, flags);
 }
 
 /* Read Bit-Clock of I2S (in multiples of LRCLK) */
@@ -349,8 +353,9 @@ static inline unsigned get_bfs(struct i2s_dai *i2s)
 /* Write Bit-Clock of I2S (in multiples of LRCLK) */
 static inline void set_bfs(struct i2s_dai *i2s, unsigned bfs)
 {
-	u32 mod = readl(i2s->addr + I2SMOD);
+	u32 mod;
 	u32 val;
+	unsigned long flags;
 
 	switch (bfs) {
 	case 48:
@@ -385,9 +390,12 @@ static inline void set_bfs(struct i2s_dai *i2s, unsigned bfs)
 		return;
 	}
 
+	spin_lock_irqsave(&lock, flags);
+	mod = readl(i2s->addr + I2SMOD);
 	mod &= ~(i2s->bfs_msk << i2s->bfs_sht);
 	mod |= val << i2s->bfs_sht;
 	writel(mod, i2s->addr + I2SMOD);
+	spin_unlock_irqrestore(&lock, flags);
 }
 
 /* Sample-Size */
@@ -409,8 +417,11 @@ static void i2s_txctrl(struct i2s_dai *i2s, int on)
 {
 	void __iomem *addr = i2s->addr;
 	u32 con = readl(addr + I2SCON);
-	u32 mod = readl(addr + I2SMOD);
+	u32 mod;
+	unsigned long flags;
 
+	spin_lock_irqsave(&lock, flags);
+	mod = readl(addr + I2SMOD);
 	mod &= ~(i2s->txr_msk << i2s->txr_sht);
 	mod |= MOD_TXR_TXRX << i2s->txr_sht;
 
@@ -441,6 +452,7 @@ static void i2s_txctrl(struct i2s_dai *i2s, int on)
 
 		if (other_tx_active(i2s)) {
 			writel(con, addr + I2SCON);
+			spin_unlock_irqrestore(&lock, flags);
 			return;
 		}
 
@@ -454,6 +466,7 @@ static void i2s_txctrl(struct i2s_dai *i2s, int on)
 
 	writel(mod, addr + I2SMOD);
 	writel(con, addr + I2SCON);
+	spin_unlock_irqrestore(&lock, flags);
 }
 
 /* RX Channel Control */
@@ -461,8 +474,11 @@ static void i2s_rxctrl(struct i2s_dai *i2s, int on)
 {
 	void __iomem *addr = i2s->addr;
 	u32 con = readl(addr + I2SCON);
-	u32 mod = readl(addr + I2SMOD);
+	u32 mod;
+	unsigned long flags;
 
+	spin_lock_irqsave(&lock, flags);
+	mod = readl(addr + I2SMOD);
 	mod &= ~(i2s->txr_msk << i2s->txr_sht);
 	mod |= MOD_TXR_TXRX << i2s->txr_sht;
 
@@ -486,6 +502,8 @@ static void i2s_rxctrl(struct i2s_dai *i2s, int on)
 
 	writel(mod, addr + I2SMOD);
 	writel(con, addr + I2SCON);
+
+	spin_unlock_irqrestore(&lock, flags);
 }
 
 /* Flush FIFO of an interface */
@@ -518,7 +536,9 @@ static int i2s_set_sysclk(struct snd_soc_dai *dai,
 {
 	struct i2s_dai *i2s = to_info(dai);
 	struct i2s_dai *other = i2s->pri_dai ? : i2s->sec_dai;
-	u32 mod = readl(i2s->addr + I2SMOD);
+	u32 mod;
+
+	mod = readl(i2s->addr + I2SMOD);
 
 	switch (clk_id) {
 	case SAMSUNG_I2S_OPCLK:
@@ -603,6 +623,7 @@ static int i2s_set_sysclk(struct snd_soc_dai *dai,
 		dev_err(&i2s->pdev->dev, "We don't serve that!\n");
 		return -EINVAL;
 	}
+
 	writel(mod, i2s->addr + I2SMOD);
 
 	return 0;
@@ -612,9 +633,10 @@ static int i2s_set_fmt(struct snd_soc_dai *dai,
 	unsigned int fmt)
 {
 	struct i2s_dai *i2s = to_info(dai);
-	u32 mod = readl(i2s->addr + I2SMOD);
+	u32 mod;
 	u32 tmp = 0;
 	int sdf_mask = MOD_SDF_MASK << i2s->sdf_sht;
+	unsigned long flags;
 
 	/* Format is priority */
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
@@ -669,16 +691,20 @@ static int i2s_set_fmt(struct snd_soc_dai *dai,
 	 * Don't change the I2S mode if any controller is active on this
 	 * channel.
 	 */
+	spin_lock_irqsave(&lock, flags);
+	mod = readl(i2s->addr + I2SMOD);
 	if (any_active(i2s) &&
 	    ((mod & (sdf_mask | i2s->lrp_b | i2s->slave_b)) != tmp)) {
 		dev_err(&i2s->pdev->dev,
 				"%s:%d Other DAI busy\n", __func__, __LINE__);
+		spin_unlock_irqrestore(&lock, flags);
 		return -EAGAIN;
 	}
 
 	mod &= ~(sdf_mask | i2s->lrp_b | i2s->slave_b);
 	mod |= tmp;
 	writel(mod, i2s->addr + I2SMOD);
+	spin_unlock_irqrestore(&lock, flags);
 
 	return 0;
 }
@@ -1768,26 +1794,13 @@ static int samsung_i2s_probe(struct platform_device *pdev)
 	}
 
 	if (!np) {
-		res = platform_get_resource(pdev, IORESOURCE_DMA, 0);
-		if (!res) {
-			dev_err(&pdev->dev,
-				"Unable to get I2S-TX dma resource\n");
-			return -ENXIO;
-		}
-		pri_dai->dma_playback.channel = res->start;
-
-		res = platform_get_resource(pdev, IORESOURCE_DMA, 1);
-		if (!res) {
-			dev_err(&pdev->dev,
-				"Unable to get I2S-RX dma resource\n");
-			return -ENXIO;
-		}
-		pri_dai->dma_capture.channel = res->start;
-
 		if (i2s_pdata == NULL) {
 			dev_err(&pdev->dev, "Can't work without s3c_audio_pdata\n");
 			return -EINVAL;
 		}
+
+		pri_dai->dma_playback.slave = i2s_pdata->dma_playback;
+		pri_dai->dma_capture.slave = i2s_pdata->dma_capture;
 
 		if (&i2s_pdata->type)
 			i2s_cfg = &i2s_pdata->type.i2s;
@@ -1907,11 +1920,8 @@ static int samsung_i2s_probe(struct platform_device *pdev)
 			(struct s3c2410_dma_client *)&sec_dai->dma_playback;
 		sec_dai->dma_playback.ch_name = "tx-sec";
 
-		if (!np) {
-			res = platform_get_resource(pdev, IORESOURCE_DMA, 2);
-			if (res)
-				sec_dai->dma_playback.channel = res->start;
-		}
+		if (!np)
+			sec_dai->dma_playback.slave = i2s_pdata->dma_play_sec;
 
 		sec_dai->slotnum = pri_dai->slotnum;
 		sec_dai->dma_playback.dma_size = 4;

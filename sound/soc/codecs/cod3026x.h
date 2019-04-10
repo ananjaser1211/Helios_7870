@@ -29,6 +29,8 @@ extern int cod3026x_jack_mic_register(struct snd_soc_codec *codec);
 #define COD3026X_BTN_RELEASED_MASK	BIT(0)
 #define COD3026X_BTN_PRESSED_MASK	BIT(1)
 
+#define MODEL_FLAG_LDET_VTH_ENABLE 0x01
+
 struct cod3026x_jack_det {
 	bool jack_det;
 	bool mic_det;
@@ -107,6 +109,7 @@ struct cod3026x_priv {
 	int water_threshold_adc_min1;
 	int water_threshold_adc_min2;
 	int water_threshold_adc_max;
+	int ctrl_thd_vol;
 	struct jack_buttons_zone jack_buttons_zones[4];
 	struct delayed_work buttons_work;
 	struct workqueue_struct *buttons_wq;
@@ -126,6 +129,7 @@ struct cod3026x_priv {
 	struct workqueue_struct *adc_mute_wq;
 	int adc_pin;
 	struct wake_lock jack_wake_lock;
+	unsigned int model_feature_flag;
 };
 
 /*
@@ -1159,9 +1163,19 @@ struct cod3026x_priv {
 #define CTRV_JD_POP_WIDTH	2
 #define CTRV_JD_POP_MASK	MASK(CTRV_JD_POP_WIDTH, CTRV_JD_POP_SHIFT)
 
+#define CTRV_JD_POP_500K	0
+#define CTRV_JD_POP_1000K	1
+#define CTRV_JD_POP_1500K	2
+#define CTRV_JD_POP_2000K	3
+
 #define CTRV_JD_VTH_SHIFT	0
 #define CTRV_JD_VTH_WIDTH	2
 #define CTRV_JD_VTH_MASK	MASK(CTRV_JD_VTH_WIDTH, CTRV_JD_VTH_SHIFT)
+
+#define CTRV_JD_VTH_50K 	0
+#define CTRV_JD_VTH_150K	1
+#define CTRV_JD_VTH_600K	2
+#define CTRV_JD_VTH_1000K	3
 
 /** COD3026_84_JACK_DET2 **/
 #define CTMD_JD_IRQ_DBNC_SHIFT  4
