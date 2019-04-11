@@ -24,6 +24,12 @@
 #ifdef CONFIG_DISPLAY_USE_INFO
 #include "dpui.h"
 
+bool display_on = true;
+bool is_display_on()
+{
+	return display_on;
+}
+
 #define	DPUI_VENDOR_NAME	"SDC"
 #define DPUI_MODEL_NAME		"AMS561RA01"
 #endif
@@ -1707,6 +1713,9 @@ static int dsim_panel_displayon(struct dsim_device *dsim)
 
 	s6e8aa5x01_displayon(lcd);
 
+display_on = true;
+
+displayon_err:
 	mutex_lock(&lcd->lock);
 	lcd->state = PANEL_STATE_RESUMED;
 	mutex_unlock(&lcd->lock);
@@ -1728,6 +1737,8 @@ static int dsim_panel_suspend(struct dsim_device *dsim)
 	mutex_lock(&lcd->lock);
 	lcd->state = PANEL_STATE_SUSPENDING;
 	mutex_unlock(&lcd->lock);
+
+	display_on = false;
 
 	s6e8aa5x01_exit(lcd);
 
