@@ -1595,11 +1595,7 @@ static int dsim_panel_suspend(struct dsim_device *dsim)
 
 	display_on = false;
 
-	ret = s6e8aa5x01_exit(lcd);
-	if (ret) {
-		dev_info(&lcd->ld->dev, "%s: failed to panel exit\n", __func__);
-		goto suspend_err;
-	}
+	s6e8aa5x01_exit(lcd);
 
 	mutex_lock(&lcd->lock);
 	lcd->state = PANEL_STATE_SUSPENED;
