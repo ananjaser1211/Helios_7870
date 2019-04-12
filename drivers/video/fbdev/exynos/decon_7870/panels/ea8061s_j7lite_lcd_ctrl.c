@@ -22,6 +22,12 @@
 #include "mdnie_lite_table_j7lite.h"
 #endif
 
+bool display_on = true;
+bool is_display_on()
+{
+	return display_on;
+}
+
 #ifdef CONFIG_DISPLAY_USE_INFO
 #include "dpui.h"
 
@@ -1379,6 +1385,8 @@ static int dsim_panel_displayon(struct dsim_device *dsim)
 	lcd->state = PANEL_STATE_RESUMED;
 	mutex_unlock(&lcd->lock);
 
+	display_on = true;
+
 	dev_info(&lcd->ld->dev, "- %s: %d, %d\n", __func__, lcd->state, lcd->connected);
 
 	return 0;
@@ -1396,6 +1404,8 @@ static int dsim_panel_suspend(struct dsim_device *dsim)
 	mutex_lock(&lcd->lock);
 	lcd->state = PANEL_STATE_SUSPENDING;
 	mutex_unlock(&lcd->lock);
+
+	display_on = false;
 
 	ea8061s_exit(lcd);
 
