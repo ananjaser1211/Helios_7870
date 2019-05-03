@@ -1,0 +1,302 @@
+/*
+ * SAMSUNG EXYNOS8890 board device tree source
+ *
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
+
+/dts-v1/;
+#include "exynos8890-board-common.dtsi"
+
+/ {
+	model = "Samsung ESPRESSO8890 board based on EXYNOS8890";
+	compatible = "samsung,exynos8890", "samsung,ESPRESSO8890";
+
+	ect {
+		parameter_address = <0x90000000>;
+		parameter_size = <0x19000>;
+	};
+
+	dwmmc2@15740000 {
+		cd-gpio = <&gpa3 2 0xf>;
+		pinctrl-0 = <&sd2_clk &sd2_cmd &sd2_bus1 &sd2_bus4 &dwmmc2_cd_ext_irq>;
+	};
+
+	pinctrl@10580000 {
+		dwmmc2_cd_ext_irq: dwmmc2_cd_ext_irq {
+			   samsung,pins = "gpa3-2";
+			   samsung,pin-function = <0xf>;
+			   samsung,pin-pud = <0>;
+			   samsung,pin-drv = <0>;
+		};
+		muic_irq: muic-irq {
+			samsung,pins = "gpa1-1";
+			samsung,pin-function = <0x0>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
+		};
+	};
+
+	decon_f: decon_f@0x13960000 {
+		sw_te_wa = <1>;
+	};
+
+	pcie0@157A0000 {
+		pcie,wlan-gpio = <&gpj1 3 0x1 /* WLAN_EN */ >;
+		pcie,bt-gpio = <&gpe7 1 0x1 /* BT_EN */ >;
+		status = "okay";
+	};
+
+	hsi2c@14E60000 {
+		status = "okay";
+		muic-tsu6721@25 {
+			compatible = "tsu6721-muic,i2c";
+			reg = <0x25>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&muic_irq>;
+			muic,muic_int = <&gpa1 1 0>;
+			gpios = <&gpi2 3 0x1>;
+		};
+	};
+
+	spi_0: spi@14d20000 {
+		status = "okay";
+		audio_codec: wm5110@0 {
+			compatible = "wlf,wm5110";
+			reg = <0x0>;
+			spi-max-frequency = <20000000>;
+			interrupts = <5 0 0>;
+			interrupt-parent = <&gpa0>;
+
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			pinctrl-names ="default";
+			pinctrl-0 = <&codec_reset &codec_ldoena>;
+
+			wlf,reset = <&gpe6 5 0>;
+			wlf,ldoena = <&gpe6 6 0>;
+			wlf,init-mic-delay = <30>;
+			wlf,micd-detect-debounce = <300>;
+			wlf,micd-bias-start-time = <0x1>;
+			wlf,micd-rate = <0x7>;
+			wlf,micd-dbtime = <0x1>;
+			wlf,micd-timeout = <1000>;
+			wlf,micd-force-micbias;
+			wlf,micd-ranges = <
+				139 226
+				295 115
+				752 114
+				1257 217
+			>;
+
+			wlf,micd-configs = <
+				0x0 1 0
+			>;
+
+			wlf,micbias1 = <2800 0 1 0 0>;
+			wlf,micbias2 = <1800 0 1 0 0>;
+			wlf,micbias3 = <1800 0 1 0 0>;
+
+			wlf,gpio-defaults = <
+				0xA101
+				0xA101
+				0xA101
+				0xA101
+				0x8101
+			>;
+
+			wlf,gpsw = <0x3>;
+			wlf,use-jd-gpio;
+			wlf,jd-gpio-nopull;
+			wlf,fixed-hpdet-imp = <16>;
+			wlf,micd-software-compare;
+			wlf,micd-open-circuit-declare = <1>;
+
+			wlf,max-channels-clocked = <2 0 0>;
+			/* 0:MICVDD 1:MICBIAS1 2:MICBIAS2 3:MICBIAS3 */
+			wlf,dmic-ref = <2 1 3 0>;
+			/* 1st cell:IN1 2rd cell:IN2 3nd cell:IN3 4th cell:IN4 */
+			wlf,inmode = <0 0 0 0>;
+
+			AVDD-supply = <&ldo30_reg>;
+			LDOVDD-supply = <&ldo30_reg>;
+			DBVDD1-supply = <&ldo30_reg>;
+
+			CPVDD-supply = <&ldo30_reg>;
+			DBVDD2-supply = <&ldo30_reg>;
+			DBVDD3-supply = <&ldo30_reg>;
+			SPKVDDL-supply = <&ldo30_reg>;
+			SPKVDDR-supply = <&ldo30_reg>;
+
+			adsps {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				adsp@1100 {
+					reg = <0x1100>;
+					firmware {
+						EDAC {
+							wlf,wmfw-file = "edac";
+							wlf,bin-file = "edac";
+						};
+						TRACE {
+							wlf,wmfw-file = "trace";
+							wlf,compr-caps = <1 8 0x4 1 8000 16000 24000>;
+						};
+					};
+				};
+				adsp@1200 {
+					reg = <0x1200>;
+					firmware {
+						TX_NB {
+							wlf,wmfw-file = "tx-nb";
+						};
+						TX_WB {
+							wlf,wmfw-file = "tx-wb";
+						};
+						TX_SWB_INTERVIEW {
+							wlf,wmfw-file = "tx-swb";
+						};
+						TX_SWB_CONVERSATION {
+							wlf,wmfw-file = "tx-swb";
+						};
+					};
+				};
+				adsp@1300 {
+					reg = <0x1300>;
+					firmware {
+						TX_NB {
+							wlf,wmfw-file = "tx-nb";
+							wlf,bin-file = "tx-nb";
+						};
+						TX_WB {
+							wlf,wmfw-file = "tx-wb";
+							wlf,bin-file = "tx-wb";
+						};
+						TX_SWB_INTERVIEW {
+							wlf,wmfw-file = "tx-swb";
+							wlf,bin-file = "tx-swb-interview";
+						};
+						TX_SWB_CONVERSATION {
+							wlf,wmfw-file = "tx-swb";
+							wlf,bin-file = "tx-swb-conversation";
+						};
+						VOICECONTROL {
+							wlf,wmfw-file = "ez2-control";
+							wlf,bin-file = "ez2-control";
+						};
+						LPSD {
+							wlf,wmfw-file = "ez2-control";
+							wlf,bin-file = "lpsd-control";
+						};
+					};
+				};
+				adsp@1400 {
+					reg = <0x1400>;
+					firmware {
+						RX_NB {
+							wlf,wmfw-file = "rx-anc-nb";
+							wlf,bin-file = "rx-anc-nb";
+						};
+						RX_WB {
+							wlf,wmfw-file = "rx-anc-wb";
+							wlf,bin-file = "rx-anc-wb";
+						};
+					};
+				};
+			};
+
+			controller-data {
+				cs-gpio = <&gpe2 1 0>;
+				samsung,spi-feedback-delay = <0>;
+			};
+		};
+	};
+
+	pinctrl@10580000 {
+		codec_irq: codec-irq {
+			samsung,pins = "gpa0-5";
+			samsung,pin-function = <0xf>;
+			samsung,pin-pud = <3>;
+		};
+		codec_irq_idle: codec-irq-idle {
+			samsung,pins = "gpa0-5";
+			samsung,pin-function = <0x0>;
+			samsung,pin-pud = <3>;
+		};
+	};
+
+	pinctrl@14CC0000 {
+		codec_reset: codec-reset {
+			samsung,pins ="gpe6-5";
+			samsung,pin-function = <1>;
+			samsung,pin-pud = <1>;
+			samsung,pin-con-pdn =<3>;
+			samsung,pin-pud-pdn = <1>;
+			samsung,pin-val = <0>;
+		};
+		codec_ldoena: codec-ldoena {
+			samsung,pins ="gpe6-6";
+			samsung,pin-function = <1>;
+			samsung,pin-pud = <1>;
+			samsung,pin-con-pdn =<3>;
+			samsung,pin-pud-pdn = <1>;
+			samsung,pin-val = <1>;
+		};
+	};
+
+	i2s0: i2s@11440000 {
+		samsung,supports-esa-dma;
+		samsung,supports-sec-compr;
+		status = "okay";
+	};
+
+	audio_codec_dummy: dummy-codec {
+		compatible = "samsung,dummy-codec";
+		status = "okay";
+	};
+
+	i2s_dummy: dummy-i2s {
+		compatible = "samsung,dummy-i2s";
+		status = "okay";
+	};
+
+	audio_cp_dummy: cp_dummy {
+		compatible = "samsung,cp_dummy";
+		status = "okay";
+	};
+
+	sound {
+		compatible = "samsung,espresso_wm5110";
+		pinctrl-names = "default", "idle";
+		pinctrl-0 = <&codec_irq>;
+		pinctrl-1 = <&codec_irq_idle>;
+		status = "okay";
+	};
+
+	fimc_is@14370000 {
+	};
+
+	fimc_is_sensor_2p8: fimc-is_sensor_2p8@5A {
+	};
+
+	fimc_is_sensor_6b2: fimc-is_sensor_6b2@20 {
+	};
+
+	fimc_is_sensor0: fimc_is_sensor@14000000 {
+	};
+
+	fimc_is_sensor1: fimc_is_sensor@14100000 {
+	};
+
+	fimc_is_sensor2: fimc_is_sensor@14010000 {
+	};
+
+	fimc_is_sensor3: fimc_is_sensor@14020000 {
+	};
+};

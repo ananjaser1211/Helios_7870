@@ -1,0 +1,27 @@
+config USE_HW_API_COMMON
+	bool "Use HW API Common library"
+	depends on EXYNOS_FIMC_IS_HARDWARE
+	default y
+	help
+	  Enalbe HW API Common library.
+
+config USE_HOST_FD_LIBRARY
+	bool "Use FD library in host"
+	depends on EXYNOS_FIMC_IS_HARDWARE
+	default n
+	help
+	  Enalbe SW FD library in host.
+
+config MC_SCALER_V1_20
+        bool "Use MC-SCALER v1.20"
+	depends on CAMERA_MC_SCALER_VER1_USE
+        default n
+        help
+          use mc-scaler v1.20
+
+config MC_SCALER_V2_10
+        bool "Use MC-SCALER v2.10"
+	depends on CAMERA_MC_SCALER_VER2_USE
+        default n
+        help
+          use mc-scaler v2.10

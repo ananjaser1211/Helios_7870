@@ -1,0 +1,7 @@
+config EXYNOS_DECON_LCD
+	depends on EXYNOS_DECON_8890
+	bool "Select LCD panel driver"
+
+config EXYNOS_DECON_LCD_S6E3HA2K
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	tristate "S6E3HA2K AMOLED WQHD LCD driver(1440 x 2560)"

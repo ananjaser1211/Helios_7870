@@ -1,0 +1,18 @@
+/*
+ * SAMSUNG UNIVERSAL5433 board device tree source
+ *
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
+
+#include "exynos7870-j7toplte-common-battery.dtsi"
+/ {
+	battery {
+		battery,temp_table_adc = <302 353 416 490 575 670 765 838 892 958 1045 1110 1143 1214 1284 1359 1396 1437 1525 1610 1694 1825 1957 2047 2272 2497 2716 2842 2928 2966 3005 3103 3203 3267 3326 3408 3528 3629>;
+		battery,temp_table_data = <900 850 800 750 700 650 600 570 550 530 500 480 470 450 430 410 400 390 370 350 330 300 270 250 200 150 100 70 50 40 30 0 (-30) (-50) (-70) (-100) (-150) (-200)>;
+	};
+};

@@ -1,0 +1,15 @@
+/*
+ * SAMSUNG Exynos7870 M10 board device tree source
+ *
+ * Copyright (c) 2018 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include "exynos7870-m10lte_common_battery.dtsi"
+/ {
+
+};

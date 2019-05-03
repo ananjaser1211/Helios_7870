@@ -1,0 +1,168 @@
+/*
+ * SAMSUNG UNIVERSAL5433 board device tree source
+ *
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
+
+#include "z_batterydata_j7velte_common.dtsi"
+
+/ {
+
+	battery_params {
+			battery,battery_data =
+			<
+			/***** battery data for 4.35 *****/
+			/* battery,battery_table3 */
+			185 11 47 11 166 10 29 10 161 9
+			42 9 187 8 87 8 230 7 155 7
+			64 7 222 6 161 6 119 6 86 6
+			62 6 42 6 5 6 190 5 143 5
+			55 5 242 1 255 8 143 8 32 8
+			176 7 64 7 208 6 96 6 241 5
+			129 5 17 5 161 4 50 4 194 3
+			82 3 226 2 114 2 3 2 147 1
+			35 1 179 0 68 0 212 15
+			
+			/* battery,battery_table4 */
+			47 47 48 49 50 51 50 51 51 51
+			52 52 52 53 53 54 54 55 56 57
+			60 150
+			
+			/* battery,batcap */
+			0x2C 0x88 0x0B 0x22 /* [0x0F] [0x0E] [0x11] [0x10] */
+			
+			/* battery,accum */ 
+			0xC6 0x07 /* [0x44] [0x45] */
+			
+			/* battery,soc_arr_val */
+			11246 10700 10154 9608 9063 8517 7971 7425 6879 6334
+			5788 5242 4696 4150 3605 3059 2513 1967 1422 876
+			330 (-216)
+			
+			/* battery,ocv_arr_val */
+			44654 43982 43310 42642 42035 41454 40915 40426 39871 39506
+			39065 38583 38285 38079 37922 37804 37704 37525 37177 36947
+			36521 32432
+
+			/***** battery data for 4.33 *****/
+			/* battery,battery_table3 */
+			186 11 47 11 165 10 29 10 161 9
+			42 9 187 8 87 8 230 7 155 7
+			64 7 222 6 161 6 119 6 86 6
+			62 6 42 6 5 6 190 5 143 5
+			55 5 242 1 7 9 151 8 39 8
+			183 7 70 7 214 6 102 6 246 5
+			134 5 21 5 165 4 53 4 197 3
+			85 3 229 2 116 2 4 2 148 1
+			36 1 180 0 68 0 212 15
+			
+			/* battery,battery_table4 */
+			47 47 48 49 50 51 50 51 51 51
+			52 52 52 53 53 54 54 55 56 57
+			60 150
+			
+			/* battery,batcap */
+			0x2B 0xE8 0x0A 0xFA /* [0x0F] [0x0E] [0x11] [0x10] */
+			/* battery,accum */
+			0xC6 0x07 /* [0x44] [0x45] */
+			
+			/* battery,soc_arr_val */
+			11285 10737 10189 9642 9094 8546 7999 7451 6903 6354
+			5808 5260 4712 4165 3617 3069 2521 1974 1426 878
+			331 (-217)
+			/* battery,ocv_arr_val */
+			44656 43982 43308 42641 42035 41454 40915 40426 39871 39506
+			39065 38583 38285 38079 37922 37804 37704 37524 37177 36947
+			36521 32432
+
+			/***** battery data for 4.31 *****/
+			/* battery,battery_table3 */
+			185 11 47 11 166 10 29 10 161 9
+			42 9 188 8 87 8 230 7 155 7
+			64 7 222 6 161 6 119 6 86 6
+			62 6 42 6 5 6 190 5 143 5
+			55 5 242 1 48 9 190 8 76 8
+			218 7 104 7 246 6 131 6 17 6
+			159 5 45 5 187 4 72 4 214 3
+			100 3 242 2 128 2 14 2 156 1
+			41 1 183 0 69 0 211 15
+			
+			/* battery,battery_table4 */
+			47 47 48 49 50 51 50 51 51 51
+			52 52 52 53 53 54 54 55 56 57
+			60 150
+			
+			/* battery,batcap */                                  
+			0x2B 0x34 0x0A 0xCD /* [0x0F] [0x0E] [0x11] [0x10] */ 
+			/* battery,accum */
+			0xC6 0x07 /* [0x44] [0x45] */
+			
+			/* battery,soc_arr_val */
+			11486 10929 10371 9814 9257 8699 8142 7584 7027 6469
+			5911 5354 4797 4240 3682 3125 2567 2010 1452 895
+			337 (-220)
+			/* battery,ocv_arr_val */
+			44654 43982 43309 42641 42035 41454 40916 40427 39871 39506
+			39065 38584 38286 38080 37922 37804 37704 37525 37177 36948
+			36521 32432
+			>;
+
+			battery,battery_table1 = <0x7b 0x0a 0xf7 0x09 0x85 0x09 0x1b 0x09 0xb4 0x08
+					0x60 0x08 0xd5 0x07 0xaa 0x07 0x5e 0x07 0xf9 0x06
+					0xb7 0x06 0x8b 0x06 0x68 0x06 0x4d 0x06 0x36 0x06
+					0x1a 0x06 0xf2 0x05 0xbf 0x05 0x87 0x05 0x68 0x05
+					0x66 0x05 0x33 0x02 0xc1 0x07 0x62 0x07 0x03 0x07
+					0xa4 0x06 0x46 0x06 0xe7 0x05 0x88 0x05 0x29 0x05
+					0xca 0x04 0x6b 0x04 0x0c 0x04 0xad 0x03 0x4f 0x03
+					0xf0 0x02 0x91 0x02 0x32 0x02 0xd3 0x01 0x74 0x01
+					0x15 0x01 0xb6 0x00 0x57 0x00 0xf9 0x0f>;
+
+			battery,battery_table2 = <0x2d 0x2d 0x2d 0x2e 0x2e 0x2f 0x2d 0x2f 0x2f 0x2e
+					0x2f 0x2e 0x2e 0x2f 0x2e 0x2e 0x2f 0x2f 0x2f 0x2e
+					0x2f 0x9a>;
+
+			battery,battery_table3 = <185 11 47 11 166 10 29 10 161 9
+						42 9 187 8 87 8 230 7 155 7
+						64 7 222 6 161 6 119 6 86 6
+						62 6 42 6 5 6 190 5 143 5
+						55 5 242 1 255 8 143 8 32 8
+						176 7 64 7 208 6 96 6 241 5
+						129 5 17 5 161 4 50 4 194 3
+						82 3 226 2 114 2 3 2 147 1
+						35 1 179 0 68 0 212 15>;
+			battery,battery_table4 = <47 47 48 49 50 51 50 51 51 51
+						52 52 52 53 53 54 54 55 56 57
+						60 150>;
+
+			battery,batcap = <0x2C 0x88 0x0B 0x22>; /* [0x0F] [0x0E] [0x11] [0x10] */
+
+			battery,soc_arr_evt1 = <11049 10513 9977 9441 8905 8369 7833 7296 6760 6224 5688 5152 4616 4080 3544 3008 2471 1935 1399 863 327 (-209)>;
+			battery,ocv_arr_evt1 = <44691 43979 43267 42563 41956 41386 40863 40362 39764 39460 39008 38545 38258 38059 37905 37794 37687 37510 37234 36953 36661 32596>;
+
+			battery,soc_arr_evt2 = <11246 10700 10154 9608 9063 8517 7971 7425 6879 6334 5788 5242 4696 4150 3605 3059 2513 1967 1422 876 330 (-216)>;
+			battery,ocv_arr_evt2 = <44654 43982 43310 42642 42035 41454 40915 40426 39871 39506 39065 38583 38285 38079 37922 37804 37704 37525 37177 36947 36521 32432>;
+
+			battery,FG_Accumulative_rate_evt2 =<0xC6 0x07>;
+
+	};
+
+	battery {
+
+		battery,recharge_condition_vcell = <4250>;
+		battery,standard_curr = <1603>;      /* In-efficient charging case */
+		battery,expired_time = <12600>;      /* 150 + 60 = 210min */
+		battery,recharging_expired_time = <5400>;
+
+		/* cycle(week), chg_float_voltage, recharge_condition_vcell, full_condition_vcell, full_condition_soc */
+		battery,age_data = <0 4350 4250 4250 93
+			28 4330 4230 4230 91
+			36 4310 4210 4210 89>;
+
+	};
+
+};

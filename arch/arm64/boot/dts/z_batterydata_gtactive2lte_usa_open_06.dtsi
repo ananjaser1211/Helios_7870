@@ -1,0 +1,25 @@
+/*
+ * SAMSUNG UNIVERSAL5433 board device tree source
+ *
+ * Copyright (c) 2015 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include "z_batterydata_gtactive2lte_usa_open_common.dtsi"
+
+/ {
+	battery {
+		battery,battery_check_type = <1>; /* SEC_BATTERY_CHECK_ADC */
+		battery,check_count = <0>;
+
+		battery,check_adc_max = <2500>;
+		battery,check_adc_min = <60>;
+
+		io-channels = <&exynos_adc 0>, <&exynos_adc 3>, <&exynos_adc 1>;
+		io-channel-names = "adc-temp", "adc-in-bat", "adc-bat";
+	};
+};

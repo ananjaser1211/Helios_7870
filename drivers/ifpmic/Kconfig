@@ -1,0 +1,59 @@
+#
+# IFPMIC device configuration
+#
+
+#modified by khoonk 2018.01.03
+config MFD_S2MU004
+	bool "SAMSUNG Electronics IF PMIC S2MU004 Series Support"
+	depends on I2C=y
+	select MFD_CORE
+	help
+	 Support for the Samsung Electronics MFD series.
+	 This driver provides common support for accessing the device,
+	 additional drivers must be enabled in order to use the functionality
+	 of the device
+
+menuconfig IFPMIC_SUPPORT
+	bool "IFPMIC support"
+	depends on I2C
+	default n
+	---help---
+	  This option adds core support for Interface Periperal Management Interface IC (IFPMIC).
+	  You will also need drivers from the following menu to make use of it.
+
+source "drivers/ifpmic/muic/Kconfig"
+
+config PDIC
+	tristate "Support for CC & PD driver"
+	depends on I2C
+	default n
+	---help---
+	  PDIC driver is a specification of Type C USB CC & PD
+
+source "drivers/ifpmic/battery_v2/Kconfig"
+
+source "drivers/ifpmic/manager/Kconfig"
+
+#source "drivers/ifpmic/pdic/Kconfig"
+
+#source "drivers/ifpmic/led/Kconfig"
+
+#source "drivers/ifpmic/motor/Kconfig"
+
+#config CHARGER
+#	tristate "Support for Charger driver"
+#	depends on I2C
+#	default y
+#	---help---
+#	  Charger driver
+#
+#source "drivers/ifpmic/charger/Kconfig"
+
+#config FUELGAUGE
+#	tristate "Support for Fuelgauge driver"
+#	depends on I2C
+#	default y
+#	---help---
+#	  Fuelgauge driver
+#
+#source "drivers/ifpmic/fuelgauge/Kconfig"

@@ -1,0 +1,130 @@
+ /* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/{
+	pinctrl@139B0000 {
+		spi2_idle: spi2-idle {
+			samsung,pins = "gpc4-2", "gpc5-0", "gpc5-1", "gpc4-3";
+			samsung,pin-function = <1>;
+			samsung,pin-pud = <0>;
+			samsung,pin-val = <0>;
+		};
+
+		isdbt_rst_active: isdbt-rst-active {
+			samsung,pins = "gpf4-0";
+			samsung,pin-function = <1>;
+			samsung,pin-pud = <0>;
+			samsung,pin-val = <0>;
+		};
+		isdbt_rst_suspend: isdbt-rst-suspend {
+			samsung,pins = "gpf4-0";
+			samsung,pin-function = <1>;
+			samsung,pin-pud = <0>;
+			samsung,pin-val = <0>;
+		};
+	};
+	spi_2: spi@13930000 {
+		num-cs = <1>;
+		status = "ok";
+
+		dma-mode;
+		dmas = <&pdma0 27
+			&pdma0 26>;
+
+		swap-mode;
+		spi-clkoff-time = <100>;
+
+		pinctrl-names = "default","idle";
+		pinctrl-0 = <&spi2_bus &spi2_cs>;
+		pinctrl-1 = <&spi2_idle>;
+
+		isdbt@0 {
+			compatible = "isdbt_spi_comp";
+			reg = <0>;
+			spi-max-frequency = <50000000>;
+			controller-data {
+				cs-gpio = <&gpc4 3 0>;
+				samsung,spi-feedback-delay = <3>;
+			};
+		};
+	};
+
+	pinctrl@139F0000 {
+		isdbt_pwr_active: isdbt-pwr-active {
+			samsung,pins = "gpa1-4";
+			samsung,pin-function = <1>;
+			samsung,pin-pud = <0>;
+			samsung,pin-val = <0>;
+		};
+		isdbt_pwr_suspend: isdbt-pwr-suspend {
+			samsung,pins = "gpa1-4";
+			samsung,pin-function = <1>;
+			samsung,pin-pud = <0>;
+			samsung,pin-val = <0>;
+		};
+
+		isdbt_irq_on: isdbt-irq-on {
+			samsung,pins = "gpa0-7";
+			samsung,pin-function = <0xf>;
+			samsung,pin-pud = <0>;	/* PULL NONE */
+		};
+		isdbt_irq_off: isdbt-irq-off {
+			samsung,pins = "gpa0-7";
+			samsung,pin-function = <0>; /* INPUT */
+			samsung,pin-pud = <1>;	/* PULL DOWN */
+		};
+		
+	};
+
+	pinctrl@139D0000 {
+		isdbt_b28_on: isdbt-b28-on {
+			samsung,pins = "gpc3-2";
+			samsung,pin-function = <1>;
+			samsung,pin-pud = <0>;
+			samsung,pin-val = <0>;
+		};
+		isdbt_b28_off: isdbt-b28-off {
+			samsung,pins = "gpc3-2";
+			samsung,pin-function = <1>;
+			samsung,pin-pud = <0>;
+			samsung,pin-val = <1>;
+			samsung,pin-con-pdn = <3>;
+			samsung,pin-pud-pdn = <0>;
+		};
+	};
+
+	isdbt_data {
+		compatible = "isdbt_pdata";
+
+		isdbt,isdb-bbm-xtal-freq = <24000>;
+		isdbt,gpio-tunner-en = <&gpa1 4 0>;
+		isdbt,gpio-tunner-rst = <&gpf4 0 0>;
+		isdbt,gpio-b28-ctrl = <&gpc3 2 0>;
+		isdbt,gpio-ant-ctrl1 = <&gpd1 5 0>;
+		isdbt,gpio-ant-ctrl2 = <&gpd3 1 0>;
+		isdbt,gpio-tunner-irq = <&gpa0 7 0>;
+		isdbt,gpio-ant-ctrl-sel = <1 1 1 0 0 1>; /*<ant1-dtv ant2-dtv ant1-fm ant2-fm ant1-b28 ant2-b28>*/
+
+		isdbt,isdb-gpio-spi_di = <&gpc5 0 0>;
+		isdbt,isdb-gpio-spi_do = <&gpc5 1 0>;
+		isdbt,isdb-gpio-spi_cs = <&gpc4 3 0>;
+		isdbt,isdb-gpio-spi_clk = <&gpc4 2 0>;
+
+		isdbt,tuner_id = "fc8350";
+
+		pinctrl-names = "isdbt_gpio_active", "isdbt_gpio_suspend", "isdbt_b28_set", "isdbt_b28_rel";
+		pinctrl-0 = <&isdbt_pwr_active &isdbt_rst_active &isdbt_irq_on>;
+		pinctrl-1 = <&isdbt_pwr_suspend &isdbt_rst_suspend &isdbt_irq_off>;
+		pinctrl-2 = <&isdbt_b28_on>;
+		pinctrl-3 = <&isdbt_b28_off>;
+	};
+};

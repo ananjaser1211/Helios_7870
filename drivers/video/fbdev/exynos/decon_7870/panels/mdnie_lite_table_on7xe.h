@@ -1,0 +1,464 @@
+#ifndef __MDNIE_TABLE_H__
+#define __MDNIE_TABLE_H__
+
+/* 2016.07.26 */
+
+static inline int get_hbm_index(int idx)
+{
+	int i = 0;
+	int idx_list[] = {
+		20000	/* idx < 20000: HBM_OFF */
+				/* idx >= 20000: HBM_ON */
+	};
+
+	while (i < ARRAY_SIZE(idx_list)) {
+		if (idx < idx_list[i])
+			break;
+		i++;
+	}
+
+	return i;
+}
+
+static unsigned char UI_1[] = {
+	0xC7,
+	0x00,
+	0x16,
+	0x1D,
+	0x25,
+	0x31,
+	0x3E,
+	0x48,
+	0x57,
+	0x3B,
+	0x42,
+	0x4E,
+	0x5B,
+	0x64,
+	0x6D,
+	0x7F,
+	0x00,
+	0x16,
+	0x1D,
+	0x25,
+	0x31,
+	0x3E,
+	0x48,
+	0x57,
+	0x3B,
+	0x42,
+	0x4E,
+	0x5B,
+	0x64,
+	0x6D,
+	0x7F,
+};
+
+static unsigned char UI_2[] = {
+	0xC8,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0xFC,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0xFC,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0xFC,
+	0x00,
+};
+
+static unsigned char UI_3[] = {
+	0x55,
+	0x00,
+};
+
+static unsigned char VIDEO_1[] = {
+	0xC7,
+	0x00,
+	0x10,
+	0x15,
+	0x1C,
+	0x29,
+	0x39,
+	0x44,
+	0x56,
+	0x3D,
+	0x46,
+	0x54,
+	0x63,
+	0x68,
+	0x6D,
+	0x7F,
+	0x00,
+	0x10,
+	0x15,
+	0x1C,
+	0x29,
+	0x39,
+	0x44,
+	0x56,
+	0x3D,
+	0x46,
+	0x54,
+	0x63,
+	0x68,
+	0x6D,
+	0x7F,
+};
+
+static unsigned char VIDEO_2[] = {
+	0xC8,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0xFC,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0xFC,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0xFC,
+	0x00,
+};
+
+static unsigned char VIDEO_3[] = {
+	0x55,
+	0x83,
+};
+
+static unsigned char CAMERA_1[] = {
+	0xC7,
+	0x00,
+	0x16,
+	0x1D,
+	0x25,
+	0x31,
+	0x3E,
+	0x48,
+	0x57,
+	0x3B,
+	0x42,
+	0x4E,
+	0x5B,
+	0x64,
+	0x6D,
+	0x7F,
+	0x00,
+	0x16,
+	0x1D,
+	0x25,
+	0x31,
+	0x3E,
+	0x48,
+	0x57,
+	0x3B,
+	0x42,
+	0x4E,
+	0x5B,
+	0x64,
+	0x6D,
+	0x7F,
+};
+
+static unsigned char CAMERA_2[] = {
+	0xC8,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0xFC,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0xFC,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0xFC,
+	0x00,
+};
+
+static unsigned char CAMERA_3[] = {
+	0x55,
+	0x83,
+};
+
+static unsigned char EBOOK_1[] = {
+	0xC7,
+	0x00,
+	0x16,
+	0x1D,
+	0x25,
+	0x31,
+	0x3E,
+	0x48,
+	0x57,
+	0x3B,
+	0x42,
+	0x4E,
+	0x5B,
+	0x64,
+	0x6D,
+	0x7F,
+	0x00,
+	0x16,
+	0x1D,
+	0x25,
+	0x31,
+	0x3E,
+	0x48,
+	0x57,
+	0x3B,
+	0x42,
+	0x4E,
+	0x5B,
+	0x64,
+	0x6D,
+	0x7F,
+};
+
+static unsigned char EBOOK_2[] = {
+	0xC8,
+	0x01,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0xFC,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0xCA,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x4D,
+	0x00,
+};
+
+static unsigned char EBOOK_3[] = {
+	0x55,
+	0x00,
+};
+
+static unsigned char LOCAL_CE_1[] = {
+	0xC7,
+	0x00,
+	0x15,
+	0x19,
+	0x20,
+	0x2B,
+	0x37,
+	0x40,
+	0x4E,
+	0x33,
+	0x3A,
+	0x43,
+	0x4D,
+	0x57,
+	0x5F,
+	0x7F,
+	0x00,
+	0x15,
+	0x19,
+	0x20,
+	0x2B,
+	0x37,
+	0x40,
+	0x4E,
+	0x33,
+	0x3A,
+	0x43,
+	0x4D,
+	0x57,
+	0x5F,
+	0x7F,
+};
+
+static unsigned char LOCAL_CE_2[] = {
+	0xC8,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0xFC,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0xFC,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0xFC,
+	0x00,
+};
+
+static unsigned char LOCAL_CE_3[] = {
+	0x55,
+	0x00,
+};
+
+#define MDNIE_SET(id)	\
+{							\
+	.name		= #id,				\
+	.update_flag	= {1, 2, 3},			\
+	.seq		= {				\
+		{	.cmd = id##_1,		.len = ARRAY_SIZE(id##_1),		.sleep = 0,},	\
+		{	.cmd = id##_2,		.len = ARRAY_SIZE(id##_2),		.sleep = 0,},	\
+		{	.cmd = id##_3,		.len = ARRAY_SIZE(id##_3),		.sleep = 0,},	\
+	}	\
+}
+
+static struct mdnie_table bypass_table[BYPASS_MAX] = {
+	[BYPASS_ON] = MDNIE_SET(UI)
+};
+
+static struct mdnie_table accessibility_table[ACCESSIBILITY_MAX] = {
+	[NEGATIVE] = MDNIE_SET(UI),
+	MDNIE_SET(UI),
+	MDNIE_SET(UI),
+	MDNIE_SET(UI),
+	MDNIE_SET(UI)
+};
+
+static struct mdnie_table hbm_table[HBM_MAX] = {
+	[HBM_ON] = MDNIE_SET(LOCAL_CE)
+};
+
+static struct mdnie_table dmb_table[MODE_MAX] = {
+	MDNIE_SET(UI),
+	MDNIE_SET(UI),
+	MDNIE_SET(UI),
+	MDNIE_SET(UI),
+	MDNIE_SET(UI),
+	MDNIE_SET(UI)
+};
+
+static struct mdnie_table main_table[SCENARIO_MAX][MODE_MAX] = {
+	{
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(EBOOK),
+	}, {
+		MDNIE_SET(VIDEO),
+		MDNIE_SET(VIDEO),
+		MDNIE_SET(VIDEO),
+		MDNIE_SET(VIDEO),
+		MDNIE_SET(VIDEO),
+		MDNIE_SET(EBOOK),
+	},
+	[CAMERA_MODE] = {
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(EBOOK),
+	},
+	[GALLERY_MODE] = {
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(EBOOK),
+	}, {
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(EBOOK),
+	}, {
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(EBOOK),
+	}, {
+		MDNIE_SET(EBOOK),
+		MDNIE_SET(EBOOK),
+		MDNIE_SET(EBOOK),
+		MDNIE_SET(EBOOK),
+		MDNIE_SET(EBOOK),
+		MDNIE_SET(EBOOK),
+	}, {
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(UI),
+		MDNIE_SET(EBOOK),
+	}, {
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+	}, {
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+	}, {
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+		MDNIE_SET(CAMERA),
+	}
+};
+
+#undef MDNIE_SET
+
+static struct mdnie_tune tune_info = {
+	.bypass_table = bypass_table,
+	.accessibility_table = accessibility_table,
+	.hbm_table = hbm_table,
+	.dmb_table = dmb_table,
+	.main_table = main_table,
+
+	.get_hbm_index = get_hbm_index,
+};
+
+#endif

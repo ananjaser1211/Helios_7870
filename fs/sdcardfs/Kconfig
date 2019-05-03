@@ -1,0 +1,5 @@
+#
+# Android Sdcardfs configuation
+#
+
+source "fs/sdcardfs/o/Kconfig"

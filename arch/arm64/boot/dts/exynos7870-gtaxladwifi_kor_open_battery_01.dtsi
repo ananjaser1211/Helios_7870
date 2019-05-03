@@ -1,0 +1,17 @@
+/*
+ * SAMSUNG UNIVERSAL5433 board device tree source
+ *
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include "exynos7870-gtaxladwifi-common-battery.dtsi"
+/ {
+	battery_params {
+		battery,accum = <0x6 0x0>; /* [0x45] [0x44] */
+	};
+};

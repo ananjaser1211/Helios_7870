@@ -1,0 +1,7 @@
+#
+# sensor drivers configuration
+#
+
+source "drivers/sensorhub/stm32/Kconfig"
+source "drivers/sensorhub/stm_v2/Kconfig"
+
