@@ -747,6 +747,13 @@ struct f54_query_46 {
 struct f54_query_47 {
 	union {
 		struct {
+			unsigned char f54_query47_b0:1;
+			unsigned char has_ctrl182:1;
+			unsigned char has_ctrl183:1;
+			unsigned char f54_query47_b3:1;
+			unsigned char has_ctrl185:1;
+			unsigned char has_ctrl186:1;
+			unsigned char has_ctrl187:1;
 			unsigned char f54_query47_b0__6:7;
 			unsigned char has_query49:1;
 		} __packed;
@@ -1364,6 +1371,21 @@ struct f54_control_149 {
 	};
 };
 
+struct f54_control_182 {
+	union {
+		struct {
+			unsigned char cbc_timing_ctrl_tx_lsb;
+			unsigned char cbc_timing_ctrl_tx_msb;
+			unsigned char cbc_timing_ctrl_rx_lsb;
+			unsigned char cbc_timing_ctrl_rx_msb;
+		} __packed;
+		struct {
+			unsigned char data[4];
+			unsigned short address;
+		} __packed;
+	};
+};
+
 struct f54_control_188 {
 	union {
 		struct {
@@ -1422,7 +1444,8 @@ struct f54_control {
     struct f54_control_99 *reg_99;
 	struct f54_control_110 *reg_110;
 	struct f54_control_149 *reg_149;
-	struct f54_control_188 *reg_188;	
+	struct f54_control_182 *reg_182;
+	struct f54_control_188 *reg_188;
 };
 
 struct f55_query {

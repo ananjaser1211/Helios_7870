@@ -4,7 +4,7 @@
  * Provides type definitions and function prototypes used to link the
  * DHD OS, bus, and protocol modules.
  *
- * Copyright (C) 1999-2018, Broadcom.
+ * Copyright (C) 1999-2019, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -27,7 +27,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_bus.h 786693 2018-10-29 05:51:18Z $
+ * $Id: dhd_bus.h 797197 2018-12-29 03:31:21Z $
  */
 
 #ifndef _dhd_bus_h_
@@ -36,6 +36,9 @@
 /*
  * Exported from dhd bus module (dhd_usb, dhd_sdio)
  */
+
+/* global variable for the bus */
+extern struct dhd_bus *g_dhd_bus;
 
 /* Indicate (dis)interest in finding dongles. */
 extern int dhd_bus_register(void);
@@ -224,6 +227,7 @@ extern bool dhdpcie_bus_dongle_attach(struct dhd_bus *bus);
 extern int dhd_bus_release_dongle(struct dhd_bus *bus);
 extern int dhd_bus_request_irq(struct dhd_bus *bus);
 extern int dhdpcie_get_pcieirq(struct dhd_bus *bus, unsigned int *irq);
+extern void dhd_bus_aer_config(struct dhd_bus *bus);
 
 extern struct device * dhd_bus_to_dev(struct dhd_bus *bus);
 
@@ -231,7 +235,6 @@ extern void dhdpcie_cto_init(struct dhd_bus *bus, bool enable);
 extern void dhdpcie_ssreset_dis_enum_rst(struct dhd_bus *bus);
 
 #ifdef DHD_FW_COREDUMP
-extern struct dhd_bus *g_dhd_bus;
 extern int dhd_dongle_mem_dump(void);
 #endif /* DHD_FW_COREDUMP */
 
@@ -266,11 +269,13 @@ extern void dhd_bus_dump_console_buffer(struct dhd_bus *bus);
 extern void dhd_bus_intr_count_dump(dhd_pub_t *dhdp);
 extern void dhd_bus_set_dpc_sched_time(dhd_pub_t *dhdp);
 extern bool dhd_bus_query_dpc_sched_errors(dhd_pub_t *dhdp);
+extern bool dhd_bus_check_driver_up(void);
 #else
 #define dhd_bus_dump_console_buffer(x)
 static INLINE void dhd_bus_intr_count_dump(dhd_pub_t *dhdp) { UNUSED_PARAMETER(dhdp); }
 static INLINE void dhd_bus_set_dpc_sched_time(dhd_pub_t *dhdp) { }
 static INLINE bool dhd_bus_query_dpc_sched_errors(dhd_pub_t *dhdp) { return 0; }
+static INLINE bool dhd_bus_check_driver_up(void) { return FALSE; }
 #endif /* BCMPCIE */
 
 #if defined(BCMPCIE) && defined(DHD_LOG_DUMP)
@@ -299,6 +304,9 @@ void dhdsdio_reset_bt_use_count(struct dhd_bus *bus);
 
 int dhd_bus_perform_flr(struct dhd_bus *bus, bool force_fail);
 extern bool dhd_bus_get_flr_force_fail(struct dhd_bus *bus);
+
+extern void dhd_bus_aspm_enable_rc_ep(struct dhd_bus *bus, bool enable);
+extern void dhd_bus_l1ss_enable_rc_ep(struct dhd_bus *bus, bool enable);
 
 #ifdef BCMPCIE
 extern void dhdpcie_advertise_bus_cleanup(dhd_pub_t  *dhdp);

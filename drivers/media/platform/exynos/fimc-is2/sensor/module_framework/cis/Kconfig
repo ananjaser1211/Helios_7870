@@ -163,3 +163,12 @@ config CAMERA_CIS_IMX219_OBJ
 	default n
 	help
 	  Use to build IMX219 camera sensor.
+
+config CAMERA_CIS_GC5035_OBJ
+		bool "Use GC5035 camera cis"
+	depends on USE_DIRECT_IS_CONTROL
+	depends on CAMERA_CIS_SELECT
+		default n
+		help
+		  Use to build GC5035 camera sensor.
+

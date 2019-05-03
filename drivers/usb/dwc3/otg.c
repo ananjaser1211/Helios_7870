@@ -24,23 +24,10 @@
 #include <linux/pm_runtime.h>
 #include <linux/usb/samsung_usb.h>
 #include <linux/phy/phy.h>
-#if defined(CONFIG_TYPEC)
-#include <linux/usb/typec.h>
-#endif
 
 #include "core.h"
 #include "otg.h"
 #include "io.h"
-
-#if defined(CONFIG_TYPEC)
-struct intf_typec {
-	/* struct mutex lock; */ /* device lock */
-	struct device *dev;
-	struct typec_port *port;
-	struct typec_capability cap;
-	struct typec_partner *partner;
-};
-#endif
 
 #if IS_ENABLED(CONFIG_USB_DWC3_EXYNOS)
 static struct dwc3_ext_otg_ops *dwc3_otg_exynos_rsw_probe(struct dwc3 *dwc)
@@ -633,10 +620,6 @@ int dwc3_otg_init(struct dwc3 *dwc)
 	struct dwc3_ext_otg_ops	*ops = NULL;
 	u32			reg;
 	int			ret = 0;
-#if defined(CONFIG_TYPEC)
-	struct intf_typec	*typec;
-	struct typec_partner_desc partner;
-#endif
 
 	/*
 	 * GHWPARAMS6[10] bit is SRPSupport.
@@ -702,36 +685,6 @@ has_ext_otg:
 		}
 	}
 
-#if defined(CONFIG_TYPEC)
-	typec = devm_kzalloc(dwc->dev, sizeof(*typec), GFP_KERNEL);
-	if (!typec)
-		return -ENOMEM;
-
-	/* mutex_init(&md05->lock); */
-	typec->dev = dwc->dev;
-
-	typec->cap.type = TYPEC_PORT_DRP;
-	typec->cap.revision = USB_TYPEC_REV_1_2;
-	typec->cap.pd_revision = 0x312;
-	typec->cap.prefer_role = TYPEC_NO_PREFERRED_ROLE;
-
-	typec->port = typec_register_port(dwc->dev, &typec->cap);
-	if (!typec->port)
-		return -ENODEV;
-
-	typec_set_data_role(typec->port, TYPEC_DEVICE);
-	typec_set_pwr_role(typec->port, TYPEC_SINK);
-	typec_set_pwr_opmode(typec->port, TYPEC_PWR_MODE_USB);
-
-	memset(&partner, 0, sizeof(struct typec_partner_desc));
-
-	dotg->typec = typec;
-
-	typec->partner = typec_register_partner(typec->port, &partner);
-	if (!dotg->typec->partner)
-		dev_err(dwc->dev, "failed register partner\n");
-#endif
-
 	wake_lock_init(&dotg->wakelock, WAKE_LOCK_SUSPEND, "dwc3-otg");
 
 	ret = sysfs_create_group(&dwc->dev->kobj, &dwc3_otg_attr_group);
@@ -759,11 +712,6 @@ void dwc3_otg_exit(struct dwc3 *dwc)
 
 		return;
 	}
-
-#if defined(CONFIG_TYPEC)
-	typec_unregister_partner(dotg->typec->partner);
-	typec_unregister_port(dotg->typec->port);
-#endif
 
 has_ext_otg:
 	sysfs_remove_group(&dwc->dev->kobj, &dwc3_otg_attr_group);

@@ -253,6 +253,7 @@ static void nf_ct_add_to_dying_list(struct nf_conn *ct)
 	struct ct_pcpu *pcpu;
 
 	/* START_OF_KNOX_NPA */
+	del_timer(&ct->npa_timeout);
 	/* send dying conntrack entry to collect data */
 	if ( (check_ncm_flag()) && (ct != NULL) && (atomic_read(&ct->startFlow)) ) {
 		knox_collect_conntrack_data(ct, NCM_FLOW_TYPE_CLOSE, 10);
@@ -391,8 +392,34 @@ bool nf_ct_delete(struct nf_conn *ct, u32 portid, int report)
 }
 EXPORT_SYMBOL_GPL(nf_ct_delete);
 
+/* START_OF_KNOX_NPA */
+/* Use this function only if struct nf_conn->timeout is of type struct timer_list */
+static void death_by_timeout_npa(unsigned long ul_conntrack)
+{
+	struct nf_conn *tmp = (struct nf_conn *)ul_conntrack;
+	if ( (tmp != NULL) && (check_ncm_flag()) && (check_intermediate_flag()) && (atomic_read(&tmp->startFlow)) && (atomic_read(&tmp->intermediateFlow)) ) {
+		unsigned long timeout = tmp->timeout.expires - jiffies;
+		if ( (timeout > 0) && ((timeout/HZ) > 5) ) {
+			tmp->npa_timeout.expires = (jiffies) + (get_intermediate_timeout() * HZ);
+			add_timer(&tmp->npa_timeout);
+		} else {
+			del_timer(&tmp->npa_timeout);
+		}
+		knox_collect_conntrack_data(tmp, NCM_FLOW_TYPE_INTERMEDIATE, 20);
+		return;
+	}
+	del_timer(&tmp->npa_timeout);
+	return;
+}
+/* END_OF_KNOX_NPA */
+
 static void death_by_timeout(unsigned long ul_conntrack)
 {
+	/* START_OF_KNOX_NPA */
+	struct nf_conn *tmp = (struct nf_conn *)ul_conntrack;
+	atomic_set(&tmp->intermediateFlow, 0);
+	del_timer(&tmp->npa_timeout);
+	/* END_OF_KNOX_NPA */
 	nf_ct_delete((struct nf_conn *)ul_conntrack, 0, 0);
 }
 
@@ -852,6 +879,10 @@ __nf_conntrack_alloc(struct net *net, u16 zone,
 		ct->knox_recv = 0;
 		memset(ct->interface_name,'\0',sizeof(ct->interface_name));
 		atomic_set(&ct->startFlow, 0);
+		/* Use 'ct->npa_timeout = 0' if struct nf_conn->timeout is of type u32;
+		   Use 'setup_timer(&ct->npa_timeout, death_by_timeout_npa, (unsigned long)ct)' if struct nf_conn->timeout is of type struct timer_list; */
+		setup_timer(&ct->npa_timeout, death_by_timeout_npa, (unsigned long)ct);
+		atomic_set(&ct->intermediateFlow, 0);
 	}
 	/* END_OF_KNOX_NPA */
 	

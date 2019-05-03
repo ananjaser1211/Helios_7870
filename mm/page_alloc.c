@@ -2282,8 +2282,10 @@ void warn_alloc_failed(gfp_t gfp_mask, unsigned int order, const char *fmt, ...)
 		current->comm, order, gfp_mask);
 
 	dump_stack();
-	if (!should_suppress_show_mem())
+	if (!should_suppress_show_mem()) {
+		show_mem_extra_call_notifiers();
 		show_mem(filter);
+	}
 }
 
 static inline int

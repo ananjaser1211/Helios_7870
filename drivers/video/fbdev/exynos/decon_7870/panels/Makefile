@@ -25,3 +25,4 @@ obj-$(CONFIG_PANEL_S6D7AT0B_J7TOP) += s6d7at0b_j7top_lcd_ctrl.o
 obj-$(CONFIG_PANEL_S6E8AA5X01_A6LTE) += s6e8aa5x01_a6lte_lcd_ctrl.o dynamic_aid.o
 obj-$(CONFIG_PANEL_S6E8AA5X01_J6Y18) += s6e8aa5x01_a6lte_lcd_ctrl.o dynamic_aid.o
 obj-$(CONFIG_PANEL_S6D7AT0B_M10LTE) += s6d7at0b_m10lte_lcd_ctrl.o
+obj-$(CONFIG_PANEL_TD4101_A2CORELTE) += td4101_a2corelte_lcd_ctrl.o

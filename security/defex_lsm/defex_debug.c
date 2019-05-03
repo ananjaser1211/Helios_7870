@@ -6,6 +6,7 @@
  * as published by the Free Software Foundation.
 */
 
+#include <linux/cred.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/kobject.h>

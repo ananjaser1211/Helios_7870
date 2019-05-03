@@ -1,0 +1,18 @@
+#ifndef FIMC_IS_VENDOR_CONFIG_A2CORELTE_H
+#define FIMC_IS_VENDOR_CONFIG_A2CORELTE_H
+
+#include "fimc-is-eeprom-rear-5e9_v001.h"
+#include "fimc-is-otprom-front-gc5035_v001.h"
+
+#define VENDER_PATH
+#define USE_MFHDR_CAMERA_INTERFACE
+
+#define CAMERA_MODULE_ES_VERSION_REAR 'A'
+#define CAMERA_MODULE_ES_VERSION_FRONT 'A'
+#define CAL_MAP_ES_VERSION_REAR '1'
+#define CAL_MAP_ES_VERSION_FRONT '1'
+
+#define USE_FACE_UNLOCK_AE_AWB_INIT /* for Face Unlock */
+#define CAMERA_SYSFS_V2
+
+#endif /* FIMC_IS_VENDOR_CONFIG_A2CORELTE_H */

@@ -9,6 +9,7 @@ subdir-$(CONFIG_SECURITY_TOMOYO)        += tomoyo
 subdir-$(CONFIG_SECURITY_APPARMOR)	+= apparmor
 subdir-$(CONFIG_SECURITY_YAMA)		+= yama
 subdir-$(CONFIG_SECURITY_DEFEX)		+= defex_lsm
+subdir-$(CONFIG_SECURITY_DSMS)		+= dsms
 
 # always enable default capabilities
 obj-y					+= commoncap.o
@@ -25,6 +26,7 @@ obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/
 obj-$(CONFIG_SECURITY_YAMA)		+= yama/
 obj-$(CONFIG_CGROUP_DEVICE)		+= device_cgroup.o
 obj-$(CONFIG_SECURITY_DEFEX)		+= defex_lsm/built-in.o
+obj-$(CONFIG_SECURITY_DSMS)		+= dsms/
 
 # Object integrity file lists
 subdir-$(CONFIG_INTEGRITY)		+= integrity
@@ -33,6 +35,10 @@ obj-$(CONFIG_INTEGRITY)			+= integrity/
 # Knox SDP
 obj-$(CONFIG_SDP) += sdp/
 obj-$(CONFIG_SDP) += sdp/built-in.o
+
+# PROCA module
+subdir-$(CONFIG_PROCA)			+= proca
+obj-$(CONFIG_PROCA)			+= proca/
 
 # TIMA uevent 
 obj-$(CONFIG_TIMA)     += tima_uevent/tima_uevent.o

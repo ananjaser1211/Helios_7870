@@ -61,7 +61,9 @@ static int s2mu005_i2c_update_bit(struct i2c_client *i2c,
 #if defined(DEBUG_MUIC)
 #define MAX_LOG 25
 #define READ 0
+#ifndef WRITE
 #define WRITE 1
+#endif
 
 static u8 s2mu005_log_cnt;
 static u8 s2mu005_log[MAX_LOG][3];
@@ -616,6 +618,36 @@ static ssize_t s2mu005_muic_jig_disable_store(struct device *dev,
 	return count;
 }
 
+#if defined(CONFIG_NEW_FACTORY_UART)
+static ssize_t factory_uart_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct s2mu005_muic_data *muic_data = dev_get_drvdata(dev);
+
+	if (muic_data->pdata->is_factory_uart)
+		return sprintf(buf, "ENABLE\n");
+	else
+		return sprintf(buf, "DISABLE\n");
+}
+
+static ssize_t factory_uart_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct s2mu005_muic_data *muic_data = dev_get_drvdata(dev);
+
+	pr_info("%s : %s\n", __func__, buf);
+	if (!strncasecmp(buf, "ENABLE", 6)) {
+		muic_data->pdata->is_factory_uart = true;
+		set_jig_sw(muic_data, false);
+	} else {
+		muic_data->pdata->is_factory_uart = false;
+		set_jig_sw(muic_data, true);
+	}
+
+	return count;
+}
+#endif
+
 static ssize_t s2mu005_muic_show_attached_dev(struct device *dev,
 					 struct device_attribute *attr,
 					 char *buf)
@@ -650,6 +682,8 @@ static ssize_t s2mu005_muic_show_attached_dev(struct device *dev,
 		return sprintf(buf, "DESKDOCK\n");
 	case ATTACHED_DEV_CHARGING_CABLE_MUIC:
 		return sprintf(buf, "PS CABLE\n");
+	case ATTACHED_DEV_FACTORY_UART_MUIC:
+		return sprintf(buf, "FACTORY UART\n");
 	default:
 		break;
 	}
@@ -770,6 +804,10 @@ static DEVICE_ATTR(usb_en, 0664, s2mu005_muic_show_usb_en,
 					s2mu005_muic_set_usb_en);
 static DEVICE_ATTR(jig_disable, 0664, s2mu005_muic_jig_disable_show,
 					s2mu005_muic_jig_disable_store);
+#if defined(CONFIG_NEW_FACTORY_UART)
+static DEVICE_ATTR(factory_uart, 0664, factory_uart_show,
+					factory_uart_store);
+#endif
 
 static struct attribute *s2mu005_muic_attributes[] = {
 	&dev_attr_uart_en.attr,
@@ -788,6 +826,9 @@ static struct attribute *s2mu005_muic_attributes[] = {
 	&dev_attr_apo_factory.attr,
 	&dev_attr_usb_en.attr,
 	&dev_attr_jig_disable.attr,
+#if defined(CONFIG_NEW_FACTORY_UART)
+	&dev_attr_factory_uart.attr,
+#endif
 	NULL
 };
 
@@ -1090,6 +1131,8 @@ static void s2mu005_muic_handle_attach(struct s2mu005_muic_data *muic_data,
 	case ATTACHED_DEV_JIG_UART_OFF_VB_MUIC:
 	case ATTACHED_DEV_JIG_UART_OFF_MUIC:
 	case ATTACHED_DEV_JIG_UART_ON_MUIC:
+	case ATTACHED_DEV_FACTORY_UART_MUIC:
+	case ATTACHED_DEV_TIMEOUT_OPEN_MUIC:
 #if defined(CONFIG_SEC_FACTORY) && defined(CONFIG_MUIC_S2MU005_DISCHARGING_WA)		
 	case ATTACHED_DEV_CARKIT_MUIC:
 #endif
@@ -1132,6 +1175,7 @@ static void s2mu005_muic_handle_attach(struct s2mu005_muic_data *muic_data,
 		break;
 	case ATTACHED_DEV_USB_MUIC:
 	case ATTACHED_DEV_CDP_MUIC:
+	case ATTACHED_DEV_TIMEOUT_OPEN_MUIC:	
 		ret = attach_usb(muic_data);
 		break;
 	case ATTACHED_DEV_CHARGING_CABLE_MUIC:
@@ -1160,6 +1204,10 @@ static void s2mu005_muic_handle_attach(struct s2mu005_muic_data *muic_data,
 			muic_data->jigonb_enable = false;
 		else
 			muic_data->jigonb_enable = true;
+		ret = attach_jig_uart_boot_on_off(muic_data);
+		break;
+	case ATTACHED_DEV_FACTORY_UART_MUIC:
+		muic_data->jigonb_enable = false;
 		ret = attach_jig_uart_boot_on_off(muic_data);
 		break;
 	case ATTACHED_DEV_JIG_USB_OFF_MUIC:
@@ -1365,8 +1413,8 @@ static void s2mu005_muic_detect_dev(struct s2mu005_muic_data *muic_data)
 
 	case DEV_TYPE2_SDP_1P8S:
 		if (vbvolt && adc == ADC_OPEN) {
-			new_dev = ATTACHED_DEV_USB_MUIC;
-			pr_info("%s:%s: SDP_1P8S DETECTED\n", MUIC_DEV_NAME, __func__);
+			new_dev = ATTACHED_DEV_TIMEOUT_OPEN_MUIC;
+			pr_info("%s:%s: TIMEOUT_OPEN DETECTED\n", MUIC_DEV_NAME, __func__);
 		}
 	
 		break; 
@@ -1409,6 +1457,16 @@ static void s2mu005_muic_detect_dev(struct s2mu005_muic_data *muic_data)
 			break;
 		new_dev = ATTACHED_DEV_JIG_USB_ON_MUIC;
 		pr_info("%s:%s: JIG_USB_ON DETECTED\n", MUIC_DEV_NAME, __func__);
+		break;
+	default:
+		break;
+	}
+
+	switch (val3) {
+	case DEV_TYPE3_MHL:
+		if (muic_data->pdata->is_factory_uart)
+			new_dev = ATTACHED_DEV_FACTORY_UART_MUIC;
+			pr_info("%s:%s: FACTORY_UART DETECTED\n", MUIC_DEV_NAME, __func__);
 		break;
 	default:
 		break;
@@ -1868,6 +1926,7 @@ static int s2mu005_muic_probe(struct platform_device *pdev)
 	muic_data->i2c = s2mu005->i2c;
 	muic_data->mfd_pdata = mfd_pdata;
 	muic_data->pdata = &muic_pdata;
+	pr_info("factory_uart: %d\n", muic_data->pdata->is_factory_uart);
 #if defined(CONFIG_OF)
 	ret = of_s2mu005_muic_dt(&pdev->dev, muic_data);
 	if (ret < 0)

@@ -52,7 +52,9 @@
 
 #define MAX_LOG 25
 #define READ 0
+#ifndef WRITE
 #define WRITE 1
+#endif 
 
 static u8 sm5703_log_cnt;
 static u8 sm5703_log[MAX_LOG][3];

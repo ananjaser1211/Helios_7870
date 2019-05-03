@@ -634,5 +634,5 @@ static int __init cpuidle_init(void)
 	return 0;
 }
 
-module_param(off, int, 0444);
+module_param(off, int, 0644);
 core_initcall(cpuidle_init);

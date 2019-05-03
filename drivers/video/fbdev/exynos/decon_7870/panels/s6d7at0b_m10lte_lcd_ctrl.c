@@ -379,7 +379,7 @@ static int fb_notifier_callback(struct notifier_block *self,
 	dev_info(&lcd->ld->dev, "%s: %d\n", __func__, fb_blank);
 
 	if (evdata->info->node)
-		return 0;
+		return NOTIFY_DONE;
 
 	if (fb_blank == FB_BLANK_UNBLANK)
 		s6d7at0b_displayon_late(lcd);
@@ -490,7 +490,7 @@ static ssize_t window_type_show(struct device *dev,
 {
 	struct lcd_info *lcd = dev_get_drvdata(dev);
 
-	sprintf(buf, "%x %x %x\n", lcd->id_info.id[0], lcd->id_info.id[1], lcd->id_info.id[2]);
+	sprintf(buf, "%02x %02x %02x\n", lcd->id_info.id[0], lcd->id_info.id[1], lcd->id_info.id[2]);
 
 	return strlen(buf);
 }

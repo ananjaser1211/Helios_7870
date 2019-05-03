@@ -222,21 +222,26 @@ static int __init tima_debug_log_read_init(void)
 	pr_info("%s: Registering /proc/tima_debug_log Interface\n", __func__);
 
 #ifdef CONFIG_TIMA_RKP
-	if (proc_create("tima_debug_rkp_log", 0644,NULL, &tima_proc_fops) == NULL) {
-		printk(KERN_ERR"tima_debug_rkp_log_read_init: Error creating proc entry\n");
-		goto remove_secure_entry;
+#ifdef CONFIG_KNOX_KAP
+	if (boot_mode_security){
+#endif
+		if (proc_create("tima_debug_rkp_log", 0644,NULL, &tima_proc_fops) == NULL) {
+			printk(KERN_ERR"tima_debug_rkp_log_read_init: Error creating proc entry\n");
+			goto remove_secure_entry;
+		}
+		if (proc_create("tima_secure_rkp_log", 0644,NULL, &tima_proc_fops) == NULL) {
+			printk(KERN_ERR"tima_secure_rkp_log_read_init: Error creating proc entry\n");
+			goto remove_debug_rkp_entry;
+		}
+		tima_debug_rkp_log_addr  = (unsigned long *)phys_to_virt(DEBUG_RKP_LOG_START);
+		tima_secure_rkp_log_addr = (unsigned long *)phys_to_virt(SECURE_RKP_LOG_START);
+#ifdef CONFIG_KNOX_KAP
 	}
-	if (proc_create("tima_secure_rkp_log", 0644,NULL, &tima_proc_fops) == NULL) {
-		printk(KERN_ERR"tima_secure_rkp_log_read_init: Error creating proc entry\n");
-		goto remove_debug_rkp_entry;
-	}
+#endif
 #endif
 	tima_debug_log_addr = (unsigned long *)phys_to_virt(TIMA_DEBUG_LOGGING_START);
 	tima_secure_log_addr = (unsigned long *)phys_to_virt(TIMA_SECURE_LOGGING_START);
-#ifdef CONFIG_TIMA_RKP
-	tima_debug_rkp_log_addr  = (unsigned long *)phys_to_virt(DEBUG_RKP_LOG_START);
-	tima_secure_rkp_log_addr = (unsigned long *)phys_to_virt(SECURE_RKP_LOG_START);
-#endif
+
 	return 0;
 
 #ifdef CONFIG_TIMA_RKP
@@ -261,8 +266,14 @@ static void __exit tima_debug_log_read_exit(void)
 	remove_proc_entry("tima_debug_log", NULL);
 	remove_proc_entry("tima_secure_log", NULL);
 #ifdef CONFIG_TIMA_RKP
-	remove_proc_entry("tima_debug_rkp_log", NULL);
-	remove_proc_entry("tima_secure_rkp_log", NULL);
+#ifdef CONFIG_KNOX_KAP
+	if (boot_mode_security){
+#endif
+		remove_proc_entry("tima_debug_rkp_log", NULL);
+		remove_proc_entry("tima_secure_rkp_log", NULL);
+#ifdef CONFIG_KNOX_KAP
+	}
+#endif
 #endif
 	pr_info("Deregistering /proc/tima_debug_log Interface\n");
 }

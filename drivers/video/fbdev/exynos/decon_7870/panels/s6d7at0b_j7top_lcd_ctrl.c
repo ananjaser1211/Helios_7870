@@ -374,7 +374,7 @@ static int fb_notifier_callback(struct notifier_block *self,
 	dev_info(&lcd->ld->dev, "%s: %d\n", __func__, fb_blank);
 
 	if (evdata->info->node)
-		return 0;
+		return NOTIFY_DONE;
 
 	if (fb_blank == FB_BLANK_UNBLANK)
 		s6d7at0b_displayon_late(lcd);
@@ -485,7 +485,7 @@ static ssize_t window_type_show(struct device *dev,
 {
 	struct lcd_info *lcd = dev_get_drvdata(dev);
 
-	sprintf(buf, "%x %x %x\n", lcd->id_info.id[0], lcd->id_info.id[1], lcd->id_info.id[2]);
+	sprintf(buf, "%02x %02x %02x\n", lcd->id_info.id[0], lcd->id_info.id[1], lcd->id_info.id[2]);
 
 	return strlen(buf);
 }
@@ -522,47 +522,6 @@ static ssize_t lux_store(struct device *dev,
 	}
 
 	return size;
-}
-
-static ssize_t clk_change_store(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t size)
-{
-	struct lcd_info *lcd = dev_get_drvdata(dev);
-	unsigned int p, m, s;
-	int ret;
-
-	ret = sscanf(buf, "%8d %8d %8d", &p, &m, &s);
-	if (ret != 3)
-		return ret;
-
-	lcd->dsim->lcd_info.dphy_pms.p = p;
-	lcd->dsim->lcd_info.dphy_pms.m = m;
-	lcd->dsim->lcd_info.dphy_pms.s = s;
-
-	dev_info(dev, "%s: p:%d m:%d s:%d\n", __func__, p, m, s);
-
-	return size;
-}
-
-static ssize_t clk_change_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	struct lcd_info *lcd = dev_get_drvdata(dev);
-	u32 val;
-	unsigned int p, m, s;
-
-	if (lcd->state != PANEL_STATE_RESUMED)
-		return -EINVAL;
-
-	val = dsim_read_mask(lcd->dsim->id, DSIM_PLLCTRL, DSIM_PLLCTRL_PMS_MASK);
-
-	s = (val >> 0) & 0x7;
-	m = (val >> 3) & 0x1ff;
-	p = (val >> 13) & 0x3f;
-
-	sprintf(buf, "%8x, p: %d, m: %d, s: %d\n", val, p, m, s);
-
-	return strlen(buf);
 }
 
 static ssize_t vgl_test_store(struct device *dev,
@@ -611,14 +570,12 @@ static ssize_t vgl_test_show(struct device *dev,
 static DEVICE_ATTR(lcd_type, 0444, lcd_type_show, NULL);
 static DEVICE_ATTR(window_type, 0444, window_type_show, NULL);
 static DEVICE_ATTR(lux, 0644, lux_show, lux_store);
-static DEVICE_ATTR(clk_change, 0644, clk_change_show, clk_change_store);
 static DEVICE_ATTR(vgl_test, 0644, vgl_test_show, vgl_test_store);
 
 static struct attribute *lcd_sysfs_attributes[] = {
 	&dev_attr_lcd_type.attr,
 	&dev_attr_window_type.attr,
 	&dev_attr_lux.attr,
-	&dev_attr_clk_change.attr,
 	&dev_attr_vgl_test.attr,
 	NULL,
 };

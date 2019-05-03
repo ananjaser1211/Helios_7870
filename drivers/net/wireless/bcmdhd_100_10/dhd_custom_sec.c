@@ -1,7 +1,7 @@
 /*
  * Customer HW 4 dependant file
  *
- * Copyright (C) 1999-2018, Broadcom.
+ * Copyright (C) 1999-2019, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -477,7 +477,7 @@ int dhd_sel_ant_from_file(dhd_pub_t *dhd)
 #ifndef DHD_EXPORT_CNTL_FILE
 	ret = get_ant_val_from_file(&ant_val);
 #else
-	ant_val = antsel;
+	ant_val = (uint32)antsel;
 #endif /* !DHD_EXPORT_CNTL_FILE */
 	if (ant_val == 0) {
 #ifdef CUSTOM_SET_ANTNPM
@@ -917,28 +917,64 @@ early_param("androidboot.hw_rev", get_hw_rev);
  * HalFn_getValidChannels
  */
 const char *softap_info_items[] = {
-	"DualBandConcurrency", "5G", "maxClient", "PowerSave",
+	"DualBandConcurrency",
+#ifdef DHD_SOFTAP_DUAL_IF_INFO
+	"DualInterface",
+#endif /* DHD_SOFTAP_DUAL_IF_INFO */
+	"5G", "maxClient", "PowerSave",
 	"HalFn_setCountryCodeHal", "HalFn_getValidChannels", NULL
 };
 #if defined(BCM4361_CHIP)
 const char *softap_info_values[] = {
-	"yes", "yes", "10", "yes", "yes", "yes", NULL
+	"yes",
+#ifdef DHD_SOFTAP_DUAL_IF_INFO
+	"yes",
+#endif /* DHD_SOFTAP_DUAL_IF_INFO */
+	"yes", "10", "yes", "yes", "yes", NULL
+};
+#elif defined(BCM4359_CHIP)
+const char *softap_info_values[] = {
+	"yes",
+#ifdef DHD_SOFTAP_DUAL_IF_INFO
+#ifdef CONFIG_WLAN_GRACE
+	"yes",
+#else
+	"no",
+#endif /* CONFIG_WLAN_GRACE */
+#endif /* DHD_SOFTAP_DUAL_IF_INFO */
+	"yes", "10", "yes", "yes", "yes", NULL
 };
 #elif defined(BCM43454_CHIP) || defined(BCM43455_CHIP) || defined(BCM43456_CHIP)
 const char *softap_info_values[] = {
 #ifdef WL_RESTRICTED_APSTA_SCC
-	"yes", "yes", "10", "no", "yes", "yes", NULL
+	"yes",
 #else
-	"no", "yes", "10", "no", "yes", "yes", NULL
+	"no",
 #endif /* WL_RESTRICTED_APSTA_SCC */
+#ifdef DHD_SOFTAP_DUAL_IF_INFO
+#ifdef WL_RESTRICTED_APSTA_SCC
+	"yes",
+#else
+	"no",
+#endif /* WL_RESTRICTED_APSTA_SCC */
+#endif /* DHD_SOFTAP_DUAL_IF_INFO */
+	"yes", "10", "no", "yes", "yes", NULL
 };
 #elif defined(BCM43430_CHIP)
 const char *softap_info_values[] = {
-	"no", "no", "10", "no", "yes", "yes", NULL
+	"no",
+#ifdef DHD_SOFTAP_DUAL_IF_INFO
+	"no",
+#endif /* DHD_SOFTAP_DUAL_IF_INFO */
+	"no", "10", "no", "yes", "yes", NULL
 };
 #else
 const char *softap_info_values[] = {
-	"UNDEF", "UNDEF", "UNDEF", "UNDEF", "UNDEF", "UNDEF", NULL
+	"UNDEF",
+#ifdef DHD_SOFTAP_DUAL_IF_INFO
+	"UNDEF",
+#endif /* DHD_SOFTAP_DUAL_IF_INFO */
+	"UNDEF", "UNDEF", "UNDEF", "UNDEF", "UNDEF", NULL
 };
 #endif /* defined(BCM4361_CHIP) */
 #endif /* GEN_SOFTAP_INFO_FILE */

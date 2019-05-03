@@ -54,14 +54,14 @@
 #define OTP_PAGE_ADDR                                0x0A02
 #define OTP_REG_ADDR_START                           0x0A04
 #define OTP_REG_ADDR_MAX                             0x0A43
-#define OTP_PAGE_START_ADDR                          0x0A04
-#define OTP_START_PAGE                               0x17           //cal written from Page17
+#define OTP_PAGE_START_ADDR                          0
+#define OTP_START_PAGE                               0x11           //cal written from Page17
 
 #define OTP_BANK
 #ifdef OTP_BANK
-#define OTP_START_ADDR                               0x0A10
-#define OTP_START_ADDR_BANK2                         0x0A10
-#define OTP_START_ADDR_BANK3                         0x0A10
+#define OTP_START_ADDR                               0xC
+#define OTP_START_ADDR_BANK2                         0x20C
+#define OTP_START_ADDR_BANK3                         0x40C
 #endif
 
 #define OTP_BANK_ADDR                                0xA10

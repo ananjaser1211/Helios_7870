@@ -1,7 +1,7 @@
 /*
  * Linux cfgp2p driver
  *
- * Copyright (C) 1999-2018, Broadcom.
+ * Copyright (C) 1999-2019, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wl_cfgp2p.c 788335 2018-11-12 02:40:02Z $
+ * $Id: wl_cfgp2p.c 801830 2019-01-30 01:35:34Z $
  *
  */
 #include <typedefs.h>
@@ -2560,6 +2560,10 @@ wl_cfgp2p_stop_p2p_device(struct wiphy *wiphy, struct wireless_dev *wdev)
 
 	if (!cfg->p2p)
 		return;
+
+#ifdef P2P_LISTEN_OFFLOADING
+	wl_cfg80211_p2plo_deinit(cfg);
+#endif /* P2P_LISTEN_OFFLOADING */
 
 	/* Cancel any on-going listen */
 	wl_cfgp2p_cancel_listen(cfg, bcmcfg_to_prmry_ndev(cfg), wdev, TRUE);

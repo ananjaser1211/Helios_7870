@@ -1,7 +1,7 @@
 /*
  * DHD Bus Module for PCIE
  *
- * Copyright (C) 1999-2018, Broadcom.
+ * Copyright (C) 1999-2019, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_pcie.c 795429 2018-12-19 02:11:27Z $
+ * $Id: dhd_pcie.c 798516 2019-01-09 05:22:32Z $
  */
 
 /* include files */
@@ -115,10 +115,10 @@ bool force_trap_bad_h2d_phase = 0;
 
 int dhd_dongle_memsize;
 int dhd_dongle_ramsize;
+struct dhd_bus *g_dhd_bus = NULL;
 static int dhdpcie_checkdied(dhd_bus_t *bus, char *data, uint size);
 static int dhdpcie_bus_readconsole(dhd_bus_t *bus);
 #if defined(DHD_FW_COREDUMP)
-struct dhd_bus *g_dhd_bus = NULL;
 static int dhdpcie_mem_dump(dhd_bus_t *bus);
 #endif /* DHD_FW_COREDUMP */
 
@@ -159,12 +159,9 @@ static void dhdpcie_bus_reg_unmap(osl_t *osh, volatile char *addr, int size);
 static int dhdpcie_cc_nvmshadow(dhd_bus_t *bus, struct bcmstrbuf *b);
 static void dhdpcie_fw_trap(dhd_bus_t *bus);
 static void dhd_fillup_ring_sharedptr_info(dhd_bus_t *bus, ring_info_t *ring_info);
+static void dhdpcie_handle_mb_data(dhd_bus_t *bus);
 extern void dhd_dpc_enable(dhd_pub_t *dhdp);
 extern void dhd_dpc_kill(dhd_pub_t *dhdp);
-
-#ifdef DHD_PCIE_NATIVE_RUNTIMEPM
-static void dhdpcie_handle_mb_data(dhd_bus_t *bus);
-#endif /* DHD_PCIE_NATIVE_RUNTIMEPM */
 
 #ifdef IDLE_TX_FLOW_MGMT
 static void dhd_bus_check_idle_scan(dhd_bus_t *bus);
@@ -641,9 +638,7 @@ int dhdpcie_bus_attach(osl_t *osh, dhd_bus_t **bus_ptr,
 
 		DHD_TRACE(("%s: EXIT SUCCESS\n",
 			__FUNCTION__));
-#ifdef DHD_FW_COREDUMP
 		g_dhd_bus = bus;
-#endif // endif
 		*bus_ptr = bus;
 		return ret;
 	} while (0);
@@ -1143,22 +1138,75 @@ dhdpcie_bus_intr_init(dhd_bus_t *bus)
 	}
 }
 
-#ifdef DHD_DISABLE_ASPM
 void
-dhd_bus_aspm_enable(dhd_bus_t *bus, bool enable)
+dhd_bus_aspm_enable_rc_ep(dhd_bus_t *bus, bool enable)
 {
-	uint val;
-	val = dhd_pcie_config_read(bus->osh, PCIECFGREG_LINK_STATUS_CTRL, sizeof(uint32));
+	uint32 linkctrl_rc, linkctrl_ep;
+	linkctrl_rc = dhdpcie_rc_access_cap(bus, PCIE_CAP_ID_EXP, PCIE_CAP_LINKCTRL_OFFSET, FALSE,
+		FALSE, 0);
+	linkctrl_ep = dhdpcie_ep_access_cap(bus, PCIE_CAP_ID_EXP, PCIE_CAP_LINKCTRL_OFFSET, FALSE,
+		FALSE, 0);
+	DHD_ERROR(("%s: %s val before rc-0x%x:ep-0x%x\n", __FUNCTION__,
+		(enable ? "ENABLE" : "DISABLE"), linkctrl_rc, linkctrl_ep));
 	if (enable) {
-		dhd_pcie_config_write(bus->osh, PCIECFGREG_LINK_STATUS_CTRL, sizeof(uint32),
-				(val | PCIE_ASPM_L1_ENAB));
+		/* Enable only L1 ASPM (bit 1) first RC then EP */
+		dhdpcie_rc_access_cap(bus, PCIE_CAP_ID_EXP, PCIE_CAP_LINKCTRL_OFFSET, FALSE,
+			TRUE, (linkctrl_rc | PCIE_ASPM_L1_ENAB));
+		dhdpcie_ep_access_cap(bus, PCIE_CAP_ID_EXP, PCIE_CAP_LINKCTRL_OFFSET, FALSE,
+			TRUE, (linkctrl_ep | PCIE_ASPM_L1_ENAB));
 	} else {
-		dhd_pcie_config_write(bus->osh, PCIECFGREG_LINK_STATUS_CTRL, sizeof(uint32),
-				(val & (~PCIE_ASPM_L1_ENAB)));
+		/* Disable complete ASPM (bit 1 and bit 0) first EP then RC */
+		dhdpcie_ep_access_cap(bus, PCIE_CAP_ID_EXP, PCIE_CAP_LINKCTRL_OFFSET, FALSE,
+			TRUE, (linkctrl_ep & (~PCIE_ASPM_ENAB)));
+		dhdpcie_rc_access_cap(bus, PCIE_CAP_ID_EXP, PCIE_CAP_LINKCTRL_OFFSET, FALSE,
+			TRUE, (linkctrl_rc & (~PCIE_ASPM_ENAB)));
 	}
-	DHD_ERROR(("%s: %s\n", __FUNCTION__, (enable ? "ENABLE" : "DISABLE")));
+	linkctrl_rc = dhdpcie_rc_access_cap(bus, PCIE_CAP_ID_EXP, PCIE_CAP_LINKCTRL_OFFSET, FALSE,
+		FALSE, 0);
+	linkctrl_ep = dhdpcie_ep_access_cap(bus, PCIE_CAP_ID_EXP, PCIE_CAP_LINKCTRL_OFFSET, FALSE,
+		FALSE, 0);
+	DHD_ERROR(("%s: %s val after rc-0x%x:ep-0x%x\n", __FUNCTION__,
+		(enable ? "ENABLE" : "DISABLE"), linkctrl_rc, linkctrl_ep));
 }
-#endif /* DHD_DISABLE_ASPM */
+
+void
+dhd_bus_l1ss_enable_rc_ep(dhd_bus_t *bus, bool enable)
+{
+	uint32 l1ssctrl_rc, l1ssctrl_ep;
+
+	/* Disable ASPM of RC and EP */
+	dhd_bus_aspm_enable_rc_ep(bus, FALSE);
+
+	/* Extendend Capacility Reg */
+	l1ssctrl_rc = dhdpcie_rc_access_cap(bus, PCIE_EXTCAP_ID_L1SS,
+		PCIE_EXTCAP_L1SS_CONTROL_OFFSET, TRUE, FALSE, 0);
+	l1ssctrl_ep = dhdpcie_ep_access_cap(bus, PCIE_EXTCAP_ID_L1SS,
+		PCIE_EXTCAP_L1SS_CONTROL_OFFSET, TRUE, FALSE, 0);
+	DHD_ERROR(("%s: %s val before rc-0x%x:ep-0x%x\n", __FUNCTION__,
+		(enable ? "ENABLE" : "DISABLE"), l1ssctrl_rc, l1ssctrl_ep));
+	if (enable) {
+		/* Enable RC then EP */
+		dhdpcie_rc_access_cap(bus, PCIE_EXTCAP_ID_L1SS, PCIE_EXTCAP_L1SS_CONTROL_OFFSET,
+			TRUE, TRUE, (l1ssctrl_rc | PCIE_EXT_L1SS_ENAB));
+		dhdpcie_ep_access_cap(bus, PCIE_EXTCAP_ID_L1SS, PCIE_EXTCAP_L1SS_CONTROL_OFFSET,
+			TRUE, TRUE, (l1ssctrl_ep | PCIE_EXT_L1SS_ENAB));
+	} else {
+		/* Disable EP then RC */
+		dhdpcie_ep_access_cap(bus, PCIE_EXTCAP_ID_L1SS, PCIE_EXTCAP_L1SS_CONTROL_OFFSET,
+			TRUE, TRUE, (l1ssctrl_ep & (~PCIE_EXT_L1SS_ENAB)));
+		dhdpcie_rc_access_cap(bus, PCIE_EXTCAP_ID_L1SS, PCIE_EXTCAP_L1SS_CONTROL_OFFSET,
+			TRUE, TRUE, (l1ssctrl_rc & (~PCIE_EXT_L1SS_ENAB)));
+	}
+	l1ssctrl_rc = dhdpcie_rc_access_cap(bus, PCIE_EXTCAP_ID_L1SS,
+		PCIE_EXTCAP_L1SS_CONTROL_OFFSET, TRUE, FALSE, 0);
+	l1ssctrl_ep = dhdpcie_ep_access_cap(bus, PCIE_EXTCAP_ID_L1SS,
+		PCIE_EXTCAP_L1SS_CONTROL_OFFSET, TRUE, FALSE, 0);
+	DHD_ERROR(("%s: %s val after rc-0x%x:ep-0x%x\n", __FUNCTION__,
+		(enable ? "ENABLE" : "DISABLE"), l1ssctrl_rc, l1ssctrl_ep));
+
+	/* Enable ASPM of RC and EP */
+	dhd_bus_aspm_enable_rc_ep(bus, TRUE);
+}
 
 void
 dhdpcie_dongle_reset(dhd_bus_t *bus)
@@ -1412,7 +1460,7 @@ dhdpcie_dongle_attach(dhd_bus_t *bus)
 	/* Set the poll and/or interrupt flags */
 	bus->intr = (bool)dhd_intr;
 #ifdef DHD_DISABLE_ASPM
-	dhd_bus_aspm_enable(bus, FALSE);
+	dhd_bus_aspm_enable_rc_ep(bus, FALSE);
 #endif /* DHD_DISABLE_ASPM */
 
 	bus->idma_enabled = TRUE;
@@ -1654,6 +1702,7 @@ dhdpcie_bus_release(dhd_bus_t *bus)
 		/* Finally free bus info */
 		MFREE(osh, bus, sizeof(dhd_bus_t));
 
+		g_dhd_bus = NULL;
 	}
 
 	DHD_TRACE(("%s: Exit\n", __FUNCTION__));
@@ -3412,29 +3461,6 @@ dhd_bus_mem_dump(dhd_pub_t *dhdp)
 	DHD_OS_WAKE_UNLOCK(dhdp);
 	return ret;
 }
-
-int
-dhd_dongle_mem_dump(void)
-{
-	if (!g_dhd_bus) {
-		DHD_ERROR(("%s: Bus is NULL\n", __FUNCTION__));
-		return -ENODEV;
-	}
-
-	dhd_bus_dump_console_buffer(g_dhd_bus);
-	dhd_prot_debug_info_print(g_dhd_bus->dhd);
-
-	g_dhd_bus->dhd->memdump_enabled = DUMP_MEMFILE_BUGON;
-	g_dhd_bus->dhd->memdump_type = DUMP_TYPE_AP_ABNORMAL_ACCESS;
-
-#ifdef DHD_PCIE_RUNTIMEPM
-	dhdpcie_runtime_bus_wake(g_dhd_bus->dhd, TRUE, __builtin_return_address(0));
-#endif /* DHD_PCIE_RUNTIMEPM */
-
-	dhd_bus_mem_dump(g_dhd_bus->dhd);
-	return 0;
-}
-EXPORT_SYMBOL(dhd_dongle_mem_dump);
 #endif	/* DHD_FW_COREDUMP */
 
 int
@@ -5779,7 +5805,12 @@ dhdpcie_bus_suspend(struct dhd_bus *bus, bool state)
 					__FUNCTION__, intstatus, host_irq_disabled));
 				dhd_pcie_intr_count_dump(bus->dhd);
 				dhd_print_tasklet_status(bus->dhd);
-				dhd_prot_process_ctrlbuf(bus->dhd);
+				if (bus->api.fw_rev >= PCIE_SHARED_VERSION_6 &&
+					!bus->use_mailbox) {
+					dhd_prot_process_ctrlbuf(bus->dhd);
+				} else {
+					dhdpcie_handle_mb_data(bus);
+				}
 				timeleft = dhd_os_d3ack_wait(bus->dhd, &bus->wait_for_d3_ack);
 				/* Clear Interrupts */
 				dhdpcie_bus_clear_intstatus(bus);
@@ -5800,7 +5831,6 @@ dhdpcie_bus_suspend(struct dhd_bus *bus, bool state)
 
 		if (bus->wait_for_d3_ack) {
 			DHD_ERROR(("%s: Got D3 Ack \n", __FUNCTION__));
-
 			/* Got D3 Ack. Suspend the bus */
 			if (active) {
 				DHD_ERROR(("%s():Suspend failed because of wakelock"
@@ -5913,6 +5943,7 @@ dhdpcie_bus_suspend(struct dhd_bus *bus, bool state)
 
 			/* check if the D3 ACK timeout due to scheduling issue */
 			bus->dhd->is_sched_error = !dhd_query_bus_erros(bus->dhd) &&
+				bus->isr_entry_time > bus->last_d3_inform_time &&
 				dhd_bus_query_dpc_sched_errors(bus->dhd);
 			bus->dhd->d3ack_timeout_occured = TRUE;
 			/* If the D3 Ack has timeout */
@@ -6538,7 +6569,7 @@ dhdpcie_downloadvars(dhd_bus_t *bus, void *arg, int len)
 		bus->dhd->vars_ccode[0] = 0;
 		bus->dhd->vars_regrev = 0;
 		if ((pos = strstr(tmpbuf, "ccode"))) {
-			sscanf(pos, "ccode=%s\n", bus->dhd->vars_ccode);
+			sscanf(pos, "ccode=%3s\n", bus->dhd->vars_ccode);
 		}
 		if ((pos = strstr(tmpbuf, "regrev"))) {
 			sscanf(pos, "regrev=%u\n", &(bus->dhd->vars_regrev));
@@ -6740,7 +6771,8 @@ void dhd_dump_intr_counters(dhd_pub_t *dhd, struct bcmstrbuf *strbuf)
 		"last_process_ctrlbuf_time="SEC_USEC_FMT " last_process_flowring_time="SEC_USEC_FMT
 		" last_process_txcpl_time="SEC_USEC_FMT"\nlast_process_rxcpl_time="SEC_USEC_FMT
 		" last_process_infocpl_time="SEC_USEC_FMT
-		"\ndpc_exit_time="SEC_USEC_FMT" resched_dpc_time="SEC_USEC_FMT"\n",
+		"\ndpc_exit_time="SEC_USEC_FMT" resched_dpc_time="SEC_USEC_FMT"\n"
+		"last_d3_inform_time="SEC_USEC_FMT"\n",
 		GET_SEC_USEC(current_time), GET_SEC_USEC(bus->isr_entry_time),
 		GET_SEC_USEC(bus->isr_exit_time), GET_SEC_USEC(bus->dpc_entry_time),
 		GET_SEC_USEC(bus->dpc_sched_time), GET_SEC_USEC(dhd->bus->last_non_ours_irq_time),
@@ -6749,7 +6781,8 @@ void dhd_dump_intr_counters(dhd_pub_t *dhd, struct bcmstrbuf *strbuf)
 		GET_SEC_USEC(bus->last_process_txcpl_time),
 		GET_SEC_USEC(bus->last_process_rxcpl_time),
 		GET_SEC_USEC(bus->last_process_infocpl_time),
-		GET_SEC_USEC(bus->dpc_exit_time), GET_SEC_USEC(bus->resched_dpc_time));
+		GET_SEC_USEC(bus->dpc_exit_time), GET_SEC_USEC(bus->resched_dpc_time),
+		GET_SEC_USEC(bus->last_d3_inform_time));
 
 	bcm_bprintf(strbuf, "\nlast_suspend_start_time="SEC_USEC_FMT" last_suspend_end_time="
 		SEC_USEC_FMT" last_resume_start_time="SEC_USEC_FMT" last_resume_end_time="
@@ -7241,6 +7274,7 @@ dhdpcie_send_mb_data(dhd_bus_t *bus, uint32 h2d_mb_data)
 done:
 	if (h2d_mb_data == H2D_HOST_D3_INFORM) {
 		DHD_INFO_HW4(("%s: send H2D_HOST_D3_INFORM to dongle\n", __FUNCTION__));
+		bus->last_d3_inform_time = OSL_LOCALTIME_NS();
 		bus->d3_inform_cnt++;
 	}
 	if (h2d_mb_data == H2D_HOST_D0_INFORM_IN_USE) {
@@ -8053,6 +8087,9 @@ int dhd_bus_init(dhd_pub_t *dhdp, bool enforce_mutex)
 	if (MULTIBP_ENAB(bus->sih)) {
 		dhd_bus_pcie_pwr_req(bus);
 	}
+
+	/* Configure AER registers to log the TLP header */
+	dhd_bus_aer_config(bus);
 
 	/* Make sure we're talking to the core. */
 	bus->reg = si_setcore(bus->sih, PCIE2_CORE_ID, 0);
@@ -10182,6 +10219,8 @@ dhd_pcie_intr_count_dump(dhd_pub_t *dhd)
 		" resched_dpc_time="SEC_USEC_FMT"\n",
 		GET_SEC_USEC(bus->dpc_exit_time),
 		GET_SEC_USEC(bus->resched_dpc_time)));
+	DHD_ERROR(("last_d3_inform_time="SEC_USEC_FMT"\n",
+		GET_SEC_USEC(bus->last_d3_inform_time)));
 
 	DHD_ERROR(("\nlast_suspend_start_time="SEC_USEC_FMT
 		" last_suspend_end_time="SEC_USEC_FMT"\n",
@@ -10299,11 +10338,11 @@ void
 dhd_pcie_dump_rc_conf_space_cap(dhd_pub_t *dhd)
 {
 	DHD_ERROR(("\n ------- DUMPING PCIE RC config space Registers ------- \r\n"));
-	DHD_ERROR(("Pcie RC Error Status Val=0x%x\n",
+	DHD_ERROR(("Pcie RC Uncorrectable Error Status Val=0x%x\n",
 		dhdpcie_rc_access_cap(dhd->bus, PCIE_EXTCAP_ID_ERR,
 		PCIE_EXTCAP_AER_UCERR_OFFSET, TRUE, FALSE, 0)));
 #ifdef EXTENDED_PCIE_DEBUG_DUMP
-	DHD_ERROR(("hdrlog0 =0x%x hdrlog1 =0x%x hdrlog2 =0x%x hdrlog3 =0x%x\n",
+	DHD_ERROR(("hdrlog0 =0x%08x hdrlog1 =0x%08x hdrlog2 =0x%08x hdrlog3 =0x%08x\n",
 		dhdpcie_rc_access_cap(dhd->bus, PCIE_EXTCAP_ID_ERR,
 		PCIE_EXTCAP_ERR_HEADER_LOG_0, TRUE, FALSE, 0),
 		dhdpcie_rc_access_cap(dhd->bus, PCIE_EXTCAP_ID_ERR,
@@ -10361,8 +10400,11 @@ dhd_pcie_debug_info_dump(dhd_pub_t *dhd)
 		dhd_pcie_config_read(dhd->bus->osh, PCIECFGREG_PML1_SUB_CTRL1,
 		sizeof(uint32))));
 #ifdef EXTENDED_PCIE_DEBUG_DUMP
-	DHD_ERROR(("hdrlog0(0x%x)=0x%x hdrlog1(0x%x)=0x%x hdrlog2(0x%x)=0x%x hdrlog3(0x%x)=0x%x\n",
-		PCI_TLP_HDR_LOG1,
+	DHD_ERROR(("Pcie EP Uncorrectable Error Status Val=0x%x\n",
+		dhdpcie_ep_access_cap(dhd->bus, PCIE_EXTCAP_ID_ERR,
+		PCIE_EXTCAP_AER_UCERR_OFFSET, TRUE, FALSE, 0)));
+	DHD_ERROR(("hdrlog0(0x%x)=0x%08x hdrlog1(0x%x)=0x%08x hdrlog2(0x%x)=0x%08x "
+		"hdrlog3(0x%x)=0x%08x\n", PCI_TLP_HDR_LOG1,
 		dhd_pcie_config_read(dhd->bus->osh, PCI_TLP_HDR_LOG1, sizeof(uint32)),
 		PCI_TLP_HDR_LOG2,
 		dhd_pcie_config_read(dhd->bus->osh, PCI_TLP_HDR_LOG2, sizeof(uint32)),

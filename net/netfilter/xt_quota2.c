@@ -30,6 +30,15 @@
 
 /* Format of the ULOG packets passed through netlink */
 typedef struct ulog_packet_msg {
+#ifdef CONFIG_NETFILTER_XT_MATCH_QUOTA2_LOG_32BIT
+	unsigned int mark;
+	int timestamp_sec;
+	int timestamp_usec;
+	unsigned int hook;
+	char indev_name[IFNAMSIZ];
+	char outdev_name[IFNAMSIZ];
+	unsigned int data_len;
+#else
 	unsigned long mark;
 	long timestamp_sec;
 	long timestamp_usec;
@@ -37,6 +46,7 @@ typedef struct ulog_packet_msg {
 	char indev_name[IFNAMSIZ];
 	char outdev_name[IFNAMSIZ];
 	size_t data_len;
+#endif
 	char prefix[ULOG_PREFIX_LEN];
 	unsigned char mac_len;
 	unsigned char mac[ULOG_MAC_LEN];

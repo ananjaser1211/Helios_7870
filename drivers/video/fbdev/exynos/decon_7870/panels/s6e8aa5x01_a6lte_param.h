@@ -35,7 +35,7 @@
 #define LDI_LEN_MTP			33
 
 #define LDI_LEN_HBM			30
-#define LDI_LEN_MANUFACTURE_INFO	21
+#define LDI_LEN_MANUFACTURE_INFO	20
 
 /* offset is position including addr, not only para */
 #define LDI_OFFSET_AOR_1	1
@@ -55,6 +55,7 @@
 #define LDI_GPARA_DATE		40	/* C8h 41th Para: Manufacture Year, Month */
 #define LDI_GPARA_HBM_ELVSS	22	/* B6h 23th Para: ELVSS_Cal_Offset for HBM */
 #define LDI_GPARA_HBM_GAMMA	1	/* B4h 2nd Para: V255 RED Gamma */
+#define LDI_GPARA_MANUFACTURE_INFO	1	/* C9h 2nd Para */
 
 #define	LDI_REG_RDDPM		0x0A	/* Read Display Power Mode */
 #define	LDI_LEN_RDDPM		1
@@ -594,8 +595,7 @@ static unsigned char AOR_TABLE[EXTEND_BRIGHTNESS + 1][AID_CMD_CNT] = {
 /* platform brightness <-> acl opr and percent */
 static unsigned int brightness_opr_table[ACL_STATUS_MAX][EXTEND_BRIGHTNESS + 1] = {
 	{
-		[0 ... UI_MAX_BRIGHTNESS - 1]			= OPR_STATUS_15P,
-		[UI_MAX_BRIGHTNESS ... EXTEND_BRIGHTNESS]	= OPR_STATUS_OFF,
+		[0 ... EXTEND_BRIGHTNESS]			= OPR_STATUS_OFF,
 	}, {
 		[0 ... 267]					= OPR_STATUS_15P,
 		[268 ... EXTEND_BRIGHTNESS]			= OPR_STATUS_08P

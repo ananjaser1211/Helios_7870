@@ -4145,10 +4145,51 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
  *
  * Return: A standard Linux error code
  */
-static int kbase_device_suspend(struct device *dev)
+
+/* MALI_SEC_INTEGRATION */
+static int kbase_device_suspend_dummy(struct device *dev)
 {
 	int ret = 0;
 	struct kbase_device *kbdev = to_kbase_device(dev);
+	struct kbasep_js_device_data *js_devdata = NULL;
+	struct exynos_context *platform = NULL;
+
+	if (kbdev) {
+		js_devdata = &kbdev->js_data;
+		platform = (struct exynos_context *)kbdev->platform_context;
+	}
+
+	if (!kbdev || !js_devdata || !platform) {
+		GPU_LOG(DVFS_ERROR, DUMMY, 0u, 0u, "[G3D] error control of variable : kbase_device_suspend_dummy()\n");
+		GPU_LOG(DVFS_ERROR, DUMMY, 0u, 0u, "    kbdev      [%p]\n", kbdev);
+		GPU_LOG(DVFS_ERROR, DUMMY, 0u, 0u, "    js_devdata [%p]\n", js_devdata);
+		GPU_LOG(DVFS_ERROR, DUMMY, 0u, 0u, "    platform   [%p]\n", platform);
+	}
+
+	/* we must be control RuntimePM schedule API */
+	if (kbdev && js_devdata && platform) {
+		mutex_lock(&js_devdata->runpool_mutex);
+		mutex_lock(&kbdev->pm.lock);
+
+		if (kbdev->pm.backend.callback_power_suspend)
+			kbdev->pm.backend.callback_power_suspend(kbdev);
+
+		mutex_unlock(&kbdev->pm.lock);
+		mutex_unlock(&js_devdata->runpool_mutex);
+
+		if (platform)
+			ret = platform->power_runtime_suspend_ret;
+
+		KBASE_TRACE_ADD(kbdev, KBASE_DEVICE_SUSPEND_DUMMY, NULL, NULL, 0u, ret);
+	}
+
+	return ret;
+}
+
+/* MALI_SEC_INTEGRATION */
+int kbase_device_suspend(struct kbase_device *kbdev)
+{
+	int ret = 0;
 	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
 
 	if (!kbdev)
@@ -4162,8 +4203,11 @@ static int kbase_device_suspend(struct device *dev)
 
 	kbase_pm_suspend(kbdev);
 
+	/* MALI_SEC_INTEGRATION */
 	if (platform)
 		ret = platform->power_runtime_suspend_ret;
+
+	KBASE_TRACE_ADD(kbdev, KBASE_DEVICE_SUSPEND, NULL, NULL, 0u, ret);
 
 	return ret;
 }
@@ -4177,10 +4221,26 @@ static int kbase_device_suspend(struct device *dev)
  *
  * Return: A standard Linux error code
  */
-static int kbase_device_resume(struct device *dev)
+
+/* MALI_SEC_INTEGRATION */
+static int kbase_device_resume_dummy(struct device *dev)
 {
 	int ret = 0;
 	struct kbase_device *kbdev = to_kbase_device(dev);
+	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
+
+	if (platform)
+		ret = platform->power_runtime_resume_ret;
+
+	KBASE_TRACE_ADD(kbdev, KBASE_DEVICE_RESUME_DUMMY, NULL, NULL, 0u, ret);
+
+	return ret;
+}
+
+/* MALI_SEC_INTEGRATION */
+int kbase_device_resume(struct kbase_device *kbdev)
+{
+	int ret = 0;
 	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
 
 	if (!kbdev)
@@ -4197,6 +4257,8 @@ static int kbase_device_resume(struct device *dev)
 	if (platform)
 		ret = platform->power_runtime_resume_ret;
 
+	KBASE_TRACE_ADD(kbdev, KBASE_DEVICE_RESUME, NULL, NULL, 0u, ret);
+	
 	return ret;
 }
 
@@ -4304,8 +4366,9 @@ static int kbase_device_runtime_idle(struct device *dev)
 /* The power management operations for the platform driver.
  */
 static const struct dev_pm_ops kbase_pm_ops = {
-	.suspend = kbase_device_suspend,
-	.resume = kbase_device_resume,
+	/* MALI_SEC_INTEGRATION */
+	.suspend = kbase_device_suspend_dummy,
+	.resume = kbase_device_resume_dummy,
 #ifdef KBASE_PM_RUNTIME
 	.runtime_suspend = kbase_device_runtime_suspend,
 	.runtime_resume = kbase_device_runtime_resume,

@@ -1349,6 +1349,7 @@ struct f2fs_sec_stat_info {
 	u64 kwritten_byte;
 	u32 fs_por_error;
 	u32 fs_error;
+	u32 max_undiscard_blks;		/* # of undiscard blocks */
 };
 
 struct f2fs_sb_info {

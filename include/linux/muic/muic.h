@@ -198,6 +198,7 @@ typedef enum {
 	ATTACHED_DEV_POGO_MUIC,
 	ATTACHED_DEV_CHARGING_POGO_VB_MUIC,
 	ATTACHED_DEV_CHECK_OCP,
+	ATTACHED_DEV_FACTORY_UART_MUIC,
 	ATTACHED_DEV_UNKNOWN_MUIC,
 	ATTACHED_DEV_NUM,
 } muic_attached_dev_t;
@@ -235,6 +236,8 @@ struct muic_platform_data {
 	int hv_sel;
 	int silent_chg_change_state;
 #endif
+
+	bool is_factory_uart;
 
 	/* muic switch dev register function for DockObserver */
 	void (*init_switch_dev_cb) (void);

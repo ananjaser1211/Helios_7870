@@ -329,6 +329,20 @@ int get_switch_sel(void)
 	return muic_pdata.switch_sel;
 }
 
+static int set_factory_uart(char *str)
+{
+	int mode;
+
+	get_option(&str, &mode);
+	muic_pdata.is_factory_uart = !!(mode & 0x1);
+
+	pr_info("factory_uart: %sable\n",
+		muic_pdata.is_factory_uart ? "en" : "dis");
+
+	return 0;
+}
+__setup("androidboot.muic_1k=", set_factory_uart);
+
 /* afc_mode:
  *   0x31 : Disabled
  *   0x30 : Enabled

@@ -121,6 +121,8 @@
 #define FIMC_IS_FW_2P2_12M				"fimc_is_fw2_2p2_12m.bin"
 #define FIMC_IS_FW_2P3				"fimc_is_fw2_2p3.bin"
 #ifdef USE_ONE_BINARY
+#define FIMC_IS_FW_GC5035			"fimc_is_lib.bin"
+#define FIMC_IS_FW_S5K5E9		    "fimc_is_lib.bin"
 #define FIMC_IS_FW_3M3				"fimc_is_lib.bin"
 #define FIMC_IS_FW_3L2				"fimc_is_lib.bin"
 #define FIMC_IS_FW_3P3				"fimc_is_lib.bin"
@@ -179,6 +181,8 @@
 #define FIMC_IS_SR544_SETF			"setfile_sr544.bin"
 #define FIMC_IS_2P6_SETF			"setfile_2p6.bin"
 #define FIMC_IS_2P6_FRONT_SETF			"setfile_2p6_front.bin"
+#define FIMC_IS_GC5035_SETF			"setfile_gc5035.bin"
+
 #define FIMC_IS_COMPANION_MASTER_SETF			"companion_master_setfile.bin"
 #define FIMC_IS_COMPANION_MODE_SETF			"companion_mode_setfile.bin"
 #define FIMC_IS_COMPANION_2P2_MASTER_SETF			"companion_2p2_master_setfile.bin"

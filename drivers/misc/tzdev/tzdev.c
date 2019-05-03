@@ -280,14 +280,11 @@ static int tzdev_run_init_sequence(void)
 	if (atomic_read(&tzdev_swd_state) == TZDEV_SWD_DOWN) {
 		/* check kernel and driver version compatibility with Blowfish */
 		ret = tzdev_smc_check_version();
-		if (ret == -ENOSYS) {
-			tzdev_print(0, "Minor version of TZDev driver is newer than version of"
-				"Blowfish secure kernel.\nNot critical, continue...\n");
+		if (ret == -ENOSYS || ret == -EINVAL) {
+			/* version is not compatibile. Not critical, continue ... */
 			ret = 0;
 		} else if (ret) {
-			tzdev_print(0, "The version of the Linux kernel or "
-				"TZDev driver is not compatible with Blowfish "
-				"secure kernel\n");
+			tzdev_print(0, "tzdev_smc_check_version() failed\n");
 			goto out;
 		}
 

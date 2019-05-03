@@ -1847,6 +1847,14 @@ static int fwu_scan_pdt(struct synaptics_rmi4_data *rmi4_data)
 					rmi_fd.data_base_addr;
 				fwu->f01_fd.cmd_base_addr =
 					rmi_fd.cmd_base_addr;
+				rmi4_data->f01_query_base_addr =
+					rmi_fd.query_base_addr;
+				rmi4_data->f01_ctrl_base_addr =
+					rmi_fd.ctrl_base_addr;
+				rmi4_data->f01_data_base_addr =
+					rmi_fd.data_base_addr;
+				rmi4_data->f01_cmd_base_addr =
+					rmi_fd.cmd_base_addr;
 				break;
 			case SYNAPTICS_RMI4_F34:
 				f34found = true;
@@ -3092,8 +3100,12 @@ static void fwu_parse_image_header_05_06(struct synaptics_rmi4_data *rmi4_data)
 				fwu->img_data.ui_firmware.size;
 	}
 
+#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_TD4X01_A2CORELTE
+	if (fwu->img_data.contains_bootloader|| header->options_tddi)
+#else
 	if ((fwu->img_data.bl_version == BL_V5 && fwu->img_data.contains_bootloader) ||
 			(fwu->img_data.bl_version == BL_V6 && header->options_tddi))
+#endif
 		fwu->img_data.contains_disp_config = true;
 	else
 		fwu->img_data.contains_disp_config = false;
@@ -3784,7 +3796,9 @@ int synaptics_rmi4_set_tsp_test_result_in_config(struct synaptics_rmi4_data *rmi
 	/* read config from IC */
 	memset(buf, 0, sizeof(buf));
 	snprintf(buf, 2, "%u\n", 1);
-	fwu_sysfs_read_config_store(fwu->attr_dir, NULL, buf, 1);
+	retval = fwu_sysfs_read_config_store(fwu->attr_dir, NULL, buf, 1);
+	if (retval < 0)
+		goto err_config_write;
 
 	/* set test result value
 	 * MSB 4bit of Customr derined config ID 0 used for factory test in TSP.

@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wl_cfg80211.h 784024 2018-10-10 04:44:24Z $
+ * $Id: wl_cfg80211.h 792549 2018-12-05 09:39:13Z $
  */
 
 /**
@@ -243,11 +243,7 @@ do {									\
 #define WL_AF_SEARCH_TIME_MAX		450
 #define WL_AF_TX_EXTRA_TIME_MAX		200
 
-#ifdef CONFIG_BROADCOM_WIFI_M10LTE_SCAN_TIMEOUT_EXTENSION
-#define WL_SCAN_TIMER_INTERVAL_MS	15000 /* Scan timeout */
-#else
 #define WL_SCAN_TIMER_INTERVAL_MS	10000 /* Scan timeout */
-#endif /* CONFIG_BROADCOM_WIFI_M10LTE_SCAN_TIMEOUT_EXTENSION */
 #define WL_CHANNEL_SYNC_RETRY 	5
 #define WL_INVALID 		-1
 
@@ -1568,6 +1564,8 @@ extern int wl_cfg80211_remove_if(struct bcm_cfg80211 *cfg,
 extern int wl_cfg80211_scan_stop(struct bcm_cfg80211 *cfg, bcm_struct_cfgdev *cfgdev);
 extern void wl_cfg80211_scan_abort(struct bcm_cfg80211 *cfg);
 extern bool wl_cfg80211_is_concurrent_mode(struct net_device * dev);
+extern void wl_cfg80211_disassoc(struct net_device *ndev);
+extern void wl_cfg80211_del_all_sta(struct net_device *ndev, uint32 reason);
 extern void* wl_cfg80211_get_dhdp(struct net_device * dev);
 extern bool wl_cfg80211_is_p2p_active(struct net_device * dev);
 extern bool wl_cfg80211_is_roam_offload(struct net_device * dev);

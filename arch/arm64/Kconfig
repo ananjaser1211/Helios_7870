@@ -909,7 +909,13 @@ config TIMA_LKMAUTH
 config TIMA_RKP
 	bool "Enable RKP (Realtime Kernel Protection) TIMA feature"
 	depends on TIMA
+	select UH_RKP
 	default n
+
+config UH_RKP
+	bool "Enable RKP (Realtime Kernel Protection) UH feature"
+	help
+	  it protects a kernel text and etc.
 
 config TIMA_RKP_4G
 	bool "Support 4G model"

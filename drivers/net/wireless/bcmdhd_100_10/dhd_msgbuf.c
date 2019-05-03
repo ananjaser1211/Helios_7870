@@ -3,7 +3,7 @@
  * Provides type definitions and function prototypes used to link the
  * DHD OS, bus, and protocol modules.
  *
- * Copyright (C) 1999-2018, Broadcom.
+ * Copyright (C) 1999-2019, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -26,7 +26,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_msgbuf.c 787770 2018-11-06 08:28:43Z $
+ * $Id: dhd_msgbuf.c 796673 2018-12-26 08:34:38Z $
  */
 
 #include <typedefs.h>
@@ -6479,7 +6479,10 @@ dhd_msgbuf_wait_ioctl_cmplt(dhd_pub_t *dhd, uint32 len, void *buf)
 
 	if (timeleft == 0 && (!dhd_query_bus_erros(dhd))) {
 		/* check if resumed on time out related to scheduling issue */
-		dhd->is_sched_error = dhd_bus_query_dpc_sched_errors(dhd);
+		dhd->is_sched_error = FALSE;
+		if (dhd->bus->isr_entry_time > prot->ioctl_fillup_time) {
+			dhd->is_sched_error = dhd_bus_query_dpc_sched_errors(dhd);
+		}
 
 		dhd_msgbuf_iovar_timeout_dump(dhd);
 

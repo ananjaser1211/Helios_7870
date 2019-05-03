@@ -94,8 +94,10 @@ static void update_general_status(struct f2fs_sb_info *sbi)
 	si->free_secs = free_sections(sbi);
 	si->prefree_count = prefree_segments(sbi);
 	si->dirty_count = dirty_segments(sbi);
-	si->node_pages = NODE_MAPPING(sbi)->nrpages;
-	si->meta_pages = META_MAPPING(sbi)->nrpages;
+	if (sbi->node_inode)
+		si->node_pages = NODE_MAPPING(sbi)->nrpages;
+	if (sbi->meta_inode)
+		si->meta_pages = META_MAPPING(sbi)->nrpages;
 	si->nats = NM_I(sbi)->nat_cnt;
 	si->dirty_nats = NM_I(sbi)->dirty_nat_cnt;
 	si->sits = MAIN_SEGS(sbi);
@@ -256,10 +258,14 @@ get_cache:
 						sizeof(struct extent_node);
 
 	si->page_mem = 0;
-	npages = NODE_MAPPING(sbi)->nrpages;
-	si->page_mem += (unsigned long long)npages << PAGE_SHIFT;
-	npages = META_MAPPING(sbi)->nrpages;
-	si->page_mem += (unsigned long long)npages << PAGE_SHIFT;
+	if (sbi->node_inode) {
+		npages = NODE_MAPPING(sbi)->nrpages;
+		si->page_mem += (unsigned long long)npages << PAGE_SHIFT;
+	}
+	if (sbi->meta_inode) {
+		npages = META_MAPPING(sbi)->nrpages;
+		si->page_mem += (unsigned long long)npages << PAGE_SHIFT;
+	}
 }
 
 static int stat_show(struct seq_file *s, void *v)

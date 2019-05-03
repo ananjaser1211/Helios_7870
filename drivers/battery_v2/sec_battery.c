@@ -181,6 +181,8 @@ static enum power_supply_property sec_battery_props[] = {
 	POWER_SUPPLY_PROP_VOLTAGE_AVG,
 	POWER_SUPPLY_PROP_CURRENT_NOW,
 	POWER_SUPPLY_PROP_CURRENT_AVG,
+	POWER_SUPPLY_PROP_CHARGE_FULL,
+	POWER_SUPPLY_PROP_CHARGE_COUNTER,
 	POWER_SUPPLY_PROP_CHARGE_NOW,
 	POWER_SUPPLY_PROP_CAPACITY,
 	POWER_SUPPLY_PROP_TEMP,
@@ -6807,6 +6809,18 @@ static int sec_bat_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CURRENT_AVG:
 		val->intval = battery->current_avg;
 		break;
+	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
+		psy_do_property(battery->pdata->fuelgauge_name, get,
+				POWER_SUPPLY_PROP_CHARGE_COUNTER, value);
+		val->intval = value.intval;
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_FULL:
+#if defined(CONFIG_BATTERY_CISD)
+		val->intval = battery->pdata->battery_full_capacity * 1000;
+#else
+		val->intval = 0;
+#endif
+		break;	
 	/* charging mode (differ from power supply) */
 	case POWER_SUPPLY_PROP_CHARGE_NOW:
 		val->intval = battery->charging_mode;
@@ -6959,6 +6973,7 @@ static int sec_ac_get_property(struct power_supply *psy,
 		case POWER_SUPPLY_TYPE_HV_QC20:
 		case POWER_SUPPLY_TYPE_HV_QC30:
 		case POWER_SUPPLY_TYPE_POGO:
+		case POWER_SUPPLY_TYPE_FATORY_UART:
 			val->intval = 1;
 			break;
                 case POWER_SUPPLY_TYPE_PDIC:
@@ -7349,6 +7364,9 @@ static int sec_bat_cable_check(struct sec_battery_info *battery,
 		break;
 	case ATTACHED_DEV_VZW_INCOMPATIBLE_MUIC:
 		current_cable_type = POWER_SUPPLY_TYPE_UNKNOWN;
+		break;
+	case ATTACHED_DEV_FACTORY_UART_MUIC:
+		current_cable_type = POWER_SUPPLY_TYPE_FATORY_UART;
 		break;
 	default:
 		pr_err("%s: invalid type for charger:%d\n",
@@ -7914,6 +7932,11 @@ static int batt_handle_notification(struct notifier_block *nb,
 		return 0;
 	}
 #endif
+
+	/* showing charging icon and noti(no sound, vi, haptic) only
+	   if slow insertion is detected by MUIC */
+	sec_bat_set_misc_event(battery, BATT_MISC_EVENT_TIMEOUT_OPEN_TYPE,
+		(battery->muic_cable_type != ATTACHED_DEV_TIMEOUT_OPEN_MUIC));
 
 	if (attached_dev == ATTACHED_DEV_MHL_MUIC) {
 		mutex_unlock(&battery->batt_handlelock);
@@ -9305,6 +9328,16 @@ static int sec_bat_parse_dt(struct device *dev,
 		battery->pd_current_efficiency = 90;
 
 #if defined(CONFIG_BATTERY_CISD)
+	ret = of_property_read_u32(np, "battery,battery_full_capacity",
+		&pdata->battery_full_capacity);
+	if (ret) {
+		pr_info("%s : battery_full_capacity is Empty\n", __func__);
+	} else {
+		pr_info("%s : battery_full_capacity : %d\n", __func__, pdata->battery_full_capacity);
+		pdata->cisd_cap_high_thr = pdata->battery_full_capacity + 1000;
+		pdata->cisd_cap_low_thr = pdata->battery_full_capacity + 500;
+		pdata->cisd_cap_limit = (pdata->battery_full_capacity * 11) / 10;
+	}
 	ret = of_property_read_u32(np, "battery,cisd_max_voltage_thr",
         &pdata->max_voltage_thr);
     if (ret) {

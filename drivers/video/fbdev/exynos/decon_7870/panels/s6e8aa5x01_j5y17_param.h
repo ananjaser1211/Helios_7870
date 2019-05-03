@@ -43,7 +43,7 @@
 #define LDI_LEN_ESDERR		1
 #define LDI_LEN_HBM_GAMMA_1	6
 #define LDI_LEN_HBM_GAMMA_2	15
-#define LDI_LEN_MANUFACTURE_INFO	21
+#define LDI_LEN_MANUFACTURE_INFO	20
 
 /* offset is position including addr, not only para */
 #define LDI_OFFSET_AOR_1	1
@@ -60,6 +60,7 @@
 #define LDI_GPARA_DATE		40	/* 0xC8 41th para */
 #define LDI_GPARA_HBM_GAMMA_1	33	/* 0xC8 34th ~ 39th para */
 #define LDI_GPARA_HBM_GAMMA_2	72	/* 0xC8 73th ~ 87th para */
+#define LDI_GPARA_MANUFACTURE_INFO	1	/* C9h 2nd Para */
 
 struct lcd_seq_info {
 	unsigned char	*cmd;

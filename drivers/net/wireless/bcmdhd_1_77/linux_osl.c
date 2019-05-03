@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: linux_osl.c 769693 2018-06-27 08:35:25Z $
+ * $Id: linux_osl.c 792549 2018-12-05 09:39:13Z $
  */
 
 #define LINUX_PORT
@@ -1865,6 +1865,32 @@ osl_sysuptime_us(void)
 	/* tv_usec content is fraction of a second */
 	usec = (uint64)tv.tv_sec * 1000000ul + tv.tv_usec;
 	return usec;
+}
+
+uint64
+osl_localtime_ns(void)
+{
+	uint64 ts_nsec = 0;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 36)
+	ts_nsec = local_clock();
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 36) */
+
+	return ts_nsec;
+}
+
+void
+osl_get_localtime(uint64 *sec, uint64 *usec)
+{
+	uint64 ts_nsec = 0;
+	unsigned long rem_nsec = 0;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 36)
+	ts_nsec = local_clock();
+	rem_nsec = do_div(ts_nsec, NSEC_PER_SEC);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 36) */
+	*sec = (uint64)ts_nsec;
+	*usec = (uint64)(rem_nsec / MSEC_PER_SEC);
 }
 
 
