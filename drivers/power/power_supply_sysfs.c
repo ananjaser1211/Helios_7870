@@ -53,8 +53,9 @@ static ssize_t power_supply_show_property(struct device *dev,
 		"HV_Unknown", "MDOCK_TA", "HMT_CONNECTED", "HMT_CHARGE", 
 		"Wireless_Pack", "Wireless_Pack_TA",
 #if defined(CONFIG_BATTERY_SAMSUNG_V2)
-		"Wireless_Stand", "HV_Wireless_Stand", "PDIC", "HV_Mains_CHG_LIMIT", "HV_QC20", "HV_QC30"
+		"Wireless_Stand", "HV_Wireless_Stand", "PDIC", "HV_Mains_CHG_LIMIT", "HV_QC20", "HV_QC30",
 #endif
+		"POGO", "FACTORY_UART",
 	};
 	static char *status_text[] = {
 		"Unknown", "Charging", "Discharging", "Not charging", "Full"

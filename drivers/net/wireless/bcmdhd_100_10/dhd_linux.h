@@ -1,7 +1,7 @@
 /*
  * DHD Linux header file (dhd_linux exports for cfg80211 and other components)
  *
- * Copyright (C) 1999-2018, Broadcom.
+ * Copyright (C) 1999-2019, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_linux.h 796187 2018-12-21 08:02:39Z $
+ * $Id: dhd_linux.h 798798 2019-01-10 10:24:21Z $
  */
 
 /* wifi platform functions for power, interrupt and pre-alloc, either
@@ -124,6 +124,12 @@ typedef struct dhd_if {
 	struct delayed_work m4state_work;
 	atomic_t m4state;
 #endif /* DHD_4WAYM4_FAIL_DISCONNECT */
+#ifdef DHDTCPSYNC_FLOOD_BLK
+	uint32 tsync_rcvd;
+	uint32 tsyncack_txed;
+	u64 last_sync;
+	struct work_struct  blk_tsfl_work;
+#endif /* DHDTCPSYNC_FLOOD_BLK */
 } dhd_if_t;
 
 struct ipv6_work_info_t {
@@ -296,6 +302,10 @@ extern uint32 sec_save_softap_info(void);
 #endif /* GEN_SOFTAP_INFO_FILE */
 #endif /* CUSTOMER_HW4 */
 
+#ifdef DHD_SEND_HANG_PRIVCMD_ERRORS
+extern uint32 report_hang_privcmd_err;
+#endif /* DHD_SEND_HANG_PRIVCMD_ERRORS */
+
 #if defined(ARGOS_CPU_SCHEDULER) && !defined(DHD_LB_IRQSET) && \
 	!defined(CONFIG_SOC_EXYNOS7870)
 extern int argos_task_affinity_setup_label(struct task_struct *p, const char *label,
@@ -408,6 +418,9 @@ int dhd_net_bus_put(struct net_device *dev);
 int dhd_enable_adps(dhd_pub_t *dhd, uint8 on);
 #endif /* WLADPS || WLADPS_PRIVATE_CMD */
 #ifdef DHD_DISABLE_VHTMODE
-void dhd_disable_vhtmode(dhd_pub_t *dhd);
+extern void dhd_disable_vhtmode(dhd_pub_t *dhd);
 #endif /* DHD_DISABLE_VHTMODE */
+#ifdef DHDTCPSYNC_FLOOD_BLK
+extern void dhd_reset_tcpsync_info_by_dev(struct net_device *dev);
+#endif /* DHDTCPSYNC_FLOOD_BLK */
 #endif /* __DHD_LINUX_H__ */

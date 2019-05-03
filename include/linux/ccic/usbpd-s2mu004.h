@@ -18,6 +18,9 @@
 #include <linux/ccic/pdic_notifier.h>
 #include <linux/ccic/usbpd_msg.h>
 #endif
+#if defined(CONFIG_TYPEC)
+#include <linux/usb/typec.h>
+#endif
 
 #ifndef __USBPD_S2MU004_H__
 #define __USBPD_S2MU004_H__
@@ -36,9 +39,8 @@
 #define S2MU004_HARD_RESET_DELAY_MS		(300)
 #define S2MU004_WAIT_RD_DETACH_DELAY_MS		(200)
 #define S2MU004_WAIT_ATTACH_DELAY_MS		(30)
-#if defined(CONFIG_DUAL_ROLE_USB_INTF)
 #define DUAL_ROLE_SET_MODE_WAIT_MS		(2000)
-#endif
+
 #define S2MU004_WATER_CHK_INTERVAL_TIME		(300)
 
 #define WATER_CHK_RETRY_CNT	2
@@ -512,8 +514,6 @@ struct s2mu004_usbpd_data {
 	int rid;
 	int is_host;
 	int is_client;
-	int data_role_dual; /* data_role for dual role swap */
-	int power_role_dual; /* power_role for dual role swap */
 	int is_attached;
 	u8 rp_currentlvl; 
 #if defined(CONFIG_DUAL_ROLE_USB_INTF)
@@ -522,6 +522,18 @@ struct s2mu004_usbpd_data {
 	struct completion reverse_completion;
 	int try_state_change;
 	struct delayed_work role_swap_work;
+	int data_role_dual; /* data_role for dual role swap */
+	int power_role_dual; /* power_role for dual role swap */
+#elif defined(CONFIG_TYPEC)
+	struct typec_port *port;
+	struct typec_partner *partner;
+	struct usb_pd_identity partner_identity;
+	struct typec_capability typec_cap;
+	struct completion role_reverse_completion;
+	int typec_power_role;
+	int typec_data_role;
+	int typec_try_state_change;
+	struct delayed_work typec_role_swap_work;
 #endif
 	struct notifier_block type3_nb;
 	struct workqueue_struct *pdic_queue;
@@ -538,7 +550,7 @@ extern void s2mu004_usbpd_set_muic_type(int type);
 #if defined(CONFIG_CCIC_NOTIFIER)
 extern void s2mu004_control_option_command(struct s2mu004_usbpd_data *usbpd_data, int cmd);
 #endif
-#if defined(CONFIG_DUAL_ROLE_USB_INTF)
+#if (defined CONFIG_DUAL_ROLE_USB_INTF || defined CONFIG_TYPEC)
 extern void s2mu004_rprd_mode_change(struct s2mu004_usbpd_data *usbpd_data, u8 mode);
 #endif
 extern void vbus_turn_on_ctrl(struct s2mu004_usbpd_data *usbpd_data, bool enable);

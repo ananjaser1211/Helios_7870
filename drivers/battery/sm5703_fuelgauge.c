@@ -1222,19 +1222,21 @@ static int sm5703_fg_set_property(struct power_supply *psy,
 
 	switch (psp) {
 		case POWER_SUPPLY_PROP_STATUS:
-			break;
-		case POWER_SUPPLY_PROP_CHARGE_FULL:
-			if (fuelgauge->pdata->capacity_calculation_type &
-					SEC_FUELGAUGE_CAPACITY_TYPE_DYNAMIC_SCALE) {
-				sm5703_fg_calculate_dynamic_scale(fuelgauge, val->intval);
 #ifdef ENABLE_BATT_LONG_LIFE
+			if (val->intval == POWER_SUPPLY_STATUS_FULL) {
 				pr_info("%s: POWER_SUPPLY_PROP_CHARGE_FULL : q_max_now = 0x%x \n", __func__, fuelgauge->info.q_max_now);
 				if(fuelgauge->info.q_max_now != 
 					fuelgauge->info.q_max_table[get_v_max_index_by_cycle(fuelgauge)]){
 					if (!sm5703_fg_reset(fuelgauge))
 						return -EINVAL;
 				}
+			}
 #endif
+			break;
+		case POWER_SUPPLY_PROP_CHARGE_FULL:
+			if (fuelgauge->pdata->capacity_calculation_type &
+					SEC_FUELGAUGE_CAPACITY_TYPE_DYNAMIC_SCALE) {
+				sm5703_fg_calculate_dynamic_scale(fuelgauge, val->intval);
 			}
 			break;
 		case POWER_SUPPLY_PROP_ONLINE:

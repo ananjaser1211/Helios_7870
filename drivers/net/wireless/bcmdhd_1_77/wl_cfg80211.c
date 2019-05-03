@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wl_cfg80211.c 786324 2018-10-25 11:12:52Z $
+ * $Id: wl_cfg80211.c 793549 2018-12-10 06:47:43Z $
  */
 /* */
 #include <typedefs.h>
@@ -1766,6 +1766,10 @@ wl_cfg80211_add_virtual_iface(struct wiphy *wiphy,
 	/* Use primary I/F for sending cmds down to firmware */
 	primary_ndev = bcmcfg_to_prmry_ndev(cfg);
 
+#if defined(SUPPORT_RANDOM_MAC_SCAN)
+	 wl_cfg80211_random_mac_disable(primary_ndev);
+#endif /* SUPPORT_RANDOM_MAC_SCAN */
+
 	if (unlikely(!wl_get_drv_status(cfg, READY, primary_ndev))) {
 		WL_ERR(("device is not ready\n"));
 		return ERR_PTR(-ENODEV);
@@ -2841,9 +2845,9 @@ wl_get_valid_channels(struct net_device *ndev, u8 *valid_chan_list, s32 size)
 bool g_first_broadcast_scan = TRUE;
 #endif /* USE_INITIAL_2G_SCAN || USE_INITIAL_SHORT_DWELL_TIME */
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0) && defined(SUPPORT_RANDOM_MAC_SCAN)
+#if defined(SUPPORT_RANDOM_MAC_SCAN)
 #define SCAN_REQUEST_IE_MAX_LEN 256
-#endif
+#endif /* SUPPORT_RANDOM_MAC_SCAN */
 
 static s32
 wl_run_escan(struct bcm_cfg80211 *cfg, struct net_device *ndev,
@@ -2864,9 +2868,11 @@ wl_run_escan(struct bcm_cfg80211 *cfg, struct net_device *ndev,
 	wl_uint32_list_t *list;
 	s32 bssidx = -1;
 	struct net_device *dev = NULL;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0) && defined(SUPPORT_RANDOM_MAC_SCAN)
+#if defined(SUPPORT_RANDOM_MAC_SCAN)
 	u8 scan_req_ies[SCAN_REQUEST_IE_MAX_LEN] = {0, };
-#endif
+	u8 mac_addr[ETHER_ADDR_LEN] = {0, };
+	u8 mac_addr_mask[ETHER_ADDR_LEN] = {0, };
+#endif /* SUPPORT_RANDOM_MAC_SCAN */
 
 #if defined(USE_INITIAL_2G_SCAN) || defined(USE_INITIAL_SHORT_DWELL_TIME)
 	bool is_first_init_2g_scan = false;
@@ -2881,26 +2887,33 @@ wl_run_escan(struct bcm_cfg80211 *cfg, struct net_device *ndev,
 		goto exit;
 	}
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0) && defined(SUPPORT_RANDOM_MAC_SCAN)
-	if (request->ie_len > SCAN_REQUEST_IE_MAX_LEN) {
-		WL_ERR(("IE length is bigger than buffer size\n"));
-		err = BCME_ERROR;
-		goto exit;
-	}
-
-	bcopy(request->ie, scan_req_ies, MIN(request->ie_len, SCAN_REQUEST_IE_MAX_LEN));
-
-	if ((request != NULL) && !ETHER_ISNULLADDR(request->mac_addr) &&
-		!ETHER_ISNULLADDR(request->mac_addr_mask) &&
-		!wl_is_wps_enrollee_active(ndev, scan_req_ies, request->ie_len)) {
-		wl_cfg80211_random_mac_enable(ndev, request->mac_addr,
-			request->mac_addr_mask);
-	} else {
-		wl_cfg80211_random_mac_disable(ndev);
-	}
-#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(3, 19, 0) && defined(SUPPORT_RANDOM_MAC_SCAN) */
 
 	if (!cfg->p2p_supported || !p2p_scan(cfg)) {
+#if defined(SUPPORT_RANDOM_MAC_SCAN)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0)
+		bcopy(request->mac_addr, mac_addr, ETHER_ADDR_LEN);
+		bcopy(request->mac_addr_mask, mac_addr_mask, ETHER_ADDR_LEN);
+#else
+		/* NL80211 default random mac addr and mask value */
+		mac_addr[0] = 0x2;
+		mac_addr_mask[0] = 0x3;
+#endif
+		if (request->ie_len > SCAN_REQUEST_IE_MAX_LEN) {
+			WL_ERR(("IE length is bigger than buffer size\n"));
+			err = BCME_ERROR;
+			goto exit;
+		}
+
+		bcopy(request->ie, scan_req_ies, MIN(request->ie_len, SCAN_REQUEST_IE_MAX_LEN));
+
+		if ((request != NULL) && !ETHER_ISNULLADDR(mac_addr) &&
+			!ETHER_ISNULLADDR(mac_addr_mask) &&
+			!wl_is_wps_enrollee_active(ndev, scan_req_ies, request->ie_len)) {
+			wl_cfg80211_random_mac_enable(ndev, mac_addr, mac_addr_mask);
+		} else {
+			wl_cfg80211_random_mac_disable(ndev);
+		}
+#endif /* defined(SUPPORT_RANDOM_MAC_SCAN) */
 		/* LEGACY SCAN TRIGGER */
 		WL_SCAN((" LEGACY E-SCAN START\n"));
 
@@ -3416,7 +3429,9 @@ __wl_cfg80211_scan(struct wiphy *wiphy, struct net_device *ndev,
 
 	if (cfg->p2p_supported) {
 		if (request && p2p_on(cfg) && p2p_scan(cfg)) {
-
+#if defined(SUPPORT_RANDOM_MAC_SCAN)
+			wl_cfg80211_random_mac_disable(ndev);
+#endif /* SUPPORT_RANDOM_MAC_SCAN */
 			/* find my listen channel */
 			cfg->afx_hdl->my_listen_chan =
 				wl_find_listen_channel(cfg, request->ie,
@@ -5574,6 +5589,11 @@ wl_cfg80211_connect(struct wiphy *wiphy, struct net_device *dev,
 #ifdef ROAM_CHANNEL_CACHE
 	memset(chanspec_list, 0, (sizeof(chanspec_t) * MAX_ROAM_CHANNEL));
 #endif /* ROAM_CHANNEL_CACHE */
+#ifdef DHDTCPSYNC_FLOOD_BLK
+	if (dev) {
+		dhd_reset_tcpsync_info_by_dev(dev);
+	}
+#endif /* DHDTCPSYNC_FLOOD_BLK */
 #if defined(SUPPORT_RANDOM_MAC_SCAN)
 	wl_cfg80211_random_mac_disable(dev);
 #endif /* SUPPORT_RANDOM_MAC_SCAN */
@@ -7781,6 +7801,10 @@ wl_cfg80211_send_action_frame(struct wiphy *wiphy, struct net_device *dev,
 	ndev = ndev_to_cfgdev(cfgdev);
 #endif /* WL_CFG80211_P2P_DEV_IF */
 #endif /* WL11U */
+
+#if defined(SUPPORT_RANDOM_MAC_SCAN)
+	wl_cfg80211_random_mac_disable(ndev);
+#endif /* SUPPORT_RANDOM_MAC_SCAN */
 
 	category = action_frame->data[DOT11_ACTION_CAT_OFF];
 	action = action_frame->data[DOT11_ACTION_ACT_OFF];
@@ -13529,7 +13553,51 @@ update_bss_info_out:
 	mutex_unlock(&cfg->usr_sync);
 	return err;
 }
+void wl_cfg80211_del_all_sta(struct net_device *ndev, uint32 reason)
+{
+	struct net_device *dev;
+	struct bcm_cfg80211 *cfg = wl_get_cfg(ndev);
+	scb_val_t scb_val;
+	int err;
+	char mac_buf[MAX_NUM_OF_ASSOCIATED_DEV *
+		sizeof(struct ether_addr) + sizeof(uint)] = {0};
+	struct maclist *assoc_maclist = (struct maclist *)mac_buf;
+	int num_associated = 0;
 
+	dev = ndev_to_wlc_ndev(ndev, cfg);
+
+	if (p2p_is_on(cfg)) {
+		/* Suspend P2P discovery search-listen to prevent it from changing the
+		 * channel.
+		 */
+		if ((wl_cfgp2p_discover_enable_search(cfg, false)) < 0) {
+			WL_ERR(("Can not disable discovery mode\n"));
+			return;
+		}
+	}
+
+	assoc_maclist->count = MAX_NUM_OF_ASSOCIATED_DEV;
+	err = wldev_ioctl_get(ndev, WLC_GET_ASSOCLIST,
+			assoc_maclist, sizeof(mac_buf));
+	if (err < 0)
+		WL_ERR(("WLC_GET_ASSOCLIST error %d\n", err));
+	else
+		num_associated = assoc_maclist->count;
+
+	memset(scb_val.ea.octet, 0xff, ETHER_ADDR_LEN);
+	scb_val.val = DOT11_RC_DEAUTH_LEAVING;
+	scb_val.val = htod32(reason);
+	err = wldev_ioctl_set(dev, WLC_SCB_DEAUTHENTICATE_FOR_REASON, &scb_val,
+			sizeof(scb_val_t));
+	if (err < 0) {
+		WL_ERR(("WLC_SCB_DEAUTHENTICATE_FOR_REASON err %d\n", err));
+	}
+
+	if (num_associated > 0)
+		wl_delay(400);
+
+	return;
+}
 static s32
 wl_bss_roaming_done(struct bcm_cfg80211 *cfg, struct net_device *ndev,
 	const wl_event_msg_t *e, void *data)
@@ -16232,6 +16300,9 @@ static s32 wl_escan_handler(struct bcm_cfg80211 *cfg, bcm_struct_cfgdev *cfgdev,
 				WL_TRACE_HW4(("SCAN COMPLETED: scanned AP count=%d\n",
 					cfg->bss_list->count));
 			}
+#if defined(SUPPORT_RANDOM_MAC_SCAN)
+			wl_cfg80211_random_mac_disable(ndev);
+#endif /* SUPPORT_RANDOM_MAC_SCAN */
 			wl_inform_bss(cfg);
 			wl_notify_escan_complete(cfg, ndev, false, false);
 		}

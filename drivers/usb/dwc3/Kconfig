@@ -57,7 +57,6 @@ config USB_DWC3_EXYNOS
 	tristate "Samsung Exynos Platform"
 	depends on ARCH_EXYNOS || COMPILE_TEST
 	default USB_DWC3
-	select TYPEC
 	help
 	  Recent Exynos5 SoCs ship with one DesignWare Core USB3 IP inside,
 	  say 'Y' or 'M' if you have one such device.

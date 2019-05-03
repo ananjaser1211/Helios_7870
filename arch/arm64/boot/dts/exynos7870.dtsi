@@ -37,6 +37,14 @@
 			     <0 51 4>,
 			     <0 52 4>,
 			     <0 53 4>;
+		interrupt-affinity = <&cpu4>,
+				<&cpu5>,
+				<&cpu6>,
+				<&cpu7>,
+				<&cpu0>,
+				<&cpu1>,
+				<&cpu2>,
+				<&cpu3>;
 	};
 
 	aliases {
@@ -101,56 +109,56 @@
 		#address-cells = <2>;
 		#size-cells = <0>;
 
-		cpu@0 {
+		cpu0:cpu@0 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53", "arm,armv8";
 			reg = <0x0 0x0>;
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_BOOT>;
 		};
-		cpu@1 {
+		cpu1:cpu@1 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53", "arm,armv8";
 			reg = <0x0 0x1>;
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_BOOT>;
 		};
-		cpu@2 {
+		cpu2:cpu@2 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53", "arm,armv8";
 			reg = <0x0 0x2>;
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_BOOT>;
 		};
-		cpu@3 {
+		cpu3:cpu@3 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53", "arm,armv8";
 			reg = <0x0 0x3>;
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_BOOT>;
 		};
-		cpu@100 {
+		cpu4:cpu@100 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53", "arm,armv8";
 			reg = <0x0 0x100>;
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_NONBOOT>;
 		};
-		cpu@101 {
+		cpu5:cpu@101 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53", "arm,armv8";
 			reg = <0x0 0x101>;
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_NONBOOT>;
 		};
-		cpu@102 {
+		cpu6:cpu@102 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53", "arm,armv8";
 			reg = <0x0 0x102>;
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_NONBOOT>;
 		};
-		cpu@103 {
+		cpu7:cpu@103 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53", "arm,armv8";
 			reg = <0x0 0x103>;

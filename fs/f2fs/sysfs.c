@@ -220,7 +220,7 @@ static ssize_t f2fs_sbi_show(struct f2fs_attr *a,
 		"\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%llu\","
 		"\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%llu\","
 		"\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%u\","
-		"\"%s\":\"%u\"\n",
+		"\"%s\":\"%u\",\"%s\":\"%u\"\n",
 			"CP",		sbi->sec_stat.cp_cnt[0],
 			"CPBG",		sbi->sec_stat.cp_cnt[1],
 			"CPSYNC",	sbi->sec_stat.cp_cnt[2],
@@ -239,7 +239,8 @@ static ssize_t f2fs_sbi_show(struct f2fs_attr *a,
 			"DROP_INMEMF",	sbi->sec_stat.drop_inmem_files,
 			"WRITE_MB",	(u64)(kbytes_written >> 10),
 			"FS_PERROR",	sbi->sec_stat.fs_por_error,
-			"FS_ERROR",	sbi->sec_stat.fs_error);
+			"FS_ERROR",	sbi->sec_stat.fs_error,
+			"MAX_UNDSCD",	sbi->sec_stat.max_undiscard_blks);
 	}
 
 	ui = (unsigned int *)(ptr + a->offset);
@@ -328,6 +329,7 @@ out:
 			sbi->sec_stat.kwritten_byte = BD_PART_WRITTEN(sbi);
 		sbi->sec_stat.fs_por_error = 0;
 		sbi->sec_stat.fs_error = 0;
+		sbi->sec_stat.max_undiscard_blks = 0;
 		return count;
 	}
 

@@ -1,7 +1,7 @@
 /*
  * Linux OS Independent Layer
  *
- * Copyright (C) 1999-2018, Broadcom.
+ * Copyright (C) 1999-2019, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: linux_osl.c 788879 2018-11-14 07:12:45Z $
+ * $Id: linux_osl.c 794162 2018-12-12 08:18:57Z $
  */
 
 #define LINUX_PORT
@@ -119,9 +119,13 @@ static int secdma_found = 0;
 #endif /* BCM_SECURE_DMA */
 
 #ifdef USE_DMA_LOCK
-#define DMA_LOCK(osh)		spin_lock_bh(&(osh)->dma_lock)
-#define DMA_UNLOCK(osh)		spin_unlock_bh(&(osh)->dma_lock)
-#define DMA_LOCK_INIT(osh)	spin_lock_init(&(osh)->dma_lock)
+static void osl_dma_lock(osl_t *osh);
+static void osl_dma_unlock(osl_t *osh);
+static void osl_dma_lock_init(osl_t *osh);
+
+#define DMA_LOCK(osh)		osl_dma_lock(osh)
+#define DMA_UNLOCK(osh)		osl_dma_unlock(osh)
+#define DMA_LOCK_INIT(osh)	osl_dma_lock_init(osh);
 #else
 #define DMA_LOCK(osh)		do { /* noop */ } while(0)
 #define DMA_UNLOCK(osh)		do { /* noop */ } while(0)
@@ -1968,3 +1972,34 @@ osl_timer_del(osl_t *osh, osl_timer_t *t)
 	}
 	return (TRUE);
 }
+
+#ifdef USE_DMA_LOCK
+static void
+osl_dma_lock(osl_t *osh)
+{
+	if (likely(in_irq() || irqs_disabled())) {
+		spin_lock(&osh->dma_lock);
+	} else {
+		spin_lock_bh(&osh->dma_lock);
+		osh->dma_lock_bh = TRUE;
+	}
+}
+
+static void
+osl_dma_unlock(osl_t *osh)
+{
+	if (unlikely(osh->dma_lock_bh)) {
+		osh->dma_lock_bh = FALSE;
+		spin_unlock_bh(&osh->dma_lock);
+	} else {
+		spin_unlock(&osh->dma_lock);
+	}
+}
+
+static void
+osl_dma_lock_init(osl_t *osh)
+{
+	spin_lock_init(&osh->dma_lock);
+	osh->dma_lock_bh = FALSE;
+}
+#endif /* USE_DMA_LOCK */

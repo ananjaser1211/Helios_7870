@@ -6100,6 +6100,14 @@ int fimc_is_sec_fw_find(struct fimc_is_core *core, int position)
 			/* SR544 */
 			snprintf(sysfs_finfo.load_fw_name, sizeof(FIMC_IS_FW_SR544), "%s", FIMC_IS_FW_SR544);
 			snprintf(sysfs_finfo.load_setfile_name, sizeof(FIMC_IS_SR544_SETF), "%s", FIMC_IS_SR544_SETF);
+	   } else if (sensor_id == SENSOR_NAME_S5K5E9) {
+			/* SENSOR_NAME_S5K5E9 */
+			snprintf(sysfs_finfo.load_fw_name, sizeof(FIMC_IS_FW_S5K5E9), "%s", FIMC_IS_FW_S5K5E9);
+			snprintf(sysfs_finfo.load_setfile_name, sizeof(FIMC_IS_5E9_SETF), "%s", FIMC_IS_5E9_SETF);	
+	   } else if (sensor_id == SENSOR_NAME_GC5035) {
+			/* GC5035 */
+			snprintf(sysfs_finfo.load_fw_name, sizeof(FIMC_IS_FW_GC5035), "%s", FIMC_IS_FW_GC5035);
+			snprintf(sysfs_finfo.load_setfile_name, sizeof(FIMC_IS_GC5035_SETF), "%s", FIMC_IS_GC5035_SETF);			
 		} else {
 			snprintf(sysfs_finfo.load_fw_name, sizeof(FIMC_IS_FW_2P2), "%s", FIMC_IS_FW_2P2);
 			snprintf(sysfs_finfo.load_setfile_name, sizeof(FIMC_IS_2P2_SETF), "%s", FIMC_IS_2P2_SETF);

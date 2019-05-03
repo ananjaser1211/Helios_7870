@@ -1,7 +1,7 @@
 /*
  * Linux cfg80211 driver
  *
- * Copyright (C) 1999-2018, Broadcom.
+ * Copyright (C) 1999-2019, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wl_cfg80211.h 796257 2018-12-21 11:45:38Z $
+ * $Id: wl_cfg80211.h 798772 2019-01-10 08:33:03Z $
  */
 
 /**
@@ -476,7 +476,8 @@ enum wl_prof_list {
 	WL_PROF_BSSID,
 	WL_PROF_ACT,
 	WL_PROF_BEACONINT,
-	WL_PROF_DTIMPERIOD
+	WL_PROF_DTIMPERIOD,
+	WL_PROF_LATEST_BSSID
 };
 
 /* donlge escan state */
@@ -617,6 +618,7 @@ struct wl_profile {
 	u16 beacon_interval;
 	u8 dtim_period;
 	bool active;
+	u8 latest_bssid[ETHER_ADDR_LEN];
 };
 
 struct wl_wps_ie {
@@ -1830,6 +1832,8 @@ extern void wl_cfg80211_cleanup_if(struct net_device *dev);
 extern int wl_cfg80211_scan_stop(struct bcm_cfg80211 *cfg, bcm_struct_cfgdev *cfgdev);
 extern void wl_cfg80211_scan_abort(struct bcm_cfg80211 *cfg);
 extern bool wl_cfg80211_is_concurrent_mode(struct net_device * dev);
+extern void wl_cfg80211_disassoc(struct net_device *ndev);
+extern void wl_cfg80211_del_all_sta(struct net_device *ndev, uint32 reason);
 extern void* wl_cfg80211_get_dhdp(struct net_device * dev);
 extern bool wl_cfg80211_is_p2p_active(struct net_device * dev);
 extern bool wl_cfg80211_is_roam_offload(struct net_device * dev);
@@ -2129,7 +2133,6 @@ extern int wl_cfg80211_determine_p2p_rsdb_mode(struct bcm_cfg80211 *cfg);
 extern s32 cfg80211_to_wl_iftype(uint16 type, uint16 *role, uint16 *mode);
 extern s32 wl_cfg80211_net_attach(struct net_device *primary_ndev);
 extern uint8 wl_cfg80211_get_bus_state(struct bcm_cfg80211 *cfg);
-extern void wl_cfg80211_disassoc(struct net_device *ndev);
 #ifdef WL_WPS_SYNC
 void wl_handle_wps_states(struct net_device *ndev, u8 *dump_data, u16 len, bool direction);
 #endif /* WL_WPS_SYNC */
@@ -2139,10 +2142,7 @@ void wl_handle_wps_states(struct net_device *ndev, u8 *dump_data, u16 len, bool 
 extern void wl_flush_fw_log_buffer(struct net_device *dev, uint32 logset_mask);
 #else
 #define wl_flush_fw_log_buffer(x, y)
-#endif // endif
-#ifdef SUPPORT_SET_CAC
-extern int wl_cfg80211_enable_cac(struct net_device *dev, int enable);
-#endif /* SUPPORT_SET_CAC */
+#endif /* DHD_LOG_DUMP */
 #ifdef DHD_USE_CHECK_DONGLE_IDLE
 int wl_check_dongle_idle(struct wiphy *wiphy);
 #else
@@ -2165,4 +2165,8 @@ extern s32 wl_cfg80211_get_indoor_channels(struct net_device *ndev, char *comman
 extern s32 wl_cfg80211_read_indoor_channels(struct net_device *ndev, void *buf, int buflen);
 extern bool wl_cfg80211_check_indoor_channels(struct net_device *ndev, int channel);
 #endif /* APSTA_RESTRICTED_CHANNEL */
+#ifdef SUPPORT_SET_CAC
+extern int wl_cfg80211_enable_cac(struct net_device *dev, int enable);
+extern void wl_cfg80211_set_cac(struct bcm_cfg80211 *cfg, int enable);
+#endif /* SUPPORT_SET_CAC */
 #endif /* _wl_cfg80211_h_ */

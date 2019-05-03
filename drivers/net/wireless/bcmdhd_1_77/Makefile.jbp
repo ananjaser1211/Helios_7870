@@ -99,6 +99,9 @@ endif
 	# DHD_LB_RXP - Perform RX Packet processing in parallel
 	# DHD_LB_STATS - To display the Load Blancing statistics
 	DHDCFLAGS += -DDHD_LB -DDHD_LB_RXP -DDHD_LB_TXP -DDHD_LB_STATS
+ifeq ($(CONFIG_SOC_EXYNOS8890),y)
+	DHDCFLAGS += -DWAKEUP_KSOFTIRQD_POST_NAPI_SCHEDULE
+endif
 	DHDCFLAGS += -DDHD_RECOVER_TIMEOUT
 	# HEAP ASLR
 	DHDCFLAGS += -DBCM_ASLR_HEAP
@@ -327,6 +330,9 @@ ifneq ($(USE_LEGACY_DUMP_PATH),)
 else
   DHDCFLAGS += -DDHD_COMMON_DUMP_PATH="\"/data/log/wifi/\""
 endif
+
+# TCP SYNC flood attack block
+DHDCFLAGS += -DDHDTCPSYNC_FLOOD_BLK -DTCP_SYNC_FLOOD_LIMIT=50
 
 ##############################
 # Android Platform Definition

@@ -56,6 +56,8 @@ extern struct mipi_dsim_lcd_driver s6e8aa5x01_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver s6e8aa5x01_mipi_lcd_driver;
 #elif defined(CONFIG_PANEL_S6D7AT0B_M10LTE)
 extern struct mipi_dsim_lcd_driver s6d7at0b_mipi_lcd_driver;
+#elif defined(CONFIG_PANEL_TD4101_A2CORELTE)
+extern struct mipi_dsim_lcd_driver td4101_mipi_lcd_driver;
 #endif
 
 extern int dsim_panel_ops_init(struct dsim_device *dsim);

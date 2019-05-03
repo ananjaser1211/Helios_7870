@@ -1228,8 +1228,11 @@ check_compat_entry_size_and_hooks(struct compat_arpt_entry *e,
 		return -EINVAL;
 	}
 
-	/* For purposes of check_entry casting the compat entry is fine */
-	ret = check_entry((struct arpt_entry *)e);
+	if (!arp_checkentry(&e->arp))
+		return -EINVAL;
+
+	ret = xt_compat_check_entry_offsets(e, e->elems, e->target_offset,
+					    e->next_offset);
 	if (ret)
 		return ret;
 

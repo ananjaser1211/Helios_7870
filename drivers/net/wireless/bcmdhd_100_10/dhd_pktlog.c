@@ -1,7 +1,7 @@
 /*
  * DHD debugability packet logging support
  *
- * Copyright (C) 1999-2018, Broadcom.
+ * Copyright (C) 1999-2019, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_pktlog.c 786516 2018-10-26 12:09:02Z $
+ * $Id: dhd_pktlog.c 793750 2018-12-11 02:12:38Z $
  */
 
 #include <typedefs.h>
@@ -1025,17 +1025,19 @@ dhd_pktlog_pkts_write_file(dhd_pktlog_ring_t *ringbuf, struct file *w_pcap_fp, i
 		memcpy(p, (char*)&report_ptr->info.driver_ts_sec,
 				sizeof(report_ptr->info.driver_ts_sec));
 		p += sizeof(report_ptr->info.driver_ts_sec);
-		len += sizeof(report_ptr->info.driver_ts_sec);
+		len += (uint32)sizeof(report_ptr->info.driver_ts_sec);
 
 		memcpy(p, (char*)&report_ptr->info.driver_ts_usec,
 				sizeof(report_ptr->info.driver_ts_usec));
 		p += sizeof(report_ptr->info.driver_ts_usec);
-		len += sizeof(report_ptr->info.driver_ts_usec);
+		len += (uint32)sizeof(report_ptr->info.driver_ts_usec);
 
 		if (report_ptr->info.payload_type == FRAME_TYPE_ETHERNET_II) {
-			frame_len = min(report_ptr->info.pkt_len, (size_t)MAX_FRAME_LEN_ETHERNET);
+			frame_len = (uint32)min(report_ptr->info.pkt_len,
+					(size_t)MAX_FRAME_LEN_ETHERNET);
 		} else {
-			frame_len = min(report_ptr->info.pkt_len, (size_t)MAX_FRAME_LEN_80211_MGMT);
+			frame_len = (uint32)min(report_ptr->info.pkt_len,
+					(size_t)MAX_FRAME_LEN_80211_MGMT);
 		}
 
 		bytes_user_data = sprintf(buf, "%s:%s:%02d\n", DHD_PKTLOG_FATE_INFO_FORMAT,
@@ -1045,10 +1047,10 @@ dhd_pktlog_pkts_write_file(dhd_pktlog_ring_t *ringbuf, struct file *w_pcap_fp, i
 		/* pcap pkt head has incl_len and orig_len */
 		memcpy(p, (char*)&write_frame_len, sizeof(write_frame_len));
 		p += sizeof(write_frame_len);
-		len += sizeof(write_frame_len);
+		len += (uint32)sizeof(write_frame_len);
 		memcpy(p, (char*)&write_frame_len, sizeof(write_frame_len));
 		p += sizeof(write_frame_len);
-		len += sizeof(write_frame_len);
+		len += (uint32)sizeof(write_frame_len);
 
 		memcpy(p, PKTDATA(ringbuf->dhdp->osh, report_ptr->info.pkt), frame_len);
 		if (ringbuf->pktlog_minmize) {

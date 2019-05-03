@@ -262,6 +262,7 @@ struct pmu {
 	/*
 	 * flush branch stack on context-switches (needed in cpu-wide mode)
 	 */
+	u64 (*count)			(struct perf_event *event); /*optional*/
 	void (*flush_branch_stack)	(void);
 };
 
@@ -436,6 +437,7 @@ struct perf_event {
 	struct pid_namespace		*ns;
 	u64				id;
 
+	u64				(*clock)(void);
 	perf_overflow_handler_t		overflow_handler;
 	void				*overflow_handler_context;
 
@@ -719,6 +721,11 @@ static inline void perf_event_task_sched_out(struct task_struct *prev,
 		__perf_event_task_sched_out(prev, next);
 }
 
+static inline u64 __perf_event_count(struct perf_event *event)
+{
+	return local64_read(&event->count) + atomic64_read(&event->child_count);
+}
+
 extern void perf_event_mmap(struct vm_area_struct *vma);
 extern struct perf_guest_info_callbacks *perf_guest_cbs;
 extern int perf_register_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
@@ -818,6 +825,11 @@ static inline int perf_event_init_task(struct task_struct *child)	{ return 0; }
 static inline void perf_event_exit_task(struct task_struct *child)	{ }
 static inline void perf_event_free_task(struct task_struct *task)	{ }
 static inline void perf_event_delayed_put(struct task_struct *task)	{ }
+static inline const struct perf_event_attr *perf_event_attrs(struct perf_event *event)
+{
+	return ERR_PTR(-EINVAL);
+}
+static inline u64 perf_event_read_local(struct perf_event *event)	{ return -EINVAL; }
 static inline void perf_event_print_debug(void)				{ }
 static inline int perf_event_task_disable(void)				{ return -EINVAL; }
 static inline int perf_event_task_enable(void)				{ return -EINVAL; }
@@ -907,10 +919,20 @@ struct perf_pmu_events_attr {
 	const char *event_str;
 };
 
+ssize_t perf_event_sysfs_show(struct device *dev, struct device_attribute *attr,
+			      char *page);
+
 #define PMU_EVENT_ATTR(_name, _var, _id, _show)				\
 static struct perf_pmu_events_attr _var = {				\
 	.attr = __ATTR(_name, 0444, _show, NULL),			\
 	.id   =  _id,							\
+};
+
+#define PMU_EVENT_ATTR_STRING(_name, _var, _str)			    \
+static struct perf_pmu_events_attr _var = {				    \
+	.attr		= __ATTR(_name, 0444, perf_event_sysfs_show, NULL), \
+	.id		= 0,						    \
+	.event_str	= _str,						    \
 };
 
 #define PMU_FORMAT_ATTR(_name, _format)					\

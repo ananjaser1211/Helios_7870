@@ -49,6 +49,7 @@ obj-$(CONFIG_SENSORS_SX9500)        += sx9500.o
 obj-$(CONFIG_SENSORS_SX9500_WIFI)   += sx9500_wifi.o
 obj-$(CONFIG_SENSORS_ABOV_A96T316)	+= abov_a96t316.o
 obj-$(CONFIG_SENSORS_A96T3X6)		+= a96t3x6.o
+obj-$(CONFIG_SENSORS_TC3XXK_M10)  	+= tc3xxk.o
 # hrm_sensor
 obj-$(CONFIG_SENSORS_PPSX60)		+= ppsx60.o
 obj-$(CONFIG_SENSORS_MAX86900)		+= max86900.o

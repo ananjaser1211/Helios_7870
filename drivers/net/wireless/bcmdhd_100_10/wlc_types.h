@@ -1,7 +1,7 @@
 /*
  * Forward declarations for commonly used wl driver structs
  *
- * Copyright (C) 1999-2018, Broadcom.
+ * Copyright (C) 1999-2019, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wlc_types.h 796193 2018-12-21 08:27:08Z $
+ * $Id: wlc_types.h 796817 2018-12-27 04:47:11Z $
  */
 
 #ifndef _wlc_types_h_

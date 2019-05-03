@@ -1733,6 +1733,9 @@ static int s2mu005_fg_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_ENERGY_NOW:
 		return -ENODATA;
 		/* Cell voltage (VCELL, mV) */
+	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
+		val->intval = fuelgauge->pdata->capacity_full * fuelgauge->raw_capacity;
+		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
 		val->intval = s2mu005_get_vbat(fuelgauge);
 		break;
@@ -1780,7 +1783,7 @@ static int s2mu005_fg_get_property(struct power_supply *psy,
 				val->intval = 1000;
 			if (val->intval < 0)
 				val->intval = 0;
-
+			fuelgauge->raw_capacity = val->intval;
 			/* get only integer part */
 			val->intval /= 10;
 
@@ -2085,6 +2088,11 @@ static int s2mu005_fuelgauge_parse_dt(struct s2mu005_fuelgauge_data *fuelgauge)
 				&fuelgauge->pdata->capacity_min);
 		if (ret < 0)
 			pr_err("%s error reading capacity_min %d\n", __func__, ret);
+		
+		ret = of_property_read_u32(np, "fuelgauge,capacity_full",
+				&fuelgauge->pdata->capacity_full);
+		if (ret < 0)
+			pr_err("%s error reading capacity_full %d\n", __func__, ret);
 
 		ret = of_property_read_u32(np, "fuelgauge,fuel_alert_vol",
 				&fuelgauge->pdata->fuel_alert_vol);

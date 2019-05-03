@@ -134,6 +134,9 @@ static int gpu_power_on(struct kbase_device *kbdev)
 	gpu_control_disable_customization(kbdev);
 
 	ret = pm_runtime_resume(kbdev->dev);
+
+	GPU_LOG(DVFS_INFO, LSI_GPU_RPM_RESUME_API, ret, 0u, "power on\n");
+
 	if (ret > 0) {
 		if (platform->early_clk_gating_status) {
 			GPU_LOG(DVFS_INFO, DUMMY, 0u, 0u, "already power on\n");
@@ -150,6 +153,7 @@ static int gpu_power_on(struct kbase_device *kbdev)
 
 static void gpu_power_off(struct kbase_device *kbdev)
 {
+	int ret = 0;
 	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
 	if (!platform)
 		return;
@@ -157,7 +161,9 @@ static void gpu_power_off(struct kbase_device *kbdev)
 	GPU_LOG(DVFS_INFO, DUMMY, 0u, 0u, "power off\n");
 	gpu_control_enable_customization(kbdev);
 
-	pm_schedule_suspend(kbdev->dev, platform->runtime_pm_delay_time);
+	ret = pm_schedule_suspend(kbdev->dev, platform->runtime_pm_delay_time);
+
+	GPU_LOG(DVFS_INFO, LSI_GPU_RPM_SUSPEND_API, ret, 0u, "power off\n");
 
 	if (platform->early_clk_gating_status)
 		gpu_control_disable_clock(kbdev);
@@ -165,6 +171,7 @@ static void gpu_power_off(struct kbase_device *kbdev)
 
 static void gpu_power_suspend(struct kbase_device *kbdev)
 {
+	int ret = 0;
 	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
 	if (!platform)
 		return;
@@ -172,7 +179,9 @@ static void gpu_power_suspend(struct kbase_device *kbdev)
 	GPU_LOG(DVFS_INFO, DUMMY, 0u, 0u, "power suspend\n");
 	gpu_control_enable_customization(kbdev);
 
-	pm_runtime_suspend(kbdev->dev);
+	ret = pm_runtime_suspend(kbdev->dev);
+
+	GPU_LOG(DVFS_INFO, LSI_SUSPEND_CALLBACK, ret, 0u, "power suspend\n");
 
 	if (platform->early_clk_gating_status)
 		gpu_control_disable_clock(kbdev);

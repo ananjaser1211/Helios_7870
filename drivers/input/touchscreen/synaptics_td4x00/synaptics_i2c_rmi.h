@@ -88,6 +88,10 @@
 #define F54_DATA16_ADDR 0x010a
 #define F54_DATA17_ADDR 0x010bf
 #endif
+#define F54_DATA06_ADDR 0x0104
+#define F54_DATA10_ADDR 0x0108
+#define F54_DATA17_ADDR 0x010b
+#define F51_DATA66_ADDR 0x040e
 
 #define SYNAPTICS_DEVICE_NAME	"SYNAPTICS"
 #define DRIVER_NAME "synaptics_rmi4_i2c"
@@ -108,6 +112,7 @@
 
 #define DEFAULT_DEVICE_NUM	1
 #define MAX_UTILITY_PARAMS 20
+#define MAX_SUPPORT_TOUCH_COUNT		10
 
 /* Define for Firmware file image format */
 #define FIRMWARE_IMG_HEADER_MAJOR_VERSION_OFFSET	(0x07)
@@ -230,8 +235,11 @@
 #define F51_GENERAL_CONTROL_OFFSET (1)
 /* Define for General Control(F51_CUSTOM_CTRL01) */
 #define DEAD_ZONE_EN	(1 << 0)
+#define SENSITIVITY_EN	(1 << 3)
 
 #define F51_GENERAL_CONTROL_2_OFFSET (2)
+#define F51_CONNECTION_CHECK_OFFSET (20)
+#define F51_CONNECTION_CHECK_THRESHOLD_OFFSET (21)
 
 #define SYN_I2C_RETRY_TIMES 3
 #define MAX_F11_TOUCH_WIDTH 15
@@ -301,6 +309,7 @@ enum synaptics_product_ids {
 	SYNAPTICS_PRODUCT_ID_S5807,
 	SYNAPTICS_PRODUCT_ID_S5806,
 	SYNAPTICS_PRODUCT_ID_TD4100,
+	SYNAPTICS_PRODUCT_ID_TD4101,
 	SYNAPTICS_PRODUCT_ID_MAX
 };
 
@@ -347,6 +356,8 @@ struct synaptics_rmi4_f51_handle {
 	unsigned short general_control_addr;
 	unsigned char general_control_2;		/* F51_CUSTOM_CTRL02 */
 	unsigned short general_control_2_addr;
+	unsigned short connection_check_addr;	/* F51_CUSTOM_CTRL60 */
+	unsigned short connection_check_threshold_addr;	/* F51_CUSTOM_CTRL61 & 62 */
 #ifdef USE_STYLUS
 	unsigned short forcefinger_onedge_addr;
 #endif
@@ -1168,11 +1179,14 @@ struct factory_data {
 	unsigned int abscap_tx_min;
 	unsigned int abscap_tx_max;
 	bool cmd_is_running;
+	int item_count;
 	unsigned char cmd_state;
+	unsigned char cmd_all_factory_state;
 	char cmd[CMD_STR_LEN];
 	int cmd_param[CMD_PARAM_NUM];
 	char cmd_buff[CMD_RESULT_STR_LEN];
 	char cmd_result[CMD_RESULT_STR_LEN];
+	char cmd_result_all[CMD_RESULT_STR_LEN];
 	struct mutex cmd_lock;
 	struct list_head cmd_list_head;
 };
@@ -1357,6 +1371,34 @@ struct synaptics_rmi4_f54_freq_im {
 };
 #endif
 
+struct synaptics_rmi4_f54_im {
+	union {
+		struct {
+			unsigned char im_low;
+			unsigned char im_high;
+		} __packed;
+		unsigned char data[2];
+	};
+};
+
+struct synaptics_rmi4_f51_touch_sensitivity {
+	union {
+		struct {
+			unsigned char sensitivity0_lsb;
+			unsigned char sensitivity0_msb;
+			unsigned char sensitivity1_lsb;
+			unsigned char sensitivity1_msb;
+			unsigned char sensitivity2_lsb;
+			unsigned char sensitivity2_msb;
+			unsigned char sensitivity3_lsb;
+			unsigned char sensitivity3_msb;
+			unsigned char sensitivity4_lsb;
+			unsigned char sensitivity4_msb;
+		} __packed;
+		unsigned char data[10];
+	};
+};
+
 /*
  * struct synaptics_rmi4_data - rmi4 device instance data
  * @i2c_client: pointer to associated i2c client
@@ -1451,7 +1493,11 @@ struct synaptics_rmi4_data {
 #ifdef CONFIG_SEC_INCELL
 	bool is_esd;
 	struct delayed_work incell_reset_work;
+	struct notifier_block tsp_reboot_nb;
+	bool tsp_reboot_flag;
+	bool flag_incell_reset_work;
 #endif
+	struct delayed_work work_read_info;
 
 	enum synaptics_product_ids product_id;			/* product id of ic */
 	unsigned char product_id_string_of_bin[SYNAPTICS_RMI4_PRODUCT_ID_SIZE + 1];
@@ -1507,6 +1553,12 @@ struct synaptics_rmi4_data {
 	u8 check_multi;
 	unsigned int multi_count;
 	unsigned int comm_err_count;
+	unsigned int all_finger_count;
+	unsigned int checksum_result;
+
+	struct timeval time_pressed[MAX_SUPPORT_TOUCH_COUNT];
+	struct timeval time_released[MAX_SUPPORT_TOUCH_COUNT];
+	long time_longest;
 };
 
 enum exp_fn {
@@ -1563,6 +1615,10 @@ int synaptics_rmi4_read_tsp_test_result(struct synaptics_rmi4_data *rmi4_data);
 int synaptics_rmi4_access_register(struct synaptics_rmi4_data *rmi4_data,
 				bool mode, unsigned short address, int length, unsigned char *value);
 void synpatics_rmi4_release_all_event(struct synaptics_rmi4_data *rmi4_data, unsigned char type);
+
+void print_ic_status_log(struct synaptics_rmi4_data *rmi4_data);
+void run_rawcap_read_all(struct synaptics_rmi4_data *rmi4_data);
+void run_delta_read_all(struct synaptics_rmi4_data *rmi4_data);
 
 #ifdef GLOVE_MODE
 int synaptics_rmi4_glove_mode_enables(struct synaptics_rmi4_data *rmi4_data);

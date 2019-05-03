@@ -41,6 +41,8 @@ static gfp_t low_order_gfp_flags  = (GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN);
 
 static const unsigned int orders[] = {8, 4, 0};
 static const int num_orders = ARRAY_SIZE(orders);
+static struct ion_system_heap *system_heap;
+
 static int order_to_index(unsigned int order)
 {
 	int i;
@@ -479,6 +481,49 @@ static int ion_system_heap_debug_show(struct ion_heap *heap, struct seq_file *s,
 	return 0;
 }
 
+void show_ion_system_heap_size(struct seq_file *s)
+{
+	struct ion_heap *heap;
+	unsigned long system_byte = 0;
+
+	if (!system_heap) {
+		pr_err("system_heap is not ready\n");
+		return;
+	}
+
+	heap = &system_heap->heap;
+	system_byte = (unsigned int)atomic_long_read(&heap->total_allocated);
+	if (s)
+		seq_printf(s, "SystemHeap:     %8lu kB\n", system_byte >> 10);
+	else
+		pr_cont("SystemHeap:%lukB ", system_byte >> 10);
+}
+
+void show_ion_system_heap_pool_size(struct seq_file *s)
+{
+	unsigned long pool_size = 0;
+	struct ion_page_pool *pool;
+	int i;
+
+	if (!system_heap) {
+		pr_err("system_heap_pool is not ready\n");
+		return;
+	}
+
+	for (i = 0; i < num_orders * 2; i++) {
+		pool = system_heap->pools[i];
+		pool_size += (1 << pool->order) * pool->high_count;
+		pool_size += (1 << pool->order) * pool->low_count;
+	}
+
+	if (s)
+		seq_printf(s, "SystemHeapPool: %8lu kB\n",
+			   pool_size << (PAGE_SHIFT - 10));
+	else
+		pr_cont("SystemHeapPool:%lukB ",
+			pool_size << (PAGE_SHIFT - 10));
+}
+
 struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
 {
 	struct ion_system_heap *heap;
@@ -508,6 +553,12 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
 	}
 
 	heap->heap.debug_show = ion_system_heap_debug_show;
+	
+	if (!system_heap)
+		system_heap = heap;
+	else
+		pr_err("system_heap had been already created\n");
+	
 	return &heap->heap;
 
 destroy_pools:

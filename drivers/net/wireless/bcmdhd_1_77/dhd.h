@@ -27,7 +27,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd.h 784024 2018-10-10 04:44:24Z $
+ * $Id: dhd.h 792549 2018-12-05 09:39:13Z $
  */
 
 /****************
@@ -700,6 +700,20 @@ struct module_metadata {
 #endif
 
 #define MAX_MTU_SZ (1600u)
+
+#define DIV64_U64(x, y)         div64_u64(x, y)
+#define DIV_U64(x, y)           div_u64(x, y)
+#define DO_DIV(x, y)            do_div(x, y)
+
+#ifndef USEC_PER_SEC
+#define USEC_PER_SEC (1000 * 1000)
+#endif /* USEC_PER_SEC */
+
+#define SEC_USEC_FMT \
+	"%llu.%6u"
+
+#define GET_SEC_USEC(t) \
+	DIV_U64(t, USEC_PER_SEC), (unsigned int)DO_DIV(t,  USEC_PER_SEC)
 
 #ifdef DMAMAP_STATS
 typedef struct dmamap_stats {

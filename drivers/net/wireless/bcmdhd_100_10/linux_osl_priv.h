@@ -1,7 +1,7 @@
 /*
  * Private header file for Linux OS Independent Layer
  *
- * Copyright (C) 1999-2018, Broadcom.
+ * Copyright (C) 1999-2019, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: linux_osl_priv.h 782801 2018-10-01 15:16:38Z $
+ * $Id: linux_osl_priv.h 794162 2018-12-12 08:18:57Z $
  */
 
 #ifndef _LINUX_OSL_PRIV_H_
@@ -173,6 +173,7 @@ struct osl_info {
 #endif	/* BCM_BACKPLANE_TIMEOUT */
 #ifdef USE_DMA_LOCK
 	spinlock_t dma_lock;
+	bool dma_lock_bh;
 #endif /* USE_DMA_LOCK */
 #ifdef DHD_MAP_LOGGING
 	void *dhd_map_log;

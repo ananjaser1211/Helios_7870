@@ -2038,7 +2038,7 @@ static int a96t3x6_resume(struct device *dev)
 static void a96t3x6_shutdown(struct i2c_client *client)
 {
 	struct a96t3x6_data *data = i2c_get_clientdata(client);
-
+	SENSOR_INFO("%s\n", __func__);
 	a96t3x6_set_debug_work(data, 0, 1000);
 
 	if (data->enabled) {

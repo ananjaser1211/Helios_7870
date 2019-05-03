@@ -1,7 +1,7 @@
 /*
  * DHD Linux header file - contains private structure definition of the Linux specific layer
  *
- * Copyright (C) 1999-2018, Broadcom.
+ * Copyright (C) 1999-2019, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_linux_priv.h 788863 2018-11-14 06:23:10Z $
+ * $Id: dhd_linux_priv.h 788666 2018-11-13 11:37:36Z $
  */
 
 #ifndef __DHD_LINUX_PRIV_H__

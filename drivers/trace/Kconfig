@@ -128,6 +128,11 @@ config EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	depends on EXYNOS_SNAPSHOT
 	default n
 
+config EXYNOS_SNAPSHOT_GO_MODE
+	bool "Support Android Go feature configuration"
+	depends on EXYNOS_SNAPSHOT
+	default n
+
 config EXYNOS_SNAPSHOT_LOGGING_SMC_CALL
 	bool "Support logging SMC call"
 	depends on EXYNOS_SNAPSHOT

@@ -1,7 +1,7 @@
 /*
  * BCM43XX PCIE core hardware definitions.
  *
- * Copyright (C) 1999-2018, Broadcom.
+ * Copyright (C) 1999-2019, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: pcie_core.h 790505 2018-11-26 07:08:39Z $
+ * $Id: pcie_core.h 794367 2018-12-13 05:10:46Z $
  */
 #ifndef	_PCIE_CORE_H
 #define	_PCIE_CORE_H
@@ -764,6 +764,11 @@ typedef volatile struct sbpcieregs {
 #define PCIE_EXTCAP_ERR_HEADER_LOG_2	36
 #define PCIE_EXTCAP_ERR_HEADER_LOG_3	40
 
+/* L1SS reg offset in L1SS Ext Cap */
+#define PCIE_EXTCAP_ID_L1SS		0x1e	/* PCI Express L1 PM Substates Capability */
+#define PCIE_EXTCAP_L1SS_CAP_OFFSET	4	/* L1SSCap reg offset in L1SS Cap */
+#define PCIE_EXTCAP_L1SS_CONTROL_OFFSET	8	/* L1SSControl reg offset in L1SS Cap */
+
 /* Linkcontrol reg offset in PCIE Cap */
 #define PCIE_CAP_LINKCTRL_OFFSET	16	/* linkctrl offset in pcie cap */
 #define PCIE_CAP_LCREG_ASPML0s		0x01	/* ASPM L0s in linkctrl */
@@ -794,6 +799,8 @@ typedef volatile struct sbpcieregs {
 
 #define PCIE_ASPM_L11_ENAB		8	/* ASPM L1.1 in PML1_sub_control2 */
 #define PCIE_ASPM_L12_ENAB		4	/* ASPM L1.2 in PML1_sub_control2 */
+
+#define PCIE_EXT_L1SS_ENAB		0xf	/* Bits [3:0] of L1SSControl 0x248 */
 
 /* NumMsg and NumMsgEn in PCIE MSI Cap */
 #define MSICAP_NUM_MSG_SHF		17

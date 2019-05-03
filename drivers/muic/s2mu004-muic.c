@@ -103,7 +103,9 @@ static int s2mu004_i2c_write_byte(struct i2c_client *client,
 #if defined(DEBUG_MUIC)
 #define MAX_LOG 25
 #define READ 0
+#ifndef WRITE
 #define WRITE 1
+#endif
 
 static u8 s2mu004_log_cnt;
 static u8 s2mu004_log[MAX_LOG][3];

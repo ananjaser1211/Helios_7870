@@ -646,6 +646,62 @@ out:
 	return ERR_PTR(err);
 }
 
+struct scatterlist *mmc_blk_get_sg(struct mmc_card *card,
+		unsigned char *buf, int *sg_len, int size)
+{
+	struct scatterlist *sg;
+	struct scatterlist *sl;
+	int total_sec_cnt, sec_cnt;
+	int max_seg_size, len;
+
+	total_sec_cnt = size;
+	max_seg_size = card->host->max_seg_size;
+	len = (size - 1 + max_seg_size) / max_seg_size;
+	sl = kmalloc(sizeof(struct scatterlist) * len, GFP_KERNEL);
+
+	if (!sl) {
+		return NULL;
+	}
+	sg = (struct scatterlist *)sl;
+	sg_init_table(sg, len);
+
+	while (total_sec_cnt) {
+		if (total_sec_cnt < max_seg_size)
+			sec_cnt = total_sec_cnt;
+		else
+			sec_cnt = max_seg_size;
+		sg_set_page(sg, virt_to_page(buf), sec_cnt, offset_in_page(buf));
+		buf = buf + sec_cnt;
+		total_sec_cnt = total_sec_cnt - sec_cnt;
+		if (total_sec_cnt == 0)
+			break;
+		sg = sg_next(sg);
+	}
+
+	if (sg)
+		sg_mark_end(sg);
+	*sg_len = len;
+	return sl;
+}
+
+static int mmc_blk_ioctl_copy_to_user(struct mmc_ioc_cmd __user *ic_ptr,
+				struct mmc_blk_ioc_data *idata)
+{
+	struct mmc_ioc_cmd *ic = &idata->ic;
+
+	if (copy_to_user(&(ic_ptr->response), ic->response,
+			sizeof(ic->response)))
+		return -EFAULT;
+
+	if (!idata->ic.write_flag) {
+		if (copy_to_user((void __user *)(unsigned long)ic->data_ptr,
+				idata->buf, idata->buf_bytes))
+			return -EFAULT;
+	}
+
+	return 0;
+}
+
 static int ioctl_rpmb_card_status_poll(struct mmc_card *card, u32 *status,
 				       u32 retries_max)
 {
@@ -706,44 +762,6 @@ static int ioctl_do_sanitize(struct mmc_card *card)
 					     __func__);
 out:
 	return err;
-}
-
-struct scatterlist *mmc_blk_get_sg(struct mmc_card *card,
-		unsigned char *buf, int *sg_len, int size)
-{
-	struct scatterlist *sg;
-	struct scatterlist *sl;
-	int total_sec_cnt, sec_cnt;
-	int max_seg_size, len;
-
-	total_sec_cnt = size;
-	max_seg_size = card->host->max_seg_size;
-	len = (size - 1 + max_seg_size) / max_seg_size;
-	sl = kmalloc(sizeof(struct scatterlist) * len, GFP_KERNEL);
-
-	if (!sl) {
-		return NULL;
-	}
-	sg = (struct scatterlist *)sl;
-	sg_init_table(sg, len);
-
-	while (total_sec_cnt) {
-		if (total_sec_cnt < max_seg_size)
-			sec_cnt = total_sec_cnt;
-		else
-			sec_cnt = max_seg_size;
-		sg_set_page(sg, virt_to_page(buf), sec_cnt, offset_in_page(buf));
-		buf = buf + sec_cnt;
-		total_sec_cnt = total_sec_cnt - sec_cnt;
-		if (total_sec_cnt == 0)
-			break;
-		sg = sg_next(sg);
-	}
-
-	if (sg)
-		sg_mark_end(sg);
-	*sg_len = len;
-	return sl;
 }
 
 static int mmc_blk_ioctl_cmd(struct block_device *bdev,
@@ -920,6 +938,197 @@ cmd_err:
 	return err;
 }
 
+static int __mmc_blk_ioctl_cmd(struct mmc_card *card, struct mmc_blk_data *md,
+			       struct mmc_blk_ioc_data *idata)
+{
+	struct mmc_command cmd = {0};
+	struct mmc_data data = {0};
+	struct mmc_request mrq = {NULL};
+	struct scatterlist *sg = 0;
+	int err;
+
+	if (!card || !md || !idata)
+		return -EINVAL;
+
+	cmd.opcode = idata->ic.opcode;
+	cmd.arg = idata->ic.arg;
+	cmd.flags = idata->ic.flags;
+
+	if (idata->ic.postsleep_max_us < idata->ic.postsleep_min_us) {
+		pr_err("%s: min value: %u must not be greater than max value: %u\n",
+			__func__, idata->ic.postsleep_min_us,
+			idata->ic.postsleep_max_us);
+		WARN_ON(1);
+		return -EPERM;
+	}
+
+	if (idata->buf_bytes) {
+		int len;
+		data.blksz = idata->ic.blksz;
+		data.blocks = idata->ic.blocks;
+
+		sg = mmc_blk_get_sg(card, idata->buf, &len, idata->buf_bytes);
+		data.sg = sg;
+		data.sg_len = len;
+
+		if (idata->ic.write_flag)
+			data.flags = MMC_DATA_WRITE;
+		else
+			data.flags = MMC_DATA_READ;
+
+		/* data.flags must already be set before doing this. */
+		mmc_set_data_timeout(&data, card);
+
+		/* Allow overriding the timeout_ns for empirical tuning. */
+		if (idata->ic.data_timeout_ns)
+			data.timeout_ns = idata->ic.data_timeout_ns;
+
+		if ((cmd.flags & MMC_RSP_R1B) == MMC_RSP_R1B) {
+			/*
+			 * Pretend this is a data transfer and rely on the
+			 * host driver to compute timeout.  When all host
+			 * drivers support cmd.cmd_timeout for R1B, this
+			 * can be changed to:
+			 *
+			 *     mrq.data = NULL;
+			 *     cmd.cmd_timeout = idata->ic.cmd_timeout_ms;
+			 */
+			data.timeout_ns = idata->ic.cmd_timeout_ms * 1000000;
+		}
+
+		mrq.data = &data;
+	}
+
+	mrq.cmd = &cmd;
+
+	if (mmc_card_doing_bkops(card)) {
+		err = mmc_stop_bkops(card);
+		if (err) {
+			dev_err(mmc_dev(card->host),
+				"%s: stop_bkops failed %d\n", __func__, err);
+			return err;
+		}
+	}
+
+	err = mmc_blk_part_switch(card, md);
+	if (err)
+		return err;
+
+	if (idata->ic.is_acmd) {
+		err = mmc_app_cmd(card->host, card);
+		if (err)
+			return err;
+	}
+
+	if ((MMC_EXTRACT_INDEX_FROM_ARG(cmd.arg) == EXT_CSD_SANITIZE_START) &&
+	    (cmd.opcode == MMC_SWITCH)) {
+		err = ioctl_do_sanitize(card);
+
+		if (err)
+			pr_err("%s: ioctl_do_sanitize() failed. err = %d",
+			       __func__, err);
+
+		return err;
+	}
+
+	mmc_wait_for_req(card->host, &mrq);
+
+	if (cmd.error) {
+		dev_err(mmc_dev(card->host), "%s: cmd error %d\n",
+						__func__, cmd.error);
+		return cmd.error;
+	}
+	if (data.error) {
+		dev_err(mmc_dev(card->host), "%s: data error %d\n",
+						__func__, data.error);
+		return data.error;
+	}
+
+	/*
+	 * According to the SD specs, some commands require a delay after
+	 * issuing the command.
+	 */
+	if (idata->ic.postsleep_min_us)
+		usleep_range(idata->ic.postsleep_min_us, idata->ic.postsleep_max_us);
+
+	memcpy(&(idata->ic.response), cmd.resp, sizeof(cmd.resp));
+
+	if (sg)
+		kfree(sg);
+	return err;
+}
+
+static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
+				   struct mmc_ioc_multi_cmd __user *user)
+{
+	struct mmc_blk_ioc_data **idata = NULL;
+	struct mmc_ioc_cmd __user *cmds = user->cmds;
+	struct mmc_card *card;
+	struct mmc_blk_data *md;
+	int i, err = 0, ioc_err = 0;
+	__u64 num_of_cmds;
+
+	/*
+	 * The caller must have CAP_SYS_RAWIO, and must be calling this on the
+	 * whole block device, not on a partition.  This prevents overspray
+	 * between sibling partitions.
+	 */
+	if ((!capable(CAP_SYS_RAWIO)) || (bdev != bdev->bd_contains))
+		return -EPERM;
+
+	if (copy_from_user(&num_of_cmds, &user->num_of_cmds,
+			   sizeof(num_of_cmds)))
+		return -EFAULT;
+
+	if (num_of_cmds > MMC_IOC_MAX_CMDS)
+		return -EINVAL;
+
+	idata = kcalloc(num_of_cmds, sizeof(*idata), GFP_KERNEL);
+	if (!idata)
+		return -ENOMEM;
+
+	for (i = 0; i < num_of_cmds; i++) {
+		idata[i] = mmc_blk_ioctl_copy_from_user(&cmds[i]);
+		if (IS_ERR(idata[i])) {
+			err = PTR_ERR(idata[i]);
+			num_of_cmds = i;
+			goto cmd_err;
+		}
+	}
+
+	md = mmc_blk_get(bdev->bd_disk);
+	if (!md)
+		goto cmd_err;
+
+	card = md->queue.card;
+	if (IS_ERR(card)) {
+		err = PTR_ERR(card);
+		goto cmd_done;
+	}
+
+	mmc_get_card(card);
+
+	for (i = 0; i < num_of_cmds && !ioc_err; i++)
+		ioc_err = __mmc_blk_ioctl_cmd(card, md, idata[i]);
+
+	mmc_put_card(card);
+
+	/* copy to user if data and response */
+	for (i = 0; i < num_of_cmds && !err; i++)
+		err = mmc_blk_ioctl_copy_to_user(&cmds[i], idata[i]);
+
+cmd_done:
+	mmc_blk_put(md);
+cmd_err:
+	for (i = 0; i < num_of_cmds; i++) {
+		kfree(idata[i]->buf);
+		kfree(idata[i]);
+	}
+	kfree(idata);
+
+	return ioc_err ? ioc_err : err;
+}
+
 static int mmc_blk_ioctl(struct block_device *bdev, fmode_t mode,
 	unsigned int cmd, unsigned long arg)
 {
@@ -1003,23 +1212,23 @@ static int mmc_blk_ioctl(struct block_device *bdev, fmode_t mode,
 		break;
 	}
     #endif
-	if (cmd == MMC_IOC_CMD)
+	if (cmd == MMC_IOC_CMD) {
 		ret = mmc_blk_ioctl_cmd(bdev, (struct mmc_ioc_cmd __user *)arg);
-	else if(cmd == MMC_IOC_CLOCK)
-	{
+	} else if (cmd == MMC_IOC_MULTI_CMD) {
+		ret = mmc_blk_ioctl_multi_cmd(bdev, (struct mmc_ioc_multi_cmd __user *)arg);
+	} else if (cmd == MMC_IOC_CLOCK) {
 		unsigned int clock = (unsigned int)arg;
-		if( clock < card->host->f_min )
+		if (clock < card->host->f_min)
 			clock = card->host->f_min;
 
 		mmc_set_clock(card->host, clock);
 		ret = 0;
-	}
-	else if(cmd == MMC_IOC_BUSWIDTH)
-	{
+	} else if (cmd == MMC_IOC_BUSWIDTH) {
 		unsigned int width = (unsigned int)arg;
 		mmc_set_bus_width(card->host, width);
 		ret = 0;
 	}
+
 	return ret;
 }
 

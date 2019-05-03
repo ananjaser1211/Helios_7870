@@ -110,6 +110,7 @@ struct s2mu005_platform_data {
 	int capacity_max;
 	int capacity_max_margin;
 	int capacity_min;
+	int capacity_full;
 	int capacity_calculation_type;
 	int evt2_val;
 	int fuel_alert_soc;
@@ -157,6 +158,7 @@ struct s2mu005_fuelgauge_data {
 	unsigned int capacity_old;      /* only for atomic calculation */
 	unsigned int capacity_max;      /* only for dynamic calculation */
 	unsigned int standard_capacity;
+	int raw_capacity;
 
 	bool initial_update_of_soc;
 	bool sleep_initial_update_of_soc;

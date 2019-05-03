@@ -36,7 +36,6 @@
 #define SENSOR_INFO_ACCELEROMETER 		{"accelerometer_sensor", true,	REPORT_MODE_CONTINUOUS,	6, 6}
 #define SENSOR_INFO_GEOMAGNETIC_FIELD 	{"geomagnetic_sensor", true, REPORT_MODE_CONTINUOUS, 7, 7}
 #define SENSOR_INFO_GYRO 				{"gyro_sensor", true, REPORT_MODE_CONTINUOUS, 6, 6}
-#define SENSOR_INFO_LIGHT				{"light_sensor", true, REPORT_MODE_ON_CHANGE, 18, 18}
 #define SENSOR_INFO_PRESSURE				{"pressure_sensor",	true, REPORT_MODE_CONTINUOUS, 6, 14}
 #define SENSOR_INFO_PROXIMITY			{"proximity_sensor", true, REPORT_MODE_ON_CHANGE, 2, 2}
 #define SENSOR_INFO_ROTATION_VECTOR		{"rotation_vector_sensor", false, REPORT_MODE_CONTINUOUS, 17, 17}
@@ -52,6 +51,12 @@
 #define SENSOR_INFO_GEOMAGNETIC_POWER	{"geomagnetic_power", true, REPORT_MODE_CONTINUOUS, 6, 6}
 #define SENSOR_INFO_INTERRUPT_GYRO		{"interrupt_gyro_sensor", true, REPORT_MODE_ON_CHANGE, 6, 6}
 #define SENSOR_INFO_SCONTEXT			{"scontext_iio", true, REPORT_MODE_CONTINUOUS, 0, 64}
-#define SENSOR_INFO_LIGHT_CCT			{"light_cct_sensor", true, REPORT_MODE_ON_CHANGE, 18, 18}
 
+#if ANDROID_VERSION >= 90000
+#define SENSOR_INFO_LIGHT               {"light_sensor", true, REPORT_MODE_ON_CHANGE, 18, 4}
+#define SENSOR_INFO_LIGHT_CCT           {"light_cct_sensor", true, REPORT_MODE_ON_CHANGE, 18, 8}
+#else
+#define SENSOR_INFO_LIGHT               {"light_sensor", true, REPORT_MODE_ON_CHANGE, 18, 18}
+#define SENSOR_INFO_LIGHT_CCT           {"light_cct_sensor", true, REPORT_MODE_ON_CHANGE, 18, 18}
+#endif
 #endif

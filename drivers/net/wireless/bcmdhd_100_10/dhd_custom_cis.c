@@ -2,7 +2,7 @@
  * Process CIS information from OTP for customer platform
  * (Handle the MAC address and module information)
  *
- * Copyright (C) 1999-2018, Broadcom.
+ * Copyright (C) 1999-2019, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -25,7 +25,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_custom_cis.c 791901 2018-12-01 09:46:52Z $
+ * $Id: dhd_custom_cis.c 796867 2018-12-27 08:10:21Z $
  */
 
 #include <typedefs.h>
@@ -559,12 +559,15 @@ dhd_check_module_mac(dhd_pub_t *dhdp)
 		dhd_write_file(filepath_efs, otp_mac_buf, strlen(otp_mac_buf));
 #else
 		/* Export otp_mac_buf to the sys/mac_addr */
-		if (!bcm_ether_atoe((unsigned char *)&sysfs_mac_addr,
-				(struct ether_addr *)otp_mac_buf)) {
+		if (!bcm_ether_atoe(otp_mac_buf, &sysfs_mac_addr)) {
 			DHD_ERROR(("%s : mac parsing err\n", __FUNCTION__));
 			if (dhd_set_default_macaddr(dhdp) < 0) {
 				return BCME_BADARG;
 			}
+		} else {
+			DHD_INFO(("%s : set mac address properly\n", __FUNCTION__));
+			/* set otp mac to sysfs */
+			memcpy(mac, &sysfs_mac_addr, sizeof(sysfs_mac_addr));
 		}
 #endif /* !DHD_MAC_ADDR_EXPORT */
 	}

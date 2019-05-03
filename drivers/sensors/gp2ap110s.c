@@ -251,14 +251,17 @@ static void gp2ap_InitData(struct gp2ap_data *data)
 		data->ps_high_th = FORCE_CLOSE_HIGH_THD;
 		data->ps_low_th = FORCE_CLOSE_LOW_THD;
 	} else {
-		if (offset >= OFFSET_TUNE_ADC && offset < FORCE_CLOSE_OFFSET_THD && data->tune_adc_count < MAX_RETRY_TUNE_ADC_COUNT) {
-			wdata = PROX_AUTO_OFFSET;
-			gp2ap_i2c_write(0x8D, wdata, data->client);
-			data->tune_adc_count++;
+		if (!data->pre_test) {
+			if (offset >= OFFSET_TUNE_ADC && offset < FORCE_CLOSE_OFFSET_THD &&
+				data->tune_adc_count < MAX_RETRY_TUNE_ADC_COUNT) {
+				wdata = PROX_AUTO_OFFSET;
+				gp2ap_i2c_write(0x8D, wdata, data->client);
+				data->tune_adc_count++;
 			
-			SENSOR_INFO("Tune ADC offset=%d tune_adc_count=%d\n", offset, data->tune_adc_count);
+				SENSOR_INFO("Tune ADC offset=%d tune_adc_count=%d\n", offset, data->tune_adc_count);
 
-			return;
+				return;
+			}
 		}
 
 		if (data->prox_settings == 0) {
@@ -885,6 +888,34 @@ static ssize_t settings_thd_low_show(struct device *dev,
 
 }
 
+static ssize_t pre_test_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct gp2ap_data *data = dev_get_drvdata(dev);
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", data->pre_test);
+}
+
+static ssize_t pre_test_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct gp2ap_data *data = dev_get_drvdata(dev);
+	u16 value = 0;
+	int ret;
+
+	ret = kstrtou16(buf, 10, &value);
+	if (ret < 0) {
+		SENSOR_ERR("kstrtoul failed, ret=0x%x\n", ret);
+		return ret;
+	}
+
+	SENSOR_INFO("pre_test value = %d\n", value);
+
+	data->pre_test = value;
+
+	return size;
+}
+
 static uint32_t gp2ap_get_proximity_adc(struct gp2ap_data *data)
 {
 	u8 value[2];
@@ -1006,6 +1037,7 @@ static DEVICE_ATTR(prox_avg, 0644,
 static DEVICE_ATTR(modify_settings, 0664, modify_settings_show, modify_settings_store);
 static DEVICE_ATTR(settings_thd_high, 0664, settings_thd_high_show, settings_thd_high_store);
 static DEVICE_ATTR(settings_thd_low, 0664, settings_thd_low_show, settings_thd_low_store);
+static DEVICE_ATTR(pre_test, 0664, pre_test_show, pre_test_store);
 
 static struct device_attribute *proximity_attrs[] = {
 	&dev_attr_name,
@@ -1021,6 +1053,7 @@ static struct device_attribute *proximity_attrs[] = {
 	&dev_attr_modify_settings,
 	&dev_attr_settings_thd_high,
 	&dev_attr_settings_thd_low,
+	&dev_attr_pre_test,
 	NULL,
 };
 
@@ -1191,7 +1224,7 @@ static int gp2ap_i2c_probe(struct i2c_client *client,
 	gp2ap->dynamic_calib_enabled = 1;
 	gp2ap->prox_settings = 0; // keep settings value 0 at boot time
 	gp2ap->bytes = 14; // 4 bytes each for led_reg_val, thresholds & 1 byte each for ","
-
+	gp2ap->pre_test = 0;
 	gp2ap->zero_detect = 0;
 
 	value = 0x00;

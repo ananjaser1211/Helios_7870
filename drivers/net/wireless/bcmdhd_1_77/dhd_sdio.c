@@ -3736,7 +3736,7 @@ dhdsdio_read_dongle_memory_from_bus(dhd_pub_t *dhdp, uint8 *buf, int size)
 {
 	uint8 *databuf = NULL;
 	dhd_bus_t *bus = dhdp->bus;
-	uint32 start;	/* Start address */
+	uint32 start = bus->dongle_ram_base;	/* Start address */
 	uint read_size = 0;			/* Read size of each iteration */
 	int ret = 0;
 
@@ -3744,8 +3744,6 @@ dhdsdio_read_dongle_memory_from_bus(dhd_pub_t *dhdp, uint8 *buf, int size)
 		DHD_ERROR(("%s wrong param\n", __FUNCTION__));
 		return BCME_ERROR;
 	}
-
-	start = bus->dongle_ram_base;
 
 	dhd_os_sdlock(bus->dhd);
 	BUS_WAKE(bus);

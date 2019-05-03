@@ -236,7 +236,15 @@ config MUIC_S2MU005_JIGB_CONTROL
 	help
 	  If you say yes here you will get support for
 	  for the S2MU005 MUIC chip JIGB CONTROL feature.
-	  
+
+config NEW_FACTORY_UART
+	bool "Using factory uart control"
+	depends on USE_MUIC
+	default n
+	help
+		If you say yes here you will get support for
+		for the factory uart control.
+
 config MUIC_S2MU005_DISCHARGING_WA
 	bool "Using S2MU005 MUIC DISCHARGING WORKAROUND"
 	depends on USE_MUIC && MUIC_S2MU005

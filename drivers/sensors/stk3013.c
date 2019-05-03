@@ -656,7 +656,7 @@ static int32_t stk3013_enable_ps(struct device *dev,
 		/*stk3013_regulator_onoff(dev, ON);*/
 		if(ps_data->pdata->vled_ldo)
 			stk3013_vled_onoff(dev,ON);
-		msleep(20);
+		usleep_range(20000,20000);
 		ret = stk3013_init_all_setting(ps_data->client,
 							ps_data->pdata);
 		if (ret < 0) {
@@ -969,7 +969,7 @@ static void proximity_get_avg_val(struct stk3013_data *ps_data)
 	uint32_t read_value;
 
 	for (i = 0; i < PROX_READ_NUM; i++) {
-		msleep(40);
+		usleep_range(40000,40000);
 		read_value = stk3013_get_ps_reading(ps_data);
 		avg += read_value;
 
@@ -1442,7 +1442,7 @@ static void stk_work_func(struct work_struct *work)
 	goto exit;
 
 err_i2c_rw:
-	msleep(30);
+	usleep_range(30000,30000);
 exit:
 	enable_irq(ps_data->irq);
 }
@@ -1646,22 +1646,22 @@ static int stk3013_regulator_onoff(struct device *dev, bool onoff)
 		ret = regulator_enable(ps_data->vdd);
 		if (ret)
 			SENSOR_ERR("Failed to enable vdd.\n");
-		msleep(20);
+		usleep_range(20000,20000);
 
 		ret = regulator_enable(ps_data->vio);
 		if (ret)
 			SENSOR_ERR("Failed to enable vio.\n");
-		msleep(20);
+		usleep_range(20000,20000);
 	} else {
 		ret = regulator_disable(ps_data->vdd);
 		if (ret)
 			SENSOR_ERR("Failed to disable vdd.\n");
-		msleep(20);
+		usleep_range(20000,20000);
 
 		ret = regulator_disable(ps_data->vio);
 		if (ret)
 			SENSOR_ERR("Failed to disable vio.\n");
-		msleep(20);
+		usleep_range(20000,20000);
 	}
 	return 0;
 }

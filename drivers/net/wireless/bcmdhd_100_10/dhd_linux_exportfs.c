@@ -2,7 +2,7 @@
  * Broadcom Dongle Host Driver (DHD), Linux-specific network interface
  * Basically selected code segments from usb-cdc.c and usb-rndis.c
  *
- * Copyright (C) 1999-2018, Broadcom.
+ * Copyright (C) 1999-2019, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -25,7 +25,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_linux_exportfs.c 791901 2018-12-01 09:46:52Z $
+ * $Id: dhd_linux_exportfs.c 801673 2019-01-29 04:29:43Z $
  */
 #include <linux/kobject.h>
 #include <linux/proc_fs.h>
@@ -33,6 +33,9 @@
 #include <osl.h>
 #include <dhd_dbg.h>
 #include <dhd_linux_priv.h>
+#ifdef DHD_ADPS_BAM_EXPORT
+#include <wl_bam.h>
+#endif // endif
 
 /* ----------------------------------------------------------------------------
  * Infrastructure code for sysfs interface support for DHD
@@ -624,7 +627,7 @@ set_ant_info(struct dhd_info *dev, const char *buf, size_t count)
 	 * Check value
 	 * 0 - Not set, handle same as file not exist
 	 */
-	if (ant_val < 0 || ant_val > 3) {
+	if (ant_val > 3) {
 		DHD_ERROR(("[WIFI_SEC] %s: Set Invalid value %lu \n",
 			__FUNCTION__, ant_val));
 		return -EINVAL;
@@ -913,7 +916,7 @@ set_proptx(struct dhd_info *dev, const char *buf, size_t count)
 
 	proptx = onoff;
 	DHD_ERROR(("[WIFI_SEC] %s: FRAMEBURST On/Off from sysfs = %u\n",
-		__FUNCTION__, txbf));
+		__FUNCTION__, proptx));
 	return count;
 }
 
@@ -923,6 +926,121 @@ static struct dhd_attr dhd_attr_cntl_proptx =
 #endif /* PROP_TXSTATUS */
 #endif /* USE_WFA_CERT_CONF */
 #endif /* DHD_EXPORT_CNTL_FILE */
+
+#if defined(DHD_ADPS_BAM_EXPORT) && defined(WL_BAM)
+#define BAD_AP_MAC_ADDR_ELEMENT_NUM	6
+wl_bad_ap_mngr_t *g_bad_ap_mngr = NULL;
+
+static ssize_t
+show_adps_bam_list(struct dhd_info *dev, char *buf)
+{
+	int offset = 0;
+	ssize_t ret = 0;
+
+	wl_bad_ap_info_t *bad_ap;
+	wl_bad_ap_info_entry_t *entry;
+
+	if (g_bad_ap_mngr == NULL)
+		return ret;
+
+#if defined(STRICT_GCC_WARNINGS) && defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#endif // endif
+	list_for_each_entry(entry, &g_bad_ap_mngr->list, list) {
+		bad_ap = &entry->bad_ap;
+
+		ret = scnprintf(buf + offset, PAGE_SIZE - 1, MACF"\n",
+			bad_ap->bssid.octet[0], bad_ap->bssid.octet[1],
+			bad_ap->bssid.octet[2], bad_ap->bssid.octet[3],
+			bad_ap->bssid.octet[4], bad_ap->bssid.octet[5]);
+
+		offset += ret;
+	}
+#if defined(STRICT_GCC_WARNINGS) && defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif // endif
+
+	return offset;
+}
+
+static ssize_t
+store_adps_bam_list(struct dhd_info *dev, const char *buf, size_t count)
+{
+	int ret;
+	size_t len;
+	int offset;
+	char tmp[128];
+	wl_bad_ap_info_t bad_ap;
+
+	if (g_bad_ap_mngr == NULL)
+		return count;
+
+	len = count;
+	offset = 0;
+	do {
+		ret = sscanf(buf + offset, MACF"\n",
+			(uint32 *)&bad_ap.bssid.octet[0], (uint32 *)&bad_ap.bssid.octet[1],
+			(uint32 *)&bad_ap.bssid.octet[2], (uint32 *)&bad_ap.bssid.octet[3],
+			(uint32 *)&bad_ap.bssid.octet[4], (uint32 *)&bad_ap.bssid.octet[5]);
+		if (ret != BAD_AP_MAC_ADDR_ELEMENT_NUM) {
+			DHD_ERROR(("%s - fail to parse bad ap data\n", __FUNCTION__));
+			return -EINVAL;
+		}
+
+		ret = wl_bad_ap_mngr_add(g_bad_ap_mngr, &bad_ap);
+		if (ret < 0)
+			return ret;
+
+		ret = snprintf(tmp, ARRAYSIZE(tmp), MACF"\n",
+			bad_ap.bssid.octet[0], bad_ap.bssid.octet[1],
+			bad_ap.bssid.octet[2], bad_ap.bssid.octet[3],
+			bad_ap.bssid.octet[4], bad_ap.bssid.octet[5]);
+		if (ret < 0) {
+			DHD_ERROR(("%s - fail to get bad ap data length(%d)\n", __FUNCTION__, ret));
+			return ret;
+		}
+
+		len -= ret;
+		offset += ret;
+	} while (len > 0);
+
+	return count;
+}
+
+static struct dhd_attr dhd_attr_adps_bam =
+	__ATTR(bad_ap_list, 0660, show_adps_bam_list, store_adps_bam_list);
+#endif	/* DHD_ADPS_BAM_EXPORT && WL_BAM */
+
+#ifdef DHD_SEND_HANG_PRIVCMD_ERRORS
+uint32 report_hang_privcmd_err = 1;
+
+static ssize_t
+show_hang_privcmd_err(struct dhd_info *dev, char *buf)
+{
+	ssize_t ret = 0;
+
+	ret = scnprintf(buf, PAGE_SIZE - 1, "%u\n", report_hang_privcmd_err);
+	return ret;
+}
+
+static ssize_t
+set_hang_privcmd_err(struct dhd_info *dev, const char *buf, size_t count)
+{
+	uint32 val;
+
+	val = bcm_atoi(buf);
+	sscanf(buf, "%u", &val);
+
+	report_hang_privcmd_err = val ? 1 : 0;
+	DHD_INFO(("%s: Set report HANG for private cmd error: %d\n",
+		__FUNCTION__, report_hang_privcmd_err));
+	return count;
+}
+
+static struct dhd_attr dhd_attr_hang_privcmd_err =
+	__ATTR(hang_privcmd_err, 0660, show_hang_privcmd_err, set_hang_privcmd_err);
+#endif /* DHD_SEND_HANG_PRIVCMD_ERRORS */
 
 /* Attribute object that gets registered with "wifi" kobject tree */
 static struct attribute *control_file_attrs[] = {
@@ -970,6 +1088,12 @@ static struct attribute *control_file_attrs[] = {
 #endif /* PROP_TXSTATUS */
 #endif /* USE_WFA_CERT_CONF */
 #endif /* DHD_EXPORT_CNTL_FILE */
+#ifdef DHD_ADPS_BAM_EXPORT
+	&dhd_attr_adps_bam.attr,
+#endif	/* DHD_ADPS_BAM_EXPORT */
+#ifdef DHD_SEND_HANG_PRIVCMD_ERRORS
+	&dhd_attr_hang_privcmd_err.attr,
+#endif /* DHD_SEND_HANG_PRIVCMD_ERRORS */
 	NULL
 };
 

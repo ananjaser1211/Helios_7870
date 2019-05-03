@@ -43,7 +43,9 @@
 
 #define MAX_LOG 25
 #define READ 0
+#ifndef WRITE
 #define WRITE 1
+#endif
 
 #define GPIO_LEVEL_HIGH		1
 #define GPIO_LEVEL_LOW		0

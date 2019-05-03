@@ -1,7 +1,7 @@
 /*
  * Broadcom Dongle Host Driver (DHD), common DHD core.
  *
- * Copyright (C) 1999-2018, Broadcom.
+ * Copyright (C) 1999-2019, Broadcom.
  *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_common.c 788335 2018-11-12 02:40:02Z $
+ * $Id: dhd_common.c 796845 2018-12-27 06:24:52Z $
  */
 #include <typedefs.h>
 #include <osl.h>
@@ -2460,6 +2460,8 @@ unlock_exit:
 	return bcmerror;
 }
 
+#ifdef SHOW_EVENTS
+
 #if defined(SHOW_EVENTS) && defined(SUPPORT_EVT_SDB_LOG)
 #define SDB_ENABLE_AP	0x01
 #define SDB_ENABLE_P2P	0x02
@@ -2511,8 +2513,6 @@ wl_event_sdb_transition_print(void *event_data, const char *event_name)
 	}
 }
 #endif /* SHOW_EVENTS && SUPPORT_EVT_SDB_LOG */
-
-#ifdef SHOW_EVENTS
 
 static void
 wl_show_host_event(dhd_pub_t *dhd_pub, wl_event_msg_t *event, void *event_data,

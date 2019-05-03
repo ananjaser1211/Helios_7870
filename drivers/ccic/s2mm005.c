@@ -466,7 +466,7 @@ void s2mm005_control_option_command(struct s2mm005_data *usbpd_data, int cmd)
         s2mm005_write_byte(i2c, REG_ADD, &W_DATA[0], 2);
 }
 
-#if defined(CONFIG_DUAL_ROLE_USB_INTF)
+#if (defined(CONFIG_DUAL_ROLE_USB_INTF) || defined(CONFIG_TYPEC))
 static void s2mm005_new_toggling_control(struct s2mm005_data *usbpd_data, u8 mode)
 {
 	struct i2c_client *i2c = usbpd_data->i2c;
@@ -548,7 +548,7 @@ void s2mm005_set_upsm_mode(void)
 	pr_info("%s : current status is upsm! \n",__func__);
 }
 
-#if defined(CONFIG_DUAL_ROLE_USB_INTF)
+#if (defined(CONFIG_DUAL_ROLE_USB_INTF) || defined(CONFIG_TYPEC))
 void s2mm005_rprd_mode_change(struct s2mm005_data *usbpd_data, u8 mode)
 {
 	pr_info("%s, mode=0x%x\n",__func__, mode);
@@ -1024,12 +1024,28 @@ skip_update:
 	usbpd_data->desc = desc;
 	init_completion(&usbpd_data->reverse_completion);
 	usbpd_data->power_role = DUAL_ROLE_PROP_PR_NONE;
+	INIT_DELAYED_WORK(&usbpd_data->role_swap_work, role_swap_check);
+#elif defined(CONFIG_TYPEC)
+	usbpd_data->typec_cap.revision = USB_TYPEC_REV_1_2;
+	usbpd_data->typec_cap.pd_revision = 0x300;
+	usbpd_data->typec_cap.prefer_role = TYPEC_NO_PREFERRED_ROLE;
+	usbpd_data->typec_cap.port_type_set = s2mm005_port_type_set;
+	usbpd_data->typec_cap.type = TYPEC_PORT_DRP;
+	usbpd_data->port = typec_register_port(usbpd_data->dev, &usbpd_data->typec_cap);
+	if (IS_ERR(usbpd_data->port))
+		pr_err("%s : unable to register typec_register_port\n", __func__);
+	else
+		pr_err("%s : success typec_register_port port=%pK\n", __func__, usbpd_data->port);
+
+	init_completion(&usbpd_data->role_reverse_completion);
+	INIT_DELAYED_WORK(&usbpd_data->typec_role_swap_work, typec_role_swap_check);
+#endif
 #if defined(CONFIG_USB_HOST_NOTIFY)
 	send_otg_notify(o_notify, NOTIFY_EVENT_POWER_SOURCE, 0);
 #endif
-	INIT_DELAYED_WORK(&usbpd_data->role_swap_work, role_swap_check);
-#endif
 #if defined(CONFIG_CCIC_ALTERNATE_MODE)
+	init_completion(&usbpd_data->uvdm_out_wait);
+	init_completion(&usbpd_data->uvdm_longpacket_in_wait);
 	usbpd_data->alternate_state = 0;
 	usbpd_data->acc_type = 0;
 	usbpd_data->dp_is_connect = 0;
@@ -1111,6 +1127,8 @@ static int s2mm005_usbpd_remove(struct i2c_client *i2c)
 #if defined(CONFIG_DUAL_ROLE_USB_INTF)
 	devm_dual_role_instance_unregister(usbpd_data->dev, usbpd_data->dual_role);
 	devm_kfree(usbpd_data->dev, usbpd_data->desc);
+#elif defined(CONFIG_TYPEC)
+	typec_unregister_port(usbpd_data->port);
 #endif
 
 	sysfs_remove_group(&ccic_device->kobj, &ccic_sysfs_group);

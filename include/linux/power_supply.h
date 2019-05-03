@@ -245,6 +245,7 @@ enum power_supply_type {
 	POWER_SUPPLY_TYPE_HV_QC30,			/* 41 - ILIM 3.0A - CHG 3.5A (Step Charging 4.2A -> 3.0A) */
 #endif
 	POWER_SUPPLY_TYPE_POGO,			/* 42 POGO */
+	POWER_SUPPLY_TYPE_FATORY_UART,			/* 43 - FACTORY_UART */
 	POWER_SUPPLY_TYPE_MAX,
 };
 /* EXTENDED_ONLINE_TYPE */

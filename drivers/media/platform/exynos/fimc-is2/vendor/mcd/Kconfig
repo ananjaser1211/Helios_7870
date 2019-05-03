@@ -262,6 +262,12 @@ config CAMERA_M10LTE
         default n
         help
           This camera is M10 project.
+config CAMERA_A2CORELTE
+        bool "This camera is A2CORE project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is A2CORE project.		  
 config CAMERA_5E6_USE_1P2_POWER
         bool "5E6 sensor use 1p2 power pin"
         depends on VENDER_MCD

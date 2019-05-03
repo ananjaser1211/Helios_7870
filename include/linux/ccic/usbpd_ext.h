@@ -6,6 +6,8 @@
 #endif
 #if defined(CONFIG_DUAL_ROLE_USB_INTF)
 #include <linux/usb/class-dual-role.h>
+#elif defined(CONFIG_TYPEC)
+#include <linux/usb/typec.h>
 #endif
 #ifdef CONFIG_USB_TYPEC_MANAGER_NOTIFIER
 #include <linux/battery/battery_notifier.h>
@@ -34,5 +36,11 @@ extern int dual_role_set_prop(struct dual_role_phy_instance *dual_role,
 			      enum dual_role_property prop,
 			      const unsigned int *val);
 extern int dual_role_init(void *_data);
+#elif defined(CONFIG_TYPEC)
+extern void typec_role_swap_check(struct work_struct *wk);
+extern int typec_port_type_set(const struct typec_capability *cap,
+					enum typec_port_type port_type);
+extern int typec_get_pd_support(void *_data);
+extern int typec_init(void *_data);
 #endif
 #endif

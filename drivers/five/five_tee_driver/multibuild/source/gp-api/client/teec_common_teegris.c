@@ -18,6 +18,7 @@
 #include <linux/types.h>
 #include <tzdev/kernel_api.h>
 #include <tzdev/iwnotify.h>
+#include <tzdev/tzdev.h>
 #include <linux/slab.h>
 #include <linux/mm.h>
 
@@ -26,7 +27,7 @@
 #include "teec_param_utils.h"
 
 /* Timeout in seconds */
-#define FIVE_IWNOTIFY_TIMEOUT	5
+#define FIVE_IWNOTIFY_TIMEOUT	3
 #define FIVE_IWNOTIFICATION	TZ_IWNOTIFY_OEM_NOTIFICATION_FLAG_13
 
 static DECLARE_COMPLETION(kcmd_event);
@@ -92,19 +93,23 @@ static TEEC_Result TeegrisSendCommand(void *ta_session,
 	cmd.memref.size = (uint32_t)session->tci_size;
 	res = tzdev_kapi_send(session->client_id, &cmd, sizeof(cmd));
 	if (res < 0) {
+		pr_err("FIVE: Can't send command tzdev_kapi: %d\n", res);
 		ret = TEEC_ERROR_COMMUNICATION;
 		goto exit;
 	}
 
-	res = wait_for_completion_interruptible_timeout(&kcmd_event,
-		FIVE_IWNOTIFY_TIMEOUT * HZ);
+	res = wait_for_completion_timeout(&kcmd_event,
+					  FIVE_IWNOTIFY_TIMEOUT * HZ);
 	if (res <= 0) {
+		pr_err("FIVE: Timeout expired on waiting for tzdev_kapi: %d\n",
+		       res);
 		ret = TEEC_ERROR_COMMUNICATION;
 		goto exit;
 	}
 
 	res = tzdev_kapi_recv(session->client_id, NULL, 0);
 	if (res < 0) {
+		pr_err("FIVE: Can't receive answer from tzdev_kapi: %d\n", res);
 		ret = TEEC_ERROR_COMMUNICATION;
 		goto exit;
 	}
@@ -180,9 +185,13 @@ static TEEC_Result TeegrisLoadTA(void *ta_session, const TEEC_UUID *uuid)
 		goto exit;
 	}
 
+	if (!tzdev_is_up())
+		panic("FIVE: tzdev is not ready\n");
+
 	init_completion(&kcmd_event);
 	res = tz_iwnotify_chain_register(FIVE_IWNOTIFICATION, &kcmd_notifier);
 	if (res < 0) {
+		pr_err("FIVE: Can't register iwnotify tzdev: %d\n", res);
 		status = TEEC_ERROR_COMMUNICATION;
 		goto exit;
 	}
@@ -193,6 +202,7 @@ static TEEC_Result TeegrisLoadTA(void *ta_session, const TEEC_UUID *uuid)
 	(void)BUILD_BUG_ON_ZERO((sizeof(struct tz_uuid) != sizeof(TEEC_UUID)));
 	res = tzdev_kapi_open((const struct tz_uuid *)uuid);
 	if (res < 0) {
+		pr_err("FIVE: Can't open tzdev_kapi: %d\n", res);
 		status = TEEC_ERROR_GENERIC;
 		goto error_chain;
 	}
@@ -202,6 +212,7 @@ static TEEC_Result TeegrisLoadTA(void *ta_session, const TEEC_UUID *uuid)
 	res = tzdev_kapi_mem_register(session->tci_buffer,
 		session->tci_size, 1);
 	if (res < 0) {
+		pr_err("FIVE: Can't register tzdev_kapi_mem: %d\n", res);
 		status = TEEC_ERROR_GENERIC;
 		goto error_close;
 	}
@@ -210,6 +221,7 @@ static TEEC_Result TeegrisLoadTA(void *ta_session, const TEEC_UUID *uuid)
 
 	res = tzdev_kapi_mem_grant(session->client_id, session->shmem_id);
 	if (res) {
+		pr_err("FIVE: Can't grant memory tzdev_kapi_mem: %d\n", res);
 		status = TEEC_ERROR_GENERIC;
 		goto error_mem;
 	}
@@ -219,7 +231,7 @@ static TEEC_Result TeegrisLoadTA(void *ta_session, const TEEC_UUID *uuid)
 error_chain:
 	res = tz_iwnotify_chain_unregister(FIVE_IWNOTIFICATION, &kcmd_notifier);
 	if (res < 0)
-		pr_err("tz_iwnotify_chain_unregister = %d\n", res);
+		pr_err("FIVE: Can't unregister iwnotify tzdev: %d\n", res);
 
 error_mem:
 	tzdev_kapi_mem_release(session->shmem_id);

@@ -56,6 +56,7 @@ struct gp2ap_data
 	int			dynamic_calib_done;
 	int			tune_adc_count;
 	int			zero_detect;
+	int			pre_test;
 	enum of_gpio_flags	irq_gpio_flags;
 };
 

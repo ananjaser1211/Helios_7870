@@ -17,7 +17,7 @@
 #include <linux/file.h>
 #include <linux/module.h>
 #include <linux/task_integrity.h>
-#include <linux/proca_fcntl.h>
+#include <linux/proca.h>
 #include <linux/xattr.h>
 
 #include "five.h"
