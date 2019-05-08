@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wl_android.c 755150 2018-04-02 08:14:47Z $
+ * $Id: wl_android.c 784024 2018-10-10 04:44:24Z $
  */
 
 #include <linux/module.h>
@@ -86,6 +86,7 @@
 #define CMD_BTCOEXMODE		"BTCOEXMODE"
 #define CMD_SETSUSPENDOPT	"SETSUSPENDOPT"
 #define CMD_SETSUSPENDMODE      "SETSUSPENDMODE"
+#define CMD_SETDTIM_IN_SUSPEND  "SET_DTIM_IN_SUSPEND"
 #define CMD_MAXDTIM_IN_SUSPEND  "MAX_DTIM_IN_SUSPEND"
 #define CMD_P2P_DEV_ADDR	"P2P_DEV_ADDR"
 #define CMD_SETFWPATH		"SETFWPATH"
@@ -185,10 +186,6 @@
 #define CMD_COUNTRYREV_GET "GETCOUNTRYREV"
 #endif /* ROAM_API */
 
-#if defined(SUPPORT_RANDOM_MAC_SCAN)
-#define ENABLE_RANDOM_MAC "ENABLE_RANDOM_MAC"
-#define DISABLE_RANDOM_MAC "DISABLE_RANDOM_MAC"
-#endif /* SUPPORT_RANDOM_MAC_SCAN */
 
 #ifdef WES_SUPPORT
 #define CMD_GETROAMSCANCONTROL "GETROAMSCANCONTROL"
@@ -433,6 +430,15 @@ struct io_cfg {
 #define MAX_BUF_SIZE		(JOIN_PREF_RSSI_SIZE + JOIN_PREF_WPA_HDR_SIZE +	\
 				           (JOIN_PREF_WPA_TUPLE_SIZE * JOIN_PREF_MAX_WPA_TUPLES))
 #endif /* BCMFW_ROAM_ENABLE */
+
+#if defined(CONFIG_GALILEO)
+/*
+ * adding these private commands corresponding to atd-server's implementation
+ * __atd_control_pm_state()
+ */
+#define CMD_POWERSAVEMODE_SET "SETPOWERSAVEMODE"
+#define CMD_POWERSAVEMODE_GET "GETPOWERSAVEMODE"
+#endif /* CONFIG_GALILEO */
 
 #ifdef WL_NATOE
 
@@ -1047,6 +1053,30 @@ static int wl_android_set_csa(struct net_device *dev, char *command, int total_l
 		return -1;
 	}
 	return 0;
+}
+
+static int
+wl_android_set_bcn_li_dtim(struct net_device *dev, char *command)
+{
+	int ret = 0;
+	int dtim;
+
+	dtim = *(command + strlen(CMD_SETDTIM_IN_SUSPEND) + 1) - '0';
+
+	if (dtim > (MAX_DTIM_ALLOWED_INTERVAL / MAX_DTIM_SKIP_BEACON_INTERVAL)) {
+		DHD_ERROR(("%s: failed, invalid dtim %d\n",
+			__FUNCTION__, dtim));
+		return BCME_ERROR;
+	}
+
+	if (!(ret = net_os_set_suspend_bcn_li_dtim(dev, dtim))) {
+		DHD_TRACE(("%s: SET bcn_li_dtim in suspend %d\n",
+			__FUNCTION__, dtim));
+	} else {
+		DHD_ERROR(("%s: failed %d\n", __FUNCTION__, ret));
+	}
+
+	return ret;
 }
 
 static int
@@ -2746,22 +2776,32 @@ wl_android_set_mac_address_filter(struct net_device *dev, char* str)
 	list->count = htod32(macnum);
 	bzero((char *)eabuf, ETHER_ADDR_STR_LEN);
 	for (i = 0; i < list->count; i++) {
-		strncpy(eabuf, strsep((char**)&str, " "), ETHER_ADDR_STR_LEN - 1);
+		token = strsep((char**)&str, " ");
+		if (token == NULL) {
+			DHD_ERROR(("%s : No mac address present\n", __FUNCTION__));
+			ret = -EINVAL;
+			goto exit;
+		}
+		strncpy(eabuf, token, ETHER_ADDR_STR_LEN - 1);
 		if (!(ret = bcm_ether_atoe(eabuf, &list->ea[i]))) {
 			DHD_ERROR(("%s : mac parsing err index=%d, addr=%s\n",
 				__FUNCTION__, i, eabuf));
-			list->count--;
+			list->count = i;
 			break;
 		}
 		DHD_INFO(("%s : %d/%d MACADDR=%s", __FUNCTION__, i, list->count, eabuf));
 	}
+	if (i == 0)
+		goto exit;
+
 	/* set the list */
 	if ((ret = wl_android_set_ap_mac_list(dev, macmode, list)) != 0)
 		DHD_ERROR(("%s : Setting MAC list failed error=%d\n", __FUNCTION__, ret));
 
+exit:
 	kfree(list);
 
-	return 0;
+	return ret;
 }
 
 /**
@@ -3997,14 +4037,19 @@ wl_android_ch_res_rl(struct net_device *dev, bool change)
 		srl = 4;
 		lrl = 2;
 	}
+
+	BCM_REFERENCE(lrl);
+
 	error = wldev_ioctl_set(dev, WLC_SET_SRL, &srl, sizeof(s32));
 	if (error) {
 		DHD_ERROR(("Failed to set SRL, error = %d\n", error));
 	}
+#ifndef CUSTOM_LONG_RETRY_LIMIT
 	error = wldev_ioctl_set(dev, WLC_SET_LRL, &lrl, sizeof(s32));
 	if (error) {
 		DHD_ERROR(("Failed to set LRL, error = %d\n", error));
 	}
+#endif /* CUSTOM_LONG_RETRY_LIMIT */
 	return error;
 }
 
@@ -6368,6 +6413,40 @@ wl_android_pktlog_change_size(struct net_device *dev, char *command, int total_l
 }
 #endif /* DHD_PKT_LOGGING */
 
+#if defined(CONFIG_GALILEO)
+static int wl_android_set_powersave_mode(
+		struct net_device *dev, char* command, int total_len)
+{
+	int pm;
+
+	sscanf(command, "%*s %10d", &pm);
+	if (pm < 0 || pm > 2) {
+		WL_ERR(("check pm=%d\n", pm));
+		return BCME_ERROR;
+	}
+
+	return wldev_ioctl_set(dev, WLC_SET_PM, &pm, sizeof(pm));
+}
+
+static int wl_android_get_powersave_mode(
+		struct net_device *dev, char *command, int total_len)
+{
+	int err, bytes_written;
+	int pm;
+
+	err = wldev_ioctl_get(dev, WLC_GET_PM, &pm, sizeof(pm));
+	if (err != BCME_OK) {
+		WL_ERR(("failed to get pm (%d)", err));
+		return err;
+	}
+
+	bytes_written = snprintf(command, total_len, "%s %d",
+			CMD_POWERSAVEMODE_GET, pm);
+
+	return bytes_written;
+}
+#endif /* CONFIG_GALILEO */
+
 int wl_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 {
 #define PRIVATE_COMMAND_MAX_LEN	8192
@@ -6559,6 +6638,9 @@ wl_handle_private_cmd(struct net_device *net, char *command, u32 cmd_len)
 	}
 	else if (strnicmp(command, CMD_SETSUSPENDMODE, strlen(CMD_SETSUSPENDMODE)) == 0) {
 		bytes_written = wl_android_set_suspendmode(net, command, priv_cmd.total_len);
+	}
+	else if (strnicmp(command, CMD_SETDTIM_IN_SUSPEND, strlen(CMD_SETDTIM_IN_SUSPEND)) == 0) {
+		bytes_written = wl_android_set_bcn_li_dtim(net, command);
 	}
 	else if (strnicmp(command, CMD_MAXDTIM_IN_SUSPEND, strlen(CMD_MAXDTIM_IN_SUSPEND)) == 0) {
 		bytes_written = wl_android_set_max_dtim(net, command, priv_cmd.total_len);
@@ -7202,13 +7284,6 @@ wl_handle_private_cmd(struct net_device *net, char *command, u32 cmd_len)
 				priv_cmd.total_len);
 	}
 #endif /* DHD_ENABLE_BIGDATA_LOGGING */
-#if defined(SUPPORT_RANDOM_MAC_SCAN)
-	else if (strnicmp(command, ENABLE_RANDOM_MAC, strlen(ENABLE_RANDOM_MAC)) == 0) {
-		bytes_written = wl_cfg80211_set_random_mac(net, TRUE);
-	} else if (strnicmp(command, DISABLE_RANDOM_MAC, strlen(DISABLE_RANDOM_MAC)) == 0) {
-		bytes_written = wl_cfg80211_set_random_mac(net, FALSE);
-	}
-#endif /* SUPPORT_RANDOM_MAC_SCAN */
 #ifdef WL_NATOE
 	else if (strnicmp(command, CMD_NATOE, strlen(CMD_NATOE)) == 0) {
 		bytes_written = wl_android_process_natoe_cmd(net, command,
@@ -7236,6 +7311,18 @@ wl_handle_private_cmd(struct net_device *net, char *command, u32 cmd_len)
 #endif /* DHD_PKT_LOGGING */
 	}
 #endif /* DHD_LOG_DUMP */
+#if defined(CONFIG_GALILEO)
+	else if (strnicmp(command, CMD_POWERSAVEMODE_SET,
+			strlen(CMD_POWERSAVEMODE_SET)) == 0) {
+		bytes_written = wl_android_set_powersave_mode(net, command,
+			priv_cmd.total_len);
+	}
+	else if (strnicmp(command, CMD_POWERSAVEMODE_GET,
+			strlen(CMD_POWERSAVEMODE_GET)) == 0) {
+		bytes_written = wl_android_get_powersave_mode(net, command,
+			priv_cmd.total_len);
+	}
+#endif /* CONFIG_GALILEO */
 #ifdef SET_PCIE_IRQ_CPU_CORE
 	else if (strnicmp(command, CMD_PCIE_IRQ_CORE, strlen(CMD_PCIE_IRQ_CORE)) == 0) {
 		int set = *(command + strlen(CMD_PCIE_IRQ_CORE) + 1) - '0';

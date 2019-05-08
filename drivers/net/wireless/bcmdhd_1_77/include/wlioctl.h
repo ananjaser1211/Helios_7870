@@ -27,7 +27,7 @@
  * other than the GPL, without Broadcom's express prior written consent.
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wlioctl.h 753884 2018-03-23 06:08:07Z $
+ * $Id: wlioctl.h 763097 2018-05-17 07:56:15Z $
  */
 
 #ifndef _wlioctl_h_
@@ -13784,6 +13784,7 @@ typedef struct sssr_reg_info {
 #define WL_ADPS_IOV_RSSI	0x0002
 #define WL_ADPS_IOV_DUMP	0x0003
 #define WL_ADPS_IOV_DUMP_CLEAR	0x0004
+#define WL_ADPS_IOV_SUSPEND	0x0005
 
 #define ADPS_SUMMARY_STEP_NUM   2
 #define ADPS_SUMMARY_STEP_LOW	0
@@ -13791,6 +13792,9 @@ typedef struct sssr_reg_info {
 
 #define ADPS_SUB_IOV_VERSION_1	1
 #define ADPS_SUB_IOV_VERSION_2	2
+
+#define ADPS_RESUME	0u
+#define ADPS_SUSPEND	1u
 
 typedef struct wl_adps_params_v1 {
 	uint16 version;
@@ -13827,6 +13831,23 @@ typedef struct wl_adps_dump_summary_v1 {
 	uint8 padding;
 	adps_stat_elem_t stat[ADPS_SUMMARY_STEP_NUM];	/* statistics */
 } wl_adps_dump_summary_v1_t;
+
+typedef struct wl_adps_suspend_v1 {
+	uint16 version;
+	uint16 length;
+	uint8 suspend;			/* 1: suspend 0: resume */
+	uint8 padding[3];
+} wl_adps_suspend_v1_t;
+
+typedef struct wl_adps_dump_summary_v2 {
+	uint16 version;
+	uint16 length;
+	uint8 mode;					/* operation mode: On/Off */
+	uint8 current_step;				/* current step */
+	uint8 padding[2];
+	uint32 flags;					/* restrict flags */
+	adps_stat_elem_t stat[ADPS_SUMMARY_STEP_NUM];	/* statistics */
+} wl_adps_dump_summary_v2_t;
 
 typedef struct wlc_btc_2gchain_dis {
 	uint16 ver;

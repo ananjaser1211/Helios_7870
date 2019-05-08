@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wldev_common.c 754332 2018-03-27 07:12:50Z $
+ * $Id: wldev_common.c 760464 2018-05-02 06:09:53Z $
  */
 
 #include <osl.h>
@@ -212,7 +212,7 @@ s32 wldev_mkiovar_bsscfg(
 	u32 iolen;
 
 	/* initialize buffer */
-	if (!iovar_buf || buflen == 0)
+	if (!iovar_buf || buflen <= 0)
 		return BCME_BADARG;
 	memset(iovar_buf, 0, buflen);
 
@@ -225,7 +225,7 @@ s32 wldev_mkiovar_bsscfg(
 	namelen = (u32) strlen(iovar_name) + 1; /* lengh of iovar  name + null */
 	iolen = prefixlen + namelen + sizeof(u32) + paramlen;
 
-	if (buflen < 0 || iolen > (u32)buflen)
+	if (iolen > (u32)buflen)
 	{
 		WLDEV_ERROR(("%s: buffer is too short\n", __FUNCTION__));
 		return BCME_BUFTOOSHORT;
