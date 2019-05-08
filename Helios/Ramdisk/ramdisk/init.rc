@@ -66,6 +66,10 @@ on init
     symlink /system/odm /odm
     symlink /system/vendor /vendor
 
+    # Link /efs and /cpefs to /mnt/vendor to be able to use pie cbd.
+    symlink /efs /mnt/vendor/efs
+    symlink /cpefs /mnt/vendor/cpefs
+
     # MirrorLink permission
     mkdir /dev/socket/mlaudio 0770 audioserver system
 
