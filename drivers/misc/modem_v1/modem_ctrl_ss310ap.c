@@ -167,7 +167,7 @@ static int __init mif_get_hw_rev(char *arg)
     get_option(&arg, &sys_rev);
     return 0;
 }
-early_param("androidboot.hw_rev", mif_get_hw_rev);
+early_param("androidboot.revision", mif_get_hw_rev);
 
 static int init_mailbox_regs(struct modem_ctl *mc)
 {

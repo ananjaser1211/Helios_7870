@@ -1511,7 +1511,7 @@ static void pass_skb_to_net(struct mem_link_device *mld, struct sk_buff *skb)
 
 	priv = skbpriv(skb);
 	if (unlikely(!priv)) {
-		mif_err("%s: ERR! No PRIV in skb@%p\n", ld->name, skb);
+		mif_err("%s: ERR! No PRIV in skb@%pK\n", ld->name, skb);
 		dev_kfree_skb_any(skb);
 		shmem_forced_cp_crash(mld);
 		return;
@@ -1519,7 +1519,7 @@ static void pass_skb_to_net(struct mem_link_device *mld, struct sk_buff *skb)
 
 	iod = priv->iod;
 	if (unlikely(!iod)) {
-		mif_err("%s: ERR! No IOD in skb@%p\n", ld->name, skb);
+		mif_err("%s: ERR! No IOD in skb@%pK\n", ld->name, skb);
 		dev_kfree_skb_any(skb);
 		shmem_forced_cp_crash(mld);
 		return;
@@ -2755,7 +2755,7 @@ struct link_device *shmem_create_link_device(struct platform_device *pdev)
 		mif_err("Failed to vmap boot_region\n");
 		goto error;
 	}
-	mif_info("boot_base=%p, boot_size=%lu\n",
+	mif_info("boot_base=%pK, boot_size=%lu\n",
 		mld->boot_base, (unsigned long)mld->boot_size);
 
 	/**
@@ -2768,7 +2768,7 @@ struct link_device *shmem_create_link_device(struct platform_device *pdev)
 		shm_release_region(mld->boot_base);
 		goto error;
 	}
-	mif_info("ipc_base=%p, ipc_size=%lu\n",
+	mif_info("ipc_base=%pK, ipc_size=%lu\n",
 		mld->base, (unsigned long)mld->size);
 
 	modem->ipc_base = (u8 __iomem *)mld->base;
