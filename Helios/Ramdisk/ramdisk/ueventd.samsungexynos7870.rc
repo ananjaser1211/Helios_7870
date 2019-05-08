@@ -48,10 +48,10 @@
 /dev/video31              0660   media      graphics
 
 # mscalers
-/dev/video50              0660   media      graphics
+/dev/video50              0660   mediacodec drmrpc
 /dev/video51              0660   media      graphics
 /dev/m2m1shot_scaler0     0660   mediacodec drmrpc
-/dev/m2m1shot_scaler1     0660   mediacodec drmrpc
+/dev/m2m1shot_scaler1     0660   cameraserver   cameraserver
 
 /dev/video55              0666   system     graphics
 /dev/fimg2d               0666   system     graphics
@@ -109,23 +109,19 @@
 # cbd modem block
 /dev/block/mmcblk0p5     0400  radio   system
 
-# for DM tools
-/dev/umts_dm0             0660   radio      radio
-/dev/umts_router          0660   radio      radio
+# Modem Interface
+/dev/block/platform/13540000.dwmmc0/by-name/RADIO	0660   system     radio
+/dev/block/platform/13540000.dwmmc0/by-name/CP_DEBUG   0660	radio	system
+/dev/umts*                0660   system     radio
+/dev/umts_csd             0660   system     loop_radio
+/dev/smd4                 0660   system     radio
+/dev/umts_ciq*            0660   system     bridge_rw
 
 # SIPC RIL
 /dev/umts_boot0           0660   radio      radio
 /dev/umts_ipc0            0660   radio      radio
-# /dev/umts_ipc1            0660   radio      radio
+/dev/umts_ipc1            0660   radio      radio
 /dev/umts_rfs0            0660   radio      radio
-
-# Modem Interface
-/dev/block/platform/13540000.dwmmc0/by-name/RADIO	0660	system	radio
-/dev/block/platform/13540000.dwmmc0/by-name/CP_DEBUG	0660	radio	system
-/dev/umts*		  0660	system	radio
-/dev/umts_csd		  0660	system	loop_radio
-/dev/smd4                 0660  system  radio
-/dev/umts_ciq0            0660   system     bridge_rw
 
 # interactive governor parameters
 /sys/devices/system/cpu/cpu*   cpufreq/interactive/timer_rate                  0660    system  system

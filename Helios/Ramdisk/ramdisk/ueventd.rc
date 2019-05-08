@@ -157,3 +157,6 @@ subsystem sound
 
 # USB 
 /dev/ttyGS*                 0660   system       system
+
+# MPSD
+/dev/mpsd    0660    system    system

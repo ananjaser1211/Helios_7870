@@ -63,6 +63,13 @@ on post-fs-data
     mkdir /data/knox/misc_ce 01771 system misc
     mkdir /data/knox/misc_de 01771 system misc
 
+    # DualDAR
+    mkdir /data/misc/knoxcore 0771 vendor_knoxcore vendor_knoxcore
+    mkdir /data/misc/knoxcore/dualdar 0771 vendor_knoxcore vendor_knoxcore
+
+    chown vendor_knoxcore vendor_knoxcore /dev/dd
+    chmod 600 /dev/dd
+
     export KNOX_STORAGE /data/knox/ext_sdcard
 
     # SDP USER 0, SECURE FS
@@ -102,3 +109,8 @@ service sdp_cryptod /system/bin/sdp_cryptod
 
 #    start knox
 
+on property:persist.sys.knox.dualdard=true
+    start dualdard
+
+on property:persist.sys.knox.dualdard=false
+    stop dualdard

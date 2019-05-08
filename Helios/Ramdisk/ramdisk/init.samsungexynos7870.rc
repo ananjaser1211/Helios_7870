@@ -3,6 +3,7 @@ import init.baseband.rc
 import init.carrier.rc
 import init.wifi.rc
 import init.fac.rc
+import init.gps.rc
 
 on early-init
     mkdir /efs 0771 radio system
@@ -25,6 +26,10 @@ on init
     symlink /data/app /factory
     symlink /dev/block/platform/13540000.dwmmc0/by-name/PERSISTENT /dev/block/persistent
     symlink /dev/block/platform/13540000.dwmmc0/by-name/STEADY /dev/block/steady
+	
+on post-fs
+    # set RLIMIT_MEMLOCK to 64MB
+    setrlimit 8 67108864 67108864
 
 on post-fs-data
 # Log data folder
@@ -58,8 +63,7 @@ on post-fs-data
     chown system system /data/cache/backup_stage
     chmod 0711 /data/cache/backup_stage
 
-# Magnetic sensor YAS537 lib
-    mkdir /data/system/yas_lib 0770 system system
+    setprop vold.post_fs_data_done 1
 
 # /efs/factory.prop for Dual / Single SIM settings
     chown radio radio /efs/factory.prop
@@ -93,9 +97,28 @@ on post-fs-data
     chown wifi root /efs/wifi/.mac.cob
     chmod 0664 /efs/wifi/.mac.cob
 
+# Permissions for audio
+    chown system radio /sys/class/audio/earjack/select_jack
+    chown system radio /sys/class/audio/earjack/key_state
+    chown system radio /sys/class/audio/earjack/state
+    chown system radio /sys/class/audio/earjack/mic_adc
+
 # Audio I2C node for TFA amp
     chmod 0660 /dev/i2c-20
     chown audio audio /dev/i2c-20
+
+    chown system audio /sys/class/nxp/tfa_log/data
+    chown system audio /sys/class/nxp/tfa_log/data_maxx
+    chown system audio /sys/class/nxp/tfa_log/count_overxmax
+    chown system audio /sys/class/nxp/tfa_log/data_maxt
+
+    chown system audio /sys/class/nxp/tfa_log/count_overtmax
+
+# Magnetic sensor YAS539 lib
+    mkdir /data/system/yas_lib 0770 system system
+	
+	chmod 0755 /sys/kernel/debug/tracing
+    restorecon /sys/kernel/debug/tracing/trace_marker
 
 on boot
     # override init.rc to keep plenty of large order chunks around
@@ -1066,14 +1089,8 @@ on property:sys.boot_completed=1
 on property:security.semdaemonfinish=1
     stop sem_daemon
 
-# WSM service startup
-service wsmd /system/bin/wsmd
-    class core
-    user system
-    group system
-    disabled
-on property:ro.wsmd.enable=true
-    mkdir /dev/socket/wsm_socket 
-    chmod 0711 /dev/socket/wsm_socket
-    chown system system /dev/socket/wsm_socket
-    start wsmd
+on property:ro.multisim.simslotcount=1
+    setprop persist.radio.multisim.config ss
+
+on property:ro.multisim.simslotcount=2
+    setprop persist.radio.multisim.config dsds
