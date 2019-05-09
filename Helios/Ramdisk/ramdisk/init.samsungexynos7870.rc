@@ -4,6 +4,8 @@ import init.carrier.rc
 import init.wifi.rc
 import init.fac.rc
 import init.gps.rc
+import init.spectrum.rc
+import init.helios.rc
 
 on early-init
     mkdir /efs 0771 radio system

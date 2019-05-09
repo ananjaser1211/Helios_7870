@@ -3,10 +3,8 @@
 # IMPORTANT: Do not create world writable files or directories.
 # This is a common source of Android security bugs.
 #
-import /init.cronos.rc
 import /init.environ.rc
 import /init.usb.rc
-
 import /init.${ro.hardware}.rc
 import /vendor/etc/init/hw/init.${ro.hardware}.rc
 import /init.usb.configfs.rc
@@ -45,12 +43,6 @@ on init
     sysclktz 0
 
     ffu
-
-# [ SEC_SELINUX_PORTING_COMMON
-    # for audit message
-    chown system system /proc/avc_msg
-    chmod 0660 /proc/avc_msg
-# ] SEC_SELINUX_PORTING_COMMON
 
     # Mix device-specific information into the entropy pool
     copy /proc/cmdline /dev/urandom
@@ -480,50 +472,13 @@ on late-fs
     # HALs required before storage encryption can get unlocked (FBE/FDE)
     class_start early_hal
 
-    # For kperfmond.
-    chown system log /data/log/remaining_olog
-    chmod 0440 /data/log/remaining_olog
-
 on post-fs-data
-# [ SEC_SELINUX_PORTING_COMMON
-    # sec_efs_file
-    mkdir /efs/sec_efs 0775 radio system
-# ] SEC_SELINUX_PORTING_COMMON
 
     # We chown/chmod /data again so because mount is run as root + defaults
     chown system system /data
     chmod 0771 /data
     # We restorecon /data in case the userdata partition has been reset.
     restorecon /data
-    # KNOX_NAP
-    chmod 0660 /dev/ncm_dev
-    chown system system /dev/ncm_dev
-	
-    chown system radio /efs
-    chmod 0771 /efs
-    restorecon /efs
-
-    chown system system /carrier
-    chmod 0771 /carrier
-    restorecon /carrier
-
-    chown system system /dqmdbg
-    chmod 0770 /dqmdbg
-    restorecon /dqmdbg
-
-    # Samsung ODE
-    chown system system /keydata
-    chmod 0771 /keydata
-    restorecon /keydata
-	
-    chown system system /keyrefuge
-    chmod 0771 /keyrefuge
-    restorecon /keyrefuge
-	
-# [ SEC_SELINUX_PORTING_COMMON
-    # sec_efs_file
-    mkdir /efs/sec_efs 0775 radio system
-# ] SEC_SELINUX_PORTING_COMMON
 
     # mobicore
     export MC_AUTH_TOKEN_PATH /efs
@@ -531,9 +486,6 @@ on post-fs-data
     chmod 0660 /dev/t-base-tui
     chown system system /dev/t-base-tui
     start mobicore
-
-    mkdir /efs/prov 0770 system system
-    mkdir /efs/prov_data 0770 system system
 
     # icd
     check_icd
@@ -553,34 +505,9 @@ on post-fs-data
     # start icd before vold
     start icd
 
-    # Stork Daemon socket
-    mkdir /dev/socket/stork 0770 system system
-
-    # Start Stork Daemon
-    start storkd
-
-    # VaultKeeper socket
-    #mkdir /dev/socket/vaultkeeper 0770 system system
-    #chown system system /dev/socket/vaultkeeper
-    #chmod 0770 /dev/socket/vaultkeeper
-
-    #start VaultKeeper
-    #start vaultkeeper
-
-    #start VaultKeeper_HAL
-    start vaultkeeper_hal
-
-    #start CASS
-    start cass
-
     # Make sure we have the device encryption key.
     start vold
     installkey /data
-
-    # CAS key data
-    mkdir /data/.cas 0771
-    chown media system /data/.cas
-    chmod 0771 /data/.cas
 
     # Decide to trigger LACKING_STORAGE_BOOT
     trigger_lsb
@@ -592,16 +519,6 @@ on post-fs-data
 
     # Avoid predictable entropy pool. Carry over entropy from previous boot.
     copy /data/system/entropy.dat /dev/urandom
-
-    # barnswallow Daemon socket
-    mkdir /dev/socket/bsd 0770 system system
-
-    # eRR.p
-    chown root system /efs/lpm_boot.log
-    chmod 0660 /efs/lpm_boot.log
-
-    chown system system /efs/lpm/lpm_info.log
-    chmod 0660 /efs/lpm/lpm_info.log
 
     # create basic filesystem structure
     mkdir /data/misc 01771 system misc
@@ -641,10 +558,16 @@ on post-fs-data
     mkdir /data/misc/vpn 0770 system vpn
     mkdir /data/misc/shared_relro 0771 shared_relro shared_relro
     mkdir /data/misc/systemkeys 0700 system system
+    mkdir /data/misc/wifi 0770 wifi wifi
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/wifi/wpa_supplicant 0770 wifi wifi
+    mkdir /data/misc/wifi_hostapd 0771 wifi system
     mkdir /data/misc/ethernet 0770 system system
     mkdir /data/misc/dhcp 0770 dhcp dhcp
     mkdir /data/misc/user 0771 root root
     mkdir /data/misc/perfprofd 0775 root root
+    # give system access to wpa_supplicant.conf for backup and restore
+    chmod 0660 /data/misc/wifi/wpa_supplicant.conf
     mkdir /data/local 0751 root root
     mkdir /data/misc/media 0700 media media
     mkdir /data/misc/audioserver 0700 audioserver audioserver
@@ -665,6 +588,8 @@ on post-fs-data
 
     #lpnetConfig AppSync
     mkdir /data/misc/lpnet 0700 system system
+    # Professioanl Audio
+    mkdir /data/misc/jack 0770 jack system
 
     #MCPS
     #ARGOS with MCPS
@@ -744,7 +669,7 @@ on post-fs-data
     mkdir /data/misc/arcounter 0700 system system
 
     # start auditd
-    start auditd
+    # start auditd
 # ] SEC_SELINUX_PORTING_COMMON
 
 # [ SEC_AASA_ASKS_PORTING
@@ -2030,18 +1955,28 @@ service esecomm /system/bin/tlc_server ESECOMM
     group system
     disabled
 
+# [ Professional audio
+service apaservice /system/bin/apaservice
+    class main
+    user jack
+    group inet sdcard_rw sdcard_r media_rw shell
+
+# ApexServer
+service apexserver /system/bin/apexserver
+    class main
+    user system
+    group system graphics drmrpc media media_rw m2mscaler
+    disabled
+
+service jackservice /system/bin/jackservice
+    class main
+    user jack
+    group audio inet shell
+# Professional audio ]
+
 on property:security.ucm_ese_applet_installed=1
     start esecomm
     setprop security.ucm_ese_applet_installed 0
-
-# [ Wi-Fi init
-service wlandutservice /system/bin/wlandutservice
-    class main
-    user system
-    group system wifi net_raw net_admin inet
-    disabled
-    oneshot
-# ] Wi-Fi init
 
 # IO stats Deamon
 service iod /system/bin/iod
