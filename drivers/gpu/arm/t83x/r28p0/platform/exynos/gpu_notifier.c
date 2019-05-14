@@ -189,18 +189,36 @@ static void gpu_power_suspend(struct kbase_device *kbdev)
 {
 	int ret = 0;
 	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
+
 	if (!platform)
 		return;
 
-	GPU_LOG(DVFS_INFO, DUMMY, 0u, 0u, "power suspend\n");
-	gpu_control_enable_customization(kbdev);
 
+#ifdef CONFIG_MALI_DVFS
+	gpu_dvfs_timer_control(false);
+	if (platform->dvfs_pending)
+		platform->dvfs_pending = 0;
+#endif /* CONFIG_MALI_DVFS */
+
+	gpu_control_enable_customization(kbdev);
 	ret = pm_runtime_suspend(kbdev->dev);
 
-	GPU_LOG(DVFS_INFO, LSI_SUSPEND_CALLBACK, ret, 0u, "power suspend\n");
+	/* we must turn on GPU power when device status is running on shutdown callbacks */
+	if (ret != 0) {
+		gpu_control_disable_customization(kbdev);
+ 	}
+	kbdev->is_power_on = false;
 
 	if (platform->early_clk_gating_status)
 		gpu_control_disable_clock(kbdev);
+
+	if (ret > 0) {
+		platform->power_runtime_suspend_ret = 0;
+	} else {
+		platform->power_runtime_suspend_ret = ret;
+	}
+
+	GPU_LOG(DVFS_INFO, LSI_SUSPEND_CALLBACK, ret, 0u, "power suspend\n");
 }
 
 #ifdef CONFIG_MALI_RT_PM

@@ -486,10 +486,14 @@ int gpu_enable_dvs(struct exynos_context *platform)
 	}
 
 #ifdef CONFIG_EXYNOS_CL_DVFS_G3D
-	if (!platform->dvs_is_enabled)
-	{
-		level = gpu_dvfs_get_level(gpu_get_cur_clock(platform));
-		exynos_cl_dvfs_stop(ID_G3D, level);
+	if (!platform->dvs_is_enabled) {
+		if (platform->exynos_pm_domain) {
+		mutex_lock(&platform->exynos_pm_domain->access_lock);
+		if (!platform->dvs_is_enabled && gpu_is_power_on()) {
+			level = gpu_dvfs_get_level(gpu_get_cur_clock(platform));
+			exynos_cl_dvfs_stop(ID_G3D, level);
+		}
+		mutex_unlock(&platform->exynos_pm_domain->access_lock);
 	}
 #endif /* CONFIG_EXYNOS_CL_DVFS_G3D */
 
