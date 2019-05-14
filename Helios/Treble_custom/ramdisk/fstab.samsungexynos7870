@@ -11,5 +11,5 @@
 
 # VOLD
 /dev/block/platform/13540000.dwmmc0/by-name/HIDDEN             /preload    ext4    defaults    voldmanaged=preload:auto
-/devices/13560000.dwmmc2/mmc_host/mmc*                      auto    vfat    defaults    voldmanaged=sdcard:auto,encryptable=userdata
+/devices/13560000.dwmmc2/mmc_host/mmc*                      auto    vfat    defaults    voldmanaged=sdcard:auto
 /devices/13600000.usb/13600000.dwc3/xhci-hcd.2.auto/usb*    auto    auto    defaults    voldmanaged=usb:auto
