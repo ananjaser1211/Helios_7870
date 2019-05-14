@@ -27,7 +27,7 @@ CR_OUT=$CR_DIR/Helios/Out
 # Presistant A.I.K Location
 CR_AIK=$CR_DIR/Helios/A.I.K
 # Main Ramdisk Location
-CR_RAMDISK=$CR_DIR/Helios/Ramdisk
+CR_RAMDISK=$CR_DIR/Helios/Treble_custom
 CR_RAMDISK_TREBLE=$CR_DIR/Helios/Treble
 # Compiled image name and location (Image/zImage)
 CR_KERNEL=$CR_DIR/arch/arm64/boot/Image
@@ -35,7 +35,7 @@ CR_KERNEL=$CR_DIR/arch/arm64/boot/Image
 CR_DTB=$CR_DIR/boot.img-dtb
 # Kernel Name and Version
 CR_VERSION=V3.1
-CR_NAME=Helios_Pie_Kernel
+CR_NAME=HeliosPie_Treble
 # Thread count
 CR_JOBS=5
 # Target android version and platform (7/n/8/o/9/p)
@@ -58,15 +58,15 @@ CR_PLATFORM_J710X=7.0.0
 # Device specific Variables [SM-J530_2GB (F/G/S/L/K)]
 CR_DTSFILES_J530F="exynos7870-j5y17lte_eur_open_00.dtb exynos7870-j5y17lte_eur_open_01.dtb exynos7870-j5y17lte_eur_open_02.dtb exynos7870-j5y17lte_eur_open_03.dtb exynos7870-j5y17lte_eur_open_05.dtb exynos7870-j5y17lte_eur_open_07.dtb"
 CR_CONFG_J530F=j5y17lte_defconfig
-CR_VARIANT_J530F=J530F_2GB
+CR_VARIANT_J530F=J530X
 # Device specific Variables [SM-J530_3GB (Y/YM/FM/GM)]
 CR_DTSFILES_J530M="exynos7870-j5y17lte_sea_openm_03.dtb exynos7870-j5y17lte_sea_openm_05.dtb exynos7870-j5y17lte_sea_openm_07.dtb"
 CR_CONFG_J530M=j5y17lte_defconfig
-CR_VARIANT_J530M=J530Y_3GB
+CR_VARIANT_J530M=J530Y
 # Device specific Variables [SM-J730F/G]
 CR_DTSFILES_J730F="exynos7870-j7y17lte_eur_open_00.dtb exynos7870-j7y17lte_eur_open_01.dtb exynos7870-j7y17lte_eur_open_02.dtb exynos7870-j7y17lte_eur_open_03.dtb exynos7870-j7y17lte_eur_open_04.dtb exynos7870-j7y17lte_eur_open_05.dtb exynos7870-j7y17lte_eur_open_06.dtb exynos7870-j7y17lte_eur_open_07.dtb"
 CR_CONFG_J730F=j7y17lte_defconfig
-CR_VARIANT_J730F=J730F-G
+CR_VARIANT_J730F=J730X
 # Device specific Variables [SM-J710X]
 CR_DTSFILES_J710X="exynos7870-j7xelte_eur_open_00.dtb exynos7870-j7xelte_eur_open_01.dtb exynos7870-j7xelte_eur_open_02.dtb exynos7870-j7xelte_eur_open_03.dtb exynos7870-j7xelte_eur_open_04.dtb"
 CR_CONFG_J710X=j7xelte_defconfig
@@ -152,7 +152,7 @@ PACK_BOOT_IMG()
 	# Remove red warning at boot
 	echo -n "SEANDROIDENFORCE" » $CR_AIK/image-new.img
 	# Move boot.img to out dir
-	mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT.img
+	mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT-Treble.img
 	$CR_AIK/cleanup.sh
 }
 PACK_BOOT_IMG_TREBLE()
