@@ -58,15 +58,15 @@ CR_PLATFORM_J710X=7.0.0
 # Device specific Variables [SM-J530_2GB (F/G/S/L/K)]
 CR_DTSFILES_J530F="exynos7870-j5y17lte_eur_open_00.dtb exynos7870-j5y17lte_eur_open_01.dtb exynos7870-j5y17lte_eur_open_02.dtb exynos7870-j5y17lte_eur_open_03.dtb exynos7870-j5y17lte_eur_open_05.dtb exynos7870-j5y17lte_eur_open_07.dtb"
 CR_CONFG_J530F=j5y17lte_defconfig
-CR_VARIANT_J530F=J530F_2GB
+CR_VARIANT_J530F=J530X
 # Device specific Variables [SM-J530_3GB (Y/YM/FM/GM)]
 CR_DTSFILES_J530M="exynos7870-j5y17lte_sea_openm_03.dtb exynos7870-j5y17lte_sea_openm_05.dtb exynos7870-j5y17lte_sea_openm_07.dtb"
 CR_CONFG_J530M=j5y17lte_defconfig
-CR_VARIANT_J530M=J530Y_3GB
+CR_VARIANT_J530M=J530Y
 # Device specific Variables [SM-J730F/G]
 CR_DTSFILES_J730F="exynos7870-j7y17lte_eur_open_00.dtb exynos7870-j7y17lte_eur_open_01.dtb exynos7870-j7y17lte_eur_open_02.dtb exynos7870-j7y17lte_eur_open_03.dtb exynos7870-j7y17lte_eur_open_04.dtb exynos7870-j7y17lte_eur_open_05.dtb exynos7870-j7y17lte_eur_open_06.dtb exynos7870-j7y17lte_eur_open_07.dtb"
 CR_CONFG_J730F=j7y17lte_defconfig
-CR_VARIANT_J730F=J730F-G
+CR_VARIANT_J730F=J730X
 # Device specific Variables [SM-J710X]
 CR_DTSFILES_J710X="exynos7870-j7xelte_eur_open_00.dtb exynos7870-j7xelte_eur_open_01.dtb exynos7870-j7xelte_eur_open_02.dtb exynos7870-j7xelte_eur_open_03.dtb exynos7870-j7xelte_eur_open_04.dtb"
 CR_CONFG_J710X=j7xelte_defconfig
@@ -184,11 +184,11 @@ echo "----------------------------------------------"
 echo "$CR_NAME $CR_VERSION Build Script"
 echo "----------------------------------------------"
 PS3='Please select your option (1-8): '
-menuvar=("SM-J530_2G" "SM-J530_3G" "SM-J730F-G" "SM-J710X" "SM-J701X" "SM-G610X" "SM-J600X" "SM-A600X" "Exit")
+menuvar=("SM-J530X" "SM-J530Y" "SM-J730X" "SM-J710X" "SM-J701X" "SM-G610X" "SM-J600X" "SM-A600X" "Exit")
 select menuvar in "${menuvar[@]}"
 do
     case $menuvar in
-        "SM-J530_2G")
+        "SM-J530X")
             clear
             echo "Starting $CR_VARIANT_J530F kernel build..."
             CR_VARIANT=$CR_VARIANT_J530F
@@ -207,7 +207,7 @@ do
             read -n1 -r key
             break
             ;;
-        "SM-J530_3G")
+        "SM-J530Y")
             clear
             echo "Starting $CR_VARIANT_J530M kernel build..."
             CR_VARIANT=$CR_VARIANT_J530M
@@ -226,7 +226,7 @@ do
             read -n1 -r key
             break
             ;;
-        "SM-J730F-G")
+        "SM-J730X")
             clear
             echo "Starting $CR_VARIANT_J730F kernel build..."
             CR_VARIANT=$CR_VARIANT_J730F
