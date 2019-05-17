@@ -7,6 +7,7 @@
  */
 
 #include <linux/lcd.h>
+#include <linux/display_state.h>
 #include <linux/backlight.h>
 #include <linux/of_device.h>
 #include <linux/ctype.h>
