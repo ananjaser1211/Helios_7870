@@ -175,7 +175,7 @@ PACK_BOOT_IMG_TREBLE()
 	# Remove red warning at boot
 	echo -n "SEANDROIDENFORCE" » $CR_AIK/image-new.img
 	# Move boot.img to out dir
-	mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT-Treble.img
+	mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT.img
 	$CR_AIK/cleanup.sh
 }
 # Main Menu
