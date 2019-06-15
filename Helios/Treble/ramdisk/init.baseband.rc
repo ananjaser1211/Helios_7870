@@ -22,10 +22,10 @@ on fs
     wait /dev/block/platform/13540000.dwmmc0/by-name/EFS
     mkdir /efs/cpdebug
     chown radio system /efs/cpdebug
-    chmod 0660 /efs/cpdebug
+    chmod 0771 /efs/cpdebug
     symlink /dev/block/platform/13540000.dwmmc0/by-name/CP_DEBUG /efs/cpdebug/node
     chown radio system /efs/cpdebug/node
-    chmod 0660 /efs/cpdebug/node
+    chmod 0771 /efs/cpdebug/node
 
 on property:ril.clatd.v4-rmnet0=up
     write /sys/class/net/rmnet0/queues/rx-0/rps_cpus 4

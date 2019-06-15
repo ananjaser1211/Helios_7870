@@ -505,6 +505,11 @@ on post-fs-data
     chown system system /keyrefuge
     chmod 0771 /keyrefuge
     restorecon /keyrefuge
+	
+# [ SEC_SELINUX_PORTING_COMMON
+    # sec_efs_file
+    mkdir /efs/sec_efs 0775 radio system
+# ] SEC_SELINUX_PORTING_COMMON
 
     # mobicore
     export MC_AUTH_TOKEN_PATH /efs
@@ -530,10 +535,6 @@ on post-fs-data
 
     # start icd before vold
     start icd
-    start icd_tz_drm
-    start icd_fido
-    start icd_cc
-    start icd_etc
 
     # Stork Daemon socket
     mkdir /dev/socket/stork 0770 system system
@@ -716,6 +717,18 @@ on post-fs-data
 # [ SEC_PRODUCT_FEATURE_SECURITY_SUPPORT_FIVE
     mkdir /data/misc/integrity 0775 vendor_audit system
 # ] SEC_PRODUCT_FEATURE_SECURITY_SUPPORT_FIVE
+	
+# [ SEC_SELINUX_PORTING_COMMON
+    mkdir /data/misc/audit 0775 system system
+    chown vendor_audit vendor_audit /data/misc/audit/audit.log
+    chown vendor_audit vendor_audit /data/misc/audit/audit.old
+
+    # arcounter
+    mkdir /data/misc/arcounter 0700 system system
+
+    # start auditd
+    start auditd
+# ] SEC_SELINUX_PORTING_COMMON
 
 # [ SEC_AASA_ASKS_PORTING
     # Seperate location for storing security policy files on data
@@ -863,6 +876,16 @@ on post-fs-data
     # Check any timezone data in /data is newer than the copy in /system, delete if not.
     exec - system system -- /system/bin/tzdatacheck /system/usr/share/zoneinfo /data/misc/zoneinfo
 
+# [ SEC_SELINUX_PORTING_COMMON
+    restorecon --recursive --force /efs
+    restorecon --recursive --force /cpefs
+    restorecon --recursive --force /mnt/vendor/efs
+    restorecon --recursive --force /mnt/vendor/cpefs
+    restorecon --recursive --force /sec_efs
+    restorecon_recursive /carrier
+    restorecon /sys/kernel/debug/tracing/trace_marker
+# ] SEC_SELINUX_PORTING_COMMON
+
     # smart switch mobile
     mkdir /efs/ssm 0770 system system
 
@@ -895,14 +918,16 @@ on post-fs-data
     #setprop vold.post_fs_data_done 1
 
     # snap gpu kernel
-    mkdir /data/vendor/snap 0755 cameraserver cameraserver
-    copy /vendor/etc/snap_gpu_kernel_32.bin /data/vendor/snap/snap_gpu_kernel_32.bin
-    copy /vendor/etc/snap_gpu_kernel_64.bin /data/vendor/snap/snap_gpu_kernel_64.bin
-    chown cameraserver cameraserver /data/vendor/snap/snap_gpu_kernel_32.bin
-    chown cameraserver cameraserver /data/vendor/snap/snap_gpu_kernel_64.bin
-    chmod 0755 /data/vendor/snap/snap_gpu_kernel_32.bin
-    chmod 0755 /data/vendor/snap/snap_gpu_kernel_64.bin
-    
+    mkdir /data/snap 0755 cameraserver cameraserver
+    copy /vendor/etc/snap_gpu_kernel_32.bin /data/snap/snap_gpu_kernel_32.bin
+    copy /vendor/etc/snap_gpu_kernel_64.bin /data/snap/snap_gpu_kernel_64.bin
+    chown cameraserver cameraserver /data/snap/snap_gpu_kernel_32.bin
+    chown cameraserver cameraserver /data/snap/snap_gpu_kernel_64.bin
+    chmod 0755 /data/snap/snap_gpu_kernel_32.bin
+    chmod 0755 /data/snap/snap_gpu_kernel_64.bin
+    rm /efs/snap/snap_gpu_kernel_64.bin
+    rm /efs/snap/snap_gpu_kernel_32.bin
+
 # It is recommended to put unnecessary data/ initialization from post-fs-data
 # to start-zygote in device's init.rc to unblock zygote start.
 on zygote-start && property:ro.crypto.state=unencrypted
@@ -1406,9 +1431,6 @@ on boot
     # mldap
     mkdir /efs/prov_data 0770 radio system
 
-    # SSU (Samsung SIM Unlock)
-    mkdir /efs/mb_po 0700 system system
-
     # HMT relay mode
     chown radio system /sys/devices/virtual/relay_on
     chown radio system /sys/devices/virtual/data_on
@@ -1903,19 +1925,6 @@ service bsd /system/bin/bsd
 on property:sys.boot_completed=1
     start bsd
 
-# Samsung SIM Unlock (SSU) daemon
-on property:ssu.support=1 && property:vendor.tzdaemon=Ready
-    start ssud
-    setprop ssu.status default
-
-on property:ssu.support=0
-    stop ssud
-
-service ssud /system/bin/ssud
-    user system
-    group system inet
-    disabled
-
 # icd
 service icd /vendor/bin/icd
     class main
@@ -1929,38 +1938,6 @@ service icd /vendor/bin/icd
 on property:init.svc.media=restarting
     check_icd
     start icd
-
-# icd_tz_drm
-service icd_tz_drm /system/bin/icd_tz_drm
-    class main
-    user system
-    group system log
-    disabled
-    oneshot
-
-# icd_fido
-service icd_fido /system/bin/icd_fido
-    class main
-    user system
-    group system log
-    disabled
-    oneshot
-
-# icd_cc
-service icd_cc /system/bin/icd_cc
-    class main
-    user system
-    group system log
-    disabled
-    oneshot
-
-# icd_etc
-service icd_etc /system/bin/icd_etc
-    class main
-    user system
-    group system log
-    disabled
-    oneshot
 
 # strongSwan VPN
 service charon /system/bin/charon

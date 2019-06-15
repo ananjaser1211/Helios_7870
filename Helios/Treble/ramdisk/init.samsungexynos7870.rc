@@ -34,8 +34,25 @@ on post-fs
     setrlimit 8 67108864 67108864
 
 on post-fs-data
+# OLAF setup cgroup freezer
+    mkdir /dev/freezer
+    mount cgroup none /dev/freezer freezer
+    mkdir /dev/freezer/olaf
+    write /dev/freezer/olaf/freezer.state THAWED
+
+    chown system system /dev/freezer
+    chown system system /dev/freezer/olaf
+    chown system system /dev/freezer/olaf/tasks
+    chown system system /dev/freezer/olaf/cgroup.procs
+    chown system system /dev/freezer/olaf/freezer.state
+
+    chmod 0644 /dev/freezer/olaf/tasks
+    chmod 0644 /dev/freezer/olaf/cgroup.procs
+    chmod 0644 /dev/freezer/olaf/freezer.state
+
 # Log data folder
-#   mkdir /data/log 0771 radio system
+    mkdir /data/vendor 0771 root system
+    mkdir /data/vendor/log 0771 root system
 
 #SystemFramework
     chown system system /data/cache/backup
@@ -61,6 +78,28 @@ on post-fs-data
     chown system radio /sys/class/audio/earjack/key_state
     chown system radio /sys/class/audio/earjack/state
     chown system radio /sys/class/audio/earjack/mic_adc
+
+    chown system audio /sys/class/cirrus/cirrus_cal/status
+    chown system audio /sys/class/cirrus/cirrus_cal/rdc
+    chown system audio /sys/class/cirrus/cirrus_cal/temp
+
+    chown system audio /sys/class/cirrus/cirrus_bd/max_exc
+    chown system audio /sys/class/cirrus/cirrus_bd/over_exc_count
+    chown system audio /sys/class/cirrus/cirrus_bd/max_temp
+    chown system audio /sys/class/cirrus/cirrus_bd/over_temp_count
+
+    mkdir /efs/cirrus 0770 audioserver audio
+    chown audioserver audio /efs/cirrus/rdc_cal
+    chown audioserver audio /efs/cirrus/temp_cal
+    chmod 0660 /efs/cirrus/rdc_cal
+    chmod 0660 /efs/cirrus/temp_cal
+
+# for WIFI MAC address
+    mkdir /efs/wifi 0775 wifi root
+    chown wifi root /efs/wifi/.mac.info
+    chmod 0664 /efs/wifi/.mac.info
+    chown wifi root /efs/wifi/.mac.cob
+    chmod 0664 /efs/wifi/.mac.cob
 
 # Audio I2C node for TFA amp
     chmod 0660 /dev/i2c-20
@@ -831,7 +870,7 @@ on fs
 # FM Radio
     chown system audio /dev/radio0
     chmod 0660 /dev/radio0
-    chown bluetooth bluetooth /sys/devices/bluetooth/fm_dtv_ctrl
+    chown bluetooth bluetooth /sys/devices/bluetooth/lna_en
 
 # ARGOSD network_throughput
     chown system system /dev/network_throughput
@@ -841,6 +880,12 @@ service argos-daemon /vendor/bin/argosd
     class main
     user system
     group system radio
+
+service cp_vername /vendor/bin/cp_vername.sh /sys/class/nfc_test/test
+    class core
+    user system
+    group system
+    oneshot
 
 # LPM
 service lpm /system/bin/lpm

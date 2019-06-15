@@ -260,6 +260,9 @@ auditfilter hal_wifi_supplicant_default dumplog_data_file:dir search;
 # P181228-00203
 auditfilter tzdaemon unlabeled:dir search;
 
+# P181228-01907
+auditfilter rild default_prop:file read;
+
 # http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1187
 auditfilter surfaceflinger vendor_log_file:dir write;
 
@@ -361,6 +364,12 @@ auditfilter umount_service hiddenblk_device:blk_file read;
 
 # P190123-05913
 auditfilter lxd_cont_app lxd_cont_app:netlink_audit_socket create;
+
+# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1344
+auditfilter rild system_file:file setattr;
+
+# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1363
+auditfilter rild omc_vendor_file:file setattr;
 
 # http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1360
 auditfilter platform_app bluetooth_data_file:dir getattr;
