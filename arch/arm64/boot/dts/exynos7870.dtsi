@@ -1197,6 +1197,7 @@
 		dmas = <&pdma0 27
 			&pdma0 26>;
 		dma-names = "tx", "rx";
+		swap-mode;
 		#address-cells = <1>;
 		#size-cells = <0>;
 		clocks = <&clock 190>, <&clock 634>;
