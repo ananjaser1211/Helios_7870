@@ -1173,7 +1173,7 @@
 	spi_1: spi@100C0000 {
 		compatible = "samsung,exynos-spi";
 		reg = <0x0 0x100C0000 0x100>;
-		samsung,spi-fifosize = <256>;
+		samsung,spi-fifosize = <64>;
 		interrupts = <0 434 0>;
 /*
 		dma-mode;
@@ -1195,7 +1195,7 @@
 	spi_2: spi@13930000 {
 		compatible = "samsung,exynos-spi";
 		reg = <0x0 0x13930000 0x100>;
-		samsung,spi-fifosize = <256>;
+		samsung,spi-fifosize = <64>;
 		interrupts = <0 455 0>;
 /*
 		dma-mode;
@@ -1216,7 +1216,7 @@
 	spi_3: spi@13900000 {
 		compatible = "samsung,exynos-spi";
 		reg = <0x0 0x13900000 0x100>;
-		samsung,spi-fifosize = <256>;
+		samsung,spi-fifosize = <64>;
 		interrupts = <0 433 0>;
 /*
 		dma-mode;
@@ -1238,7 +1238,7 @@
 	spi_4: spi@13910000 {
 		compatible = "samsung,exynos-spi";
 		reg = <0x0 0x13910000 0x100>;
-		samsung,spi-fifosize = <256>;
+		samsung,spi-fifosize = <64>;
 		interrupts = <0 432 0>;
 /*
 		dma-mode;
