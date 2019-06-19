@@ -37,14 +37,6 @@
 			     <0 51 4>,
 			     <0 52 4>,
 			     <0 53 4>;
-		interrupt-affinity = <&cpu4>,
-				<&cpu5>,
-				<&cpu6>,
-				<&cpu7>,
-				<&cpu0>,
-				<&cpu1>,
-				<&cpu2>,
-				<&cpu3>;
 	};
 
 	aliases {
@@ -72,9 +64,7 @@
 		spi3 = &spi_3;
 		spi4 = &spi_4;
 		mshc0 = &dwmmc_0;
-//+++ MRVL_LOCAL
 		mshc1 = &dwmmc_1;
-//--- MRVL_LOCAL
 		mshc2 = &dwmmc_2;
 		decon0 = &decon_0;
 		dsim0 = &dsim_0;
