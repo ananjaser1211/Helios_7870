@@ -527,7 +527,7 @@
 		use_reg_dummy = "false";
 		reg_name = "BUCK2";
 		/* cold, cold_limit, min_cold, max_uV */
-		volt_info = <25000 1250000 0 1300000>;
+		volt_info = <25000 787500 0 1300000>;
 
 		use_tmu = "true";
 		use_cl_dvfs = "false";
@@ -569,7 +569,7 @@
 		use_reg_dummy = "false";
 		reg_name = "BUCK2";
 		/* <cold, cold_limit, min_cold, max_uV> */
-		volt_info = <25000 1250000 0 1300000>;
+		volt_info = <25000 812500 0 1300000>;
 
 		use_tmu = "true";
 		use_cl_dvfs = "false";
@@ -609,7 +609,7 @@
 		use_reg_dummy = "false";
 		reg_name = "BUCK2";
 		/* cold, cold_limit, min_cold, max_uV */
-		volt_info = <25000 1250000 0 1300000>;
+		volt_info = <25000 668750 0 1300000>;
 
 		use_tmu = "true";
 		use_cl_dvfs = "false";
@@ -649,7 +649,7 @@
 		use_reg_dummy = "true";
 		reg_name = "BUCK2";
 		/* cold, cold_limit, min_cold, max_uV */
-		volt_info = <25000 1250000 0 1300000>;
+		volt_info = <25000 793750 0 1300000>;
 
 		use_tmu = "true";
 		use_cl_dvfs = "false";
