@@ -590,7 +590,6 @@ ecryptfs_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct file *lower_file = ecryptfs_file_to_lower(file);
 	long rc = -ENOTTY;
-    long sdp_rc = -ENOTTY;
 
 #ifdef CONFIG_WTL_ENCRYPTION_FILTER
 	if (cmd == ECRYPTFS_IOCTL_GET_ATTRIBUTES) {
@@ -632,9 +631,9 @@ ecryptfs_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 #endif
 
 #ifdef CONFIG_SDP
-	sdp_rc = ecryptfs_do_sdp_ioctl(file, cmd, arg);
-	if (sdp_rc != -EOPNOTSUPP)
-		return sdp_rc;
+	rc = ecryptfs_do_sdp_ioctl(file, cmd, arg);
+	if (rc != EOPNOTSUPP)
+		return rc;
 #else
 	printk("%s CONFIG_SDP not enabled \n", __func__);
 #endif
@@ -663,7 +662,6 @@ ecryptfs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct file *lower_file = ecryptfs_file_to_lower(file);
 	long rc = -ENOIOCTLCMD;
-    long sdp_rc = -ENOIOCTLCMD;
 
 #ifdef CONFIG_WTL_ENCRYPTION_FILTER
 	if (cmd == ECRYPTFS_IOCTL_GET_ATTRIBUTES) {
@@ -705,9 +703,9 @@ ecryptfs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 #endif
 
 #ifdef CONFIG_SDP
-	sdp_rc = ecryptfs_do_sdp_ioctl(file, cmd, arg);
-	if (sdp_rc != -EOPNOTSUPP)
-		return sdp_rc;
+	rc = ecryptfs_do_sdp_ioctl(file, cmd, arg);
+	if (rc != EOPNOTSUPP)
+		return rc;
 #else
 	printk("%s CONFIG_SDP not enabled \n", __func__);
 #endif
