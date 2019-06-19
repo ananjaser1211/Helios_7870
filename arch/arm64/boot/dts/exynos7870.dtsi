@@ -285,7 +285,7 @@
 	                     <1 14 0xff01>,
 	                     <1 11 0xff01>,
 	                     <1 10 0xff01>;
-	        clock-frequency = <26000000>;
+	        clock-frequency = <26200000>;
 		use-clocksource-only;
 	};
 
