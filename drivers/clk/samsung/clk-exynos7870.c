@@ -122,7 +122,7 @@ static struct init_vclk exynos7870_g3d_vclks[] __initdata = {
 	/* G3D ACLK */
 	VCLK(g3d_sysmmu, gate_g3d_sysmmu, "gate_g3d_sysmmu", 0, 0, NULL),
 	VCLK(g3d_ppmu, gate_g3d_ppmu, "gate_g3d_ppmu", 0, 0, NULL),
-	VCLK(g3d_bts, gate_g3d_bts, "gate_g3d_bts", 0, 0, "gate_g3d_bts_alias"),
+	VCLK(g3d_bts, gate_g3d_bts, "gate_g3d_bts", 0, 0, "NULL"),
 	VCLK(gate_g3d, gate_g3d_g3d, "gate_g3d_g3d", 0, 0, "vclk_g3d"),
 };
 
@@ -339,7 +339,7 @@ void __init exynos7870_clk_init(struct device_node *np)
 
 	samsung_clk_of_add_provider(np, ctx);
 
-	clk_register_fixed_factor(NULL, "pwm-clock", "gate_peri_sclk_pwm_motor", CLK_SET_RATE_PARENT, 1, 1);
+	clk_register_fixed_factor(NULL, "pwm-clock", "gate_peri_sclk_pwm_motor",CLK_SET_RATE_PARENT, 1, 1);
 
 	pr_info("EXYNOS7870: Clock setup completed\n");
 }
