@@ -21,6 +21,8 @@ sha512-arm-neon-y := sha512-armv7-neon.o sha512_neon_glue.o
 aes-arm-ce-y	:= aes-ce-core.o aes-ce-glue.o
 sha2-arm-ce-y	:= sha2-ce-core.o sha2-ce-glue.o
 
+ccflags-y := -O3
+
 quiet_cmd_perl = PERL    $@
       cmd_perl = $(PERL) $(<) > $(@)
 
