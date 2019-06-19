@@ -37,7 +37,7 @@ CR_DTB=$CR_DIR/boot.img-dtb
 CR_VERSION=V3.1
 CR_NAME=Helios_Pie_Kernel
 # Thread count
-CR_JOBS=5
+CR_JOBS=16
 # Target android version and platform (7/n/8/o/9/p)
 CR_ANDROID=p
 CR_PLATFORM=9.0.0
