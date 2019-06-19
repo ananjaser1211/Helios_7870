@@ -1153,11 +1153,9 @@
 		reg = <0x0 0x13920000 0x100>;
 		samsung,spi-fifosize = <256>;
 		interrupts = <0 431 0>;
-/*
 		dma-mode;
 		dmas = <&pdma0 25
 			&pdma0 24>;
-*/
 		dma-names = "tx", "rx";
 		swap-mode;
 		#address-cells = <1>;
@@ -1175,11 +1173,9 @@
 		reg = <0x0 0x100C0000 0x100>;
 		samsung,spi-fifosize = <64>;
 		interrupts = <0 434 0>;
-/*
 		dma-mode;
 		dmas = <&pdma0 19
 			&pdma0 18>;
-*/
 		dma-names = "tx", "rx";
 		swap-mode;
 		#address-cells = <1>;
@@ -1197,11 +1193,9 @@
 		reg = <0x0 0x13930000 0x100>;
 		samsung,spi-fifosize = <64>;
 		interrupts = <0 455 0>;
-/*
 		dma-mode;
 		dmas = <&pdma0 27
 			&pdma0 26>;
-*/
 		dma-names = "tx", "rx";
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -1218,11 +1212,9 @@
 		reg = <0x0 0x13900000 0x100>;
 		samsung,spi-fifosize = <64>;
 		interrupts = <0 433 0>;
-/*
 		dma-mode;
 		dmas = <&pdma0 23
 			&pdma0 22>;
-*/
 		dma-names = "tx", "rx";
 		swap-mode;
 		#address-cells = <1>;
@@ -1240,11 +1232,9 @@
 		reg = <0x0 0x13910000 0x100>;
 		samsung,spi-fifosize = <64>;
 		interrupts = <0 432 0>;
-/*
 		dma-mode;
 		dmas = <&pdma0 21
 			&pdma0 20>;
-*/
 		dma-names = "tx", "rx";
 		swap-mode;
 		#address-cells = <1>;
