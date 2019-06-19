@@ -99,7 +99,7 @@ enum exynos7870_clks {
 
 /* fixed rate clocks generated outside the soc */
 static struct samsung_fixed_rate exynos7870_fixed_rate_ext_clks[] __initdata = {
-	FRATE(oscclk, "fin_pll", NULL, CLK_IS_ROOT, 26000000),
+	FRATE(oscclk, "fin_pll", NULL, CLK_IS_ROOT, 26200000),
 };
 
 static struct of_device_id ext_clk_match[] __initdata = {
