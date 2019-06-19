@@ -19,7 +19,7 @@
 # Main Dir
 CR_DIR=$(pwd)
 # Define toolchan path
-CR_TC=~/Android/Toolchains/linaro-7.4.1-aarch64-linux/bin/aarch64-linux-gnu-
+CR_TC=/home/spartanicus/toolchains/linaro/aarch64-linux-android-gcc-linaro/bin/aarch64-linux-android-
 # Define proper arch and dir for dts files
 CR_DTS=arch/arm64/boot/dts
 # Define boot.img out dir
