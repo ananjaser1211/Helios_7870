@@ -530,7 +530,7 @@ int gpu_regulator_init(struct exynos_context *platform)
 {
 #ifdef CONFIG_MALI_DVFS
 
-	g3d_regulator = regulator_get(NULL, "BUCK2");
+	g3d_regulator = regulator_get(NULL, "vdd_g3d");
 	if (IS_ERR(g3d_regulator)) {
 		GPU_LOG(DVFS_ERROR, DUMMY, 0u, 0u, "%s: failed to get vdd_g3d regulator, 0x%p\n", __func__, g3d_regulator);
 		g3d_regulator = NULL;
