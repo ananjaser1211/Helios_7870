@@ -141,7 +141,7 @@ static gpu_attribute gpu_config_attributes[] = {
 	{GPU_HWCNT_UP_STEP, 3},
 	{GPU_HWCNT_DOWN_STEP, 2},
 	{GPU_HWCNT_GPR, 0},
-	{GPU_HWCNT_DUMP_PERIOD, 100}, /* ms */
+	{GPU_HWCNT_DUMP_PERIOD, 50}, /* ms */
 	{GPU_HWCNT_CHOOSE_JM, 0x56},
 	{GPU_HWCNT_CHOOSE_SHADER, 0x560},
 	{GPU_HWCNT_CHOOSE_TILER, 0x800},
