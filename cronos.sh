@@ -34,8 +34,8 @@ CR_KERNEL=$CR_DIR/arch/arm64/boot/Image
 # Compiled dtb by dtbtool
 CR_DTB=$CR_DIR/boot.img-dtb
 # Kernel Name and Version
-CR_VERSION=V3.1
-CR_NAME=Helios_Pie_Kernel
+CR_VERSION=V3.2
+CR_NAME=Helios_Pie_Kernel_SPARTANICUS
 # Thread count
 CR_JOBS=16
 # Target android version and platform (7/n/8/o/9/p)
