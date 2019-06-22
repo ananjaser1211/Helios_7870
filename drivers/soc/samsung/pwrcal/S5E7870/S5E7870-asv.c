@@ -682,18 +682,17 @@ static int dvfsg3d_get_asv_table(unsigned int *table)
     /* G3D Voltage Override */
 #ifdef CONFIG_SOC_EXYNOS7870
 {
-	table[0] = 1150000;
-	table[1] = 1120000;
-	table[2] = 1050000;
-	table[3] = 1000000;
-	table[4] = 950000;
-	table[5] = 900000;
-	table[6] = 850000;
-	table[7] = 806250;
-	table[8] = 768750;
-	table[9] = 625000;
-	table[10] = 587500;
-	table[11] = 475000;
+	table[0] = 1150000;  /* 1300 MHz */
+	table[1] = 1120000;  /* 1246 MHz */
+	table[2] = 1050000;  /* 1146 MHz */
+	table[3] = 1000000;  /* 1001 MHz */
+	table[4] = 950000;   /*  845 MHz */
+	table[5] = 900000;   /*  728 MHz */
+	table[6] = 850000;   /*  676 MHz */
+	table[7] = 806250;   /*  545 MHz */
+	table[8] = 768750;   /*  450 MHz */
+	table[9] = 625000;   /*  343 MHz */
+	table[10] = 587500;  /*  160 MHz */
 }
 #else
 		table[lv] = get_asv_voltage(cal_asv_dvfs_g3d, lv);
