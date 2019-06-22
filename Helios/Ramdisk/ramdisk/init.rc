@@ -55,8 +55,9 @@ on init
     symlink /sys/kernel/debug /d
 
     # Link /vendor to /system/vendor for devices without a vendor partition.
-    symlink /system/odm /odm
     symlink /system/vendor /vendor
+    symlink /system/odm /odm
+    symlink /system/product /product
 
     # Link /efs and /cpefs to /mnt/vendor to be able to use pie cbd.
     symlink /efs /mnt/vendor/efs
