@@ -1074,7 +1074,7 @@ on boot
     # Permissions for GPU DVFS destroyer
     chmod 000 /sys/devices/11400000.mali/clock
     chmod 000 /sys/devices/11400000.mali/dvfs
-    chmod 000 /sys/devices/11400000.mali/dvfs_governor
+    #chmod 000 /sys/devices/11400000.mali/dvfs_governor
     chmod 000 /sys/devices/11400000.mali/dvfs_max_lock
     chmod 000 /sys/devices/11400000.mali/dvfs_max_lock_status
     chmod 000 /sys/devices/11400000.mali/dvfs_min_lock
