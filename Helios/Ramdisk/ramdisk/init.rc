@@ -1071,6 +1071,18 @@ on boot
     chown system radio /sys/power/cpufreq_max_limit
     chmod 000 /sys/power/cpufreq_max_limit
 
+    # Permissions for GPU DVFS destroyer
+    chmod 000 /sys/devices/11400000.mali/clock
+    chmod 000 /sys/devices/11400000.mali/dvfs
+    chmod 000 /sys/devices/11400000.mali/dvfs_governor
+    chmod 000 /sys/devices/11400000.mali/dvfs_max_lock
+    chmod 000 /sys/devices/11400000.mali/dvfs_max_lock_status
+    chmod 000 /sys/devices/11400000.mali/dvfs_min_lock
+    chmod 000 /sys/devices/11400000.mali/dvfs_min_lock_status
+    chmod 000 /sys/devices/11400000.mali/dvfs_period
+    chmod 000 /sys/devices/11400000.mali/dvfs_table
+    chmod 000 /sys/devices/11400000.mali/core_availability_policy
+
 	# permission for CHARGING
 	mkdir /efs/Battery 0775 radio system
 	chown radio system /efs/Battery
