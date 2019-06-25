@@ -713,7 +713,7 @@ static int dvfsg3d_get_asv_table(unsigned int *table)
 	int lv, max_lv;
 
 #ifdef CONFIG_SOC_EXYNOS7870
-    max_lv = asv_dvfs_g3d->table->max_freq = 1146000;
+    max_lv = asv_dvfs_g3d->table->max_freq = 1300000;
 #else
 	max_lv = asv_dvfs_g3d->table->num_of_lv;
 #endif
