@@ -59,7 +59,6 @@
 #include <linux/page-debug-flags.h>
 #include <linux/hugetlb.h>
 #include <linux/sched/rt.h>
-#include <linux/page_owner.h>
 #include <linux/kthread.h>
 #include <linux/random.h>
 
