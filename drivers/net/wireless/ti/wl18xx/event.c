@@ -77,7 +77,7 @@ static int wlcore_smart_config_sync_event(struct wl1271 *wl, u8 sync_channel,
 	wl1271_debug(DEBUG_EVENT,
 		     "SMART_CONFIG_SYNC_EVENT_ID, freq: %d (chan: %d band %d)",
 		     freq, sync_channel, sync_band);
-	skb = cfg80211_vendor_event_alloc(wl->hw->wiphy, 20,
+	skb = cfg80211_vendor_event_alloc(wl->hw->wiphy, NULL, 20,
 					  WLCORE_VENDOR_EVENT_SC_SYNC,
 					  GFP_KERNEL);
 
@@ -98,7 +98,7 @@ static int wlcore_smart_config_decode_event(struct wl1271 *wl,
 	wl1271_debug(DEBUG_EVENT, "SMART_CONFIG_DECODE_EVENT_ID");
 	wl1271_dump_ascii(DEBUG_EVENT, "SSID:", ssid, ssid_len);
 
-	skb = cfg80211_vendor_event_alloc(wl->hw->wiphy,
+	skb = cfg80211_vendor_event_alloc(wl->hw->wiphy, NULL,
 					  ssid_len + pwd_len + 20,
 					  WLCORE_VENDOR_EVENT_SC_DECODE,
 					  GFP_KERNEL);
@@ -110,6 +110,14 @@ static int wlcore_smart_config_decode_event(struct wl1271 *wl,
 	}
 	cfg80211_vendor_event(skb, GFP_KERNEL);
 	return 0;
+}
+
+static void wlcore_event_time_sync(struct wl1271 *wl, u16 tsf_msb, u16 tsf_lsb)
+{
+	u32 clock;
+	/* convert the MSB+LSB to a u32 TSF value */
+	clock = (tsf_msb << 16) | tsf_lsb;
+	wl1271_info("TIME_SYNC_EVENT_ID: clock %u", clock);
 }
 
 int wl18xx_process_mailbox_events(struct wl1271 *wl)
@@ -127,6 +135,11 @@ int wl18xx_process_mailbox_events(struct wl1271 *wl)
 		if (wl->scan_wlvif)
 			wl18xx_scan_completed(wl, wl->scan_wlvif);
 	}
+
+	if (vector & TIME_SYNC_EVENT_ID)
+		wlcore_event_time_sync(wl,
+				mbox->time_sync_tsf_msb,
+				mbox->time_sync_tsf_lsb);
 
 	if (vector & RADAR_DETECTED_EVENT_ID) {
 		wl1271_info("radar event: channel %d type %s",
@@ -192,6 +205,34 @@ int wl18xx_process_mailbox_events(struct wl1271 *wl)
 						 mbox->sc_ssid,
 						 mbox->sc_pwd_len,
 						 mbox->sc_pwd);
+
+	if (vector & RX_BA_WIN_SIZE_CHANGE_EVENT_ID) {
+		struct wl12xx_vif *wlvif;
+		struct ieee80211_vif *vif;
+		struct ieee80211_sta *sta;
+		u8 link_id = mbox->rx_ba_link_id;
+		u8 win_size = mbox->rx_ba_win_size;
+		const u8 *addr;
+
+		wlvif = wl->links[link_id].wlvif;
+		vif = wl12xx_wlvif_to_vif(wlvif);
+
+		/* Update RX aggregation window size and call
+		 * MAC routine to stop active RX aggregations for this link
+		 */
+		if (wlvif->bss_type != BSS_TYPE_AP_BSS)
+			addr = vif->bss_conf.bssid;
+		else
+			addr = wl->links[link_id].addr;
+
+		sta = ieee80211_find_sta(vif, addr);
+		if (sta) {
+			sta->max_rx_aggregation_subframes = win_size;
+			ieee80211_stop_rx_ba_session(vif,
+						wl->links[link_id].ba_bitmap,
+						addr);
+		}
+	}
 
 	return 0;
 }

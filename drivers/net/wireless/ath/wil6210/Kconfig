@@ -1,5 +1,6 @@
 config WIL6210
 	tristate "Wilocity 60g WiFi card wil6210 support"
+	select WANT_DEV_COREDUMP
 	depends on CFG80211
 	depends on PCI
 	default n
@@ -39,12 +40,3 @@ config WIL6210_TRACING
 	  option if you are interested in debugging the driver.
 
 	  If unsure, say Y to make it easier to debug problems.
-
-config WIL6210_PLATFORM_MSM
-	bool "wil6210 MSM platform specific support"
-	depends on WIL6210
-	depends on ARCH_MSM
-	default y
-	---help---
-	  Say Y here to enable wil6210 driver support for MSM
-	  platform specific features

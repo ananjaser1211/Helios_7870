@@ -143,7 +143,7 @@ static int psm;
 static char *essid;
 
 /* Default to encapsulation unless translation requested */
-static bool translate = 1;
+static bool translate = true;
 
 static int country = USA;
 
@@ -247,10 +247,7 @@ static const UCHAR b4_default_startup_parms[] = {
 	0x04, 0x08,		/* Noise gain, limit offset */
 	0x28, 0x28,		/* det rssi, med busy offsets */
 	7,			/* det sync thresh */
-	0, 2, 2,		/* test mode, min, max */
-	0,			/* rx/tx delay */
-	0, 0, 0, 0, 0, 0,	/* current BSS id */
-	0			/* hop set */
+	0, 2, 2			/* test mode, min, max */
 };
 
 /*===========================================================================*/
@@ -601,7 +598,7 @@ static void init_startup_params(ray_dev_t *local)
 	 *    a_beacon_period = hops    a_beacon_period = KuS
 	 *//* 64ms = 010000 */
 	if (local->fw_ver == 0x55) {
-		memcpy(&local->sparm.b4, b4_default_startup_parms,
+		memcpy((UCHAR *) &local->sparm.b4, b4_default_startup_parms,
 		       sizeof(struct b4_startup_params));
 		/* Translate sane kus input values to old build 4/5 format */
 		/* i = hop time in uS truncated to 3 bytes */
@@ -811,7 +808,7 @@ static int ray_dev_init(struct net_device *dev)
 
 	/* copy mac and broadcast addresses to linux device */
 	memcpy(dev->dev_addr, &local->sparm.b4.a_mac_addr, ADDRLEN);
-	memset(dev->broadcast, 0xff, ETH_ALEN);
+	eth_broadcast_addr(dev->broadcast);
 
 	dev_dbg(&link->dev, "ray_dev_init ending\n");
 	return 0;

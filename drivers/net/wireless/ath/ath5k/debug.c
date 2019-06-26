@@ -722,7 +722,7 @@ static ssize_t read_file_ani(struct file *file, char __user *user_buf,
 			st->mib_intr);
 	len += snprintf(buf + len, sizeof(buf) - len,
 			"beacon RSSI average:\t%d\n",
-			(int)ewma_read(&ah->ah_beacon_rssi_avg));
+			(int)ewma_beacon_rssi_read(&ah->ah_beacon_rssi_avg));
 
 #define CC_PRINT(_struct, _field) \
 	_struct._field, \
@@ -939,10 +939,7 @@ static int open_file_eeprom(struct inode *inode, struct file *file)
 	}
 
 	for (i = 0; i < eesize; ++i) {
-		if (!ath5k_hw_nvram_read(ah, i, &val)) {
-			ret = -EIO;
-			goto freebuf;
-		}
+		AR5K_EEPROM_READ(i, val);
 		buf[i] = val;
 	}
 
