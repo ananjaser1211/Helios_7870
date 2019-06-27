@@ -244,6 +244,8 @@ struct etspi_data {
 	int detect_threshold;
 	bool finger_on;
 	const char *chipid;
+	int reset_count;
+	int interrupt_count;
 };
 
 int etspi_io_burst_read_register(struct etspi_data *etspi,

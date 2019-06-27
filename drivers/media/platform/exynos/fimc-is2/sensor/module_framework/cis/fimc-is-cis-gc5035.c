@@ -843,6 +843,8 @@ int sensor_gc5035_cis_set_exposure_time(struct v4l2_subdev *subdev, struct ae_pa
 			cis_data->sen_vsync_count, short_coarse_int);
 	}
 
+	short_coarse_int = (short_coarse_int / 4)*4;
+
 	dbg_sensor(2, "[MOD:D:%d] %s, frame_length_lines(%#x), long_coarse_int %#x, short_coarse_int %#x\n",
 		cis->id, __func__, cis_data->frame_length_lines, long_coarse_int, short_coarse_int);
 
@@ -1052,6 +1054,7 @@ int sensor_gc5035_cis_set_frame_duration(struct v4l2_subdev *subdev, u32 frame_d
 {
 	int ret = 0;
 	int hold = 0;
+	int write_data = 0;
 	struct fimc_is_cis *cis;
 	struct i2c_client *client;
 	cis_shared_data *cis_data;
@@ -1094,6 +1097,8 @@ int sensor_gc5035_cis_set_frame_duration(struct v4l2_subdev *subdev, u32 frame_d
 	dbg_sensor(2, "[MOD:D:%d] %s, vt_pic_clk_freq_mhz(%#x) frame_duration = %d us,"
 		KERN_CONT "(line_length_pck%#x), frame_length_lines(%#x)\n",
 		cis->id, __func__, vt_pic_clk_freq_mhz, frame_duration, line_length_pck, frame_length_lines);
+		
+	frame_length_lines = (frame_length_lines/4)*4;
 
 	hold = sensor_gc5035_cis_group_param_hold_func(subdev, 0x01);
 	if (hold < 0) {
@@ -1105,7 +1110,12 @@ int sensor_gc5035_cis_set_frame_duration(struct v4l2_subdev *subdev, u32 frame_d
 	if (ret < 0)
 		 goto p_err;
 
-	ret = fimc_is_sensor_addr8_write8(client, 0x41, frame_length_lines);
+	write_data = (u8)((frame_length_lines >> 8) & 0x3f);
+	ret = fimc_is_sensor_addr8_write8(client, 0x41, write_data);
+	if (ret < 0)
+		goto p_err;
+	write_data = (u8)(frame_length_lines & 0xff);
+	ret = fimc_is_sensor_addr8_write8(client, 0x42, write_data);
 	if (ret < 0)
 		goto p_err;
 
@@ -1232,37 +1242,62 @@ int sensor_gc5035_cis_adjust_analog_gain(struct v4l2_subdev *subdev, u32 input_a
 	return ret;
 }
 
-//For finding the nearest value in the gain table
-u32 sensor_gc5035_cis_calc_again_closest(u32 permile) 
+#ifdef CAMERA_FRONT_GC5035
+//For finding the nearest Min. value in the analog gain table for using the digital gain
+u32 sensor_gc5035_cis_calc_again_closest(u32 permile)
 {
-	int i, j, mid; 
+	int i;
 
-	if (permile <= sensor_gc5035_analog_gain[CODE_GAIN_INDEX][PERMILE_GAIN_INDEX]) 
-		return sensor_gc5035_analog_gain[CODE_GAIN_INDEX][PERMILE_GAIN_INDEX]; 
-	if (permile >= sensor_gc5035_analog_gain[MAX_GAIN_INDEX][PERMILE_GAIN_INDEX]) 
-		return sensor_gc5035_analog_gain[MAX_GAIN_INDEX][PERMILE_GAIN_INDEX]; 
+	if (permile <= sensor_gc5035_analog_gain[CODE_GAIN_INDEX][PERMILE_GAIN_INDEX])
+	    return sensor_gc5035_analog_gain[CODE_GAIN_INDEX][PERMILE_GAIN_INDEX];
+	if (permile >= sensor_gc5035_analog_gain[MAX_GAIN_INDEX][PERMILE_GAIN_INDEX])
+	    return sensor_gc5035_analog_gain[MAX_GAIN_INDEX][PERMILE_GAIN_INDEX];
 
-	i = 0, j = MAX_GAIN_INDEX + 1, mid = 0; 
-	while (i < j) { 
-		mid = (i + j) / 2; 
+	for (i = 0; i <= MAX_GAIN_INDEX; i++)
+	{
+		if (sensor_gc5035_analog_gain[i][PERMILE_GAIN_INDEX] == permile)
+			return sensor_gc5035_analog_gain[i][PERMILE_GAIN_INDEX];
 
-		if (sensor_gc5035_analog_gain[mid][PERMILE_GAIN_INDEX] == permile) 
-			return sensor_gc5035_analog_gain[mid][PERMILE_GAIN_INDEX]; 
-  
-		if (permile < sensor_gc5035_analog_gain[mid][PERMILE_GAIN_INDEX]) { 
-			if (mid > 0 && permile > sensor_gc5035_analog_gain[mid - 1][PERMILE_GAIN_INDEX]) 
-				return GET_CLOSEST(sensor_gc5035_analog_gain[mid-1][PERMILE_GAIN_INDEX], sensor_gc5035_analog_gain[mid][PERMILE_GAIN_INDEX], permile); 
-			j = mid; 
-		} 
-		else { 
-			if (mid < MAX_GAIN_INDEX - 1 && permile < sensor_gc5035_analog_gain[mid + 1][PERMILE_GAIN_INDEX]) 
+		if ((int)(permile - sensor_gc5035_analog_gain[i][PERMILE_GAIN_INDEX]) < 0)
+			return sensor_gc5035_analog_gain[i-1][PERMILE_GAIN_INDEX];
+	}
+
+	return sensor_gc5035_analog_gain[i][PERMILE_GAIN_INDEX];
+}
+#else
+
+//For finding the nearest value in the gain table
+u32 sensor_gc5035_cis_calc_again_closest(u32 permile)
+{
+	int i, j, mid;
+
+	if (permile <= sensor_gc5035_analog_gain[CODE_GAIN_INDEX][PERMILE_GAIN_INDEX])
+		return sensor_gc5035_analog_gain[CODE_GAIN_INDEX][PERMILE_GAIN_INDEX];
+	if (permile >= sensor_gc5035_analog_gain[MAX_GAIN_INDEX][PERMILE_GAIN_INDEX])
+		return sensor_gc5035_analog_gain[MAX_GAIN_INDEX][PERMILE_GAIN_INDEX];
+
+	i = 0, j = MAX_GAIN_INDEX + 1, mid = 0;
+	while (i < j) {
+		mid = (i + j) / 2;
+
+		if (sensor_gc5035_analog_gain[mid][PERMILE_GAIN_INDEX] == permile)
+			return sensor_gc5035_analog_gain[mid][PERMILE_GAIN_INDEX];
+
+		if (permile < sensor_gc5035_analog_gain[mid][PERMILE_GAIN_INDEX]) {
+			if (mid > 0 && permile > sensor_gc5035_analog_gain[mid - 1][PERMILE_GAIN_INDEX])
+				return GET_CLOSEST(sensor_gc5035_analog_gain[mid-1][PERMILE_GAIN_INDEX], sensor_gc5035_analog_gain[mid][PERMILE_GAIN_INDEX], permile);
+			j = mid;
+		}
+		else {
+			if (mid < MAX_GAIN_INDEX - 1 && permile < sensor_gc5035_analog_gain[mid + 1][PERMILE_GAIN_INDEX])
 				return GET_CLOSEST(sensor_gc5035_analog_gain[mid][PERMILE_GAIN_INDEX], sensor_gc5035_analog_gain[mid+1][PERMILE_GAIN_INDEX], permile);
-			i = mid + 1;  
-		} 
-	} 
+			i = mid + 1;
+		}
+	}
 
-	return sensor_gc5035_analog_gain[mid][PERMILE_GAIN_INDEX]; 
-} 
+	return sensor_gc5035_analog_gain[mid][PERMILE_GAIN_INDEX];
+}
+#endif
 
 u32 sensor_gc5035_cis_calc_again_permile(u8 code)
 {
@@ -1300,6 +1335,21 @@ u32 sensor_gc5035_cis_calc_again_code(u32 permile)
 	return ret;
 }
 
+u32 sensor_gc5035_cis_calc_dgain_code(u32 input_gain, u32 permile)
+{
+	u32 calc_value = 0;
+	u8 digital_gain = 0;
+
+	calc_value = input_gain*1000/permile;
+	digital_gain = (calc_value * 256) / 1000;
+
+	dbg_sensor(2, "[%s] input_gain : %d, calc_value : %d, digital_gain : %d \n",
+        __func__, input_gain, calc_value, digital_gain);
+
+	return digital_gain;
+}
+
+#ifdef CAMERA_FRONT_GC5035
 int sensor_gc5035_cis_set_analog_gain(struct v4l2_subdev *subdev, struct ae_param *again)
 {
 	int ret = 0;
@@ -1309,6 +1359,8 @@ int sensor_gc5035_cis_set_analog_gain(struct v4l2_subdev *subdev, struct ae_para
 	cis_shared_data *cis_data;
 
 	u32 analog_gain = 0;
+	u32 analog_permile = 0;
+	u8 digital_gain = 0;
 
 #ifdef DEBUG_SENSOR_TIME
 	struct timeval st, end;
@@ -1333,7 +1385,8 @@ int sensor_gc5035_cis_set_analog_gain(struct v4l2_subdev *subdev, struct ae_para
 	cis_data = cis->cis_data;
 
 	analog_gain = sensor_gc5035_cis_calc_again_code(again->val);
-
+	analog_permile = sensor_gc5035_cis_calc_again_permile(analog_gain);
+	digital_gain = sensor_gc5035_cis_calc_dgain_code(again->val, analog_permile);
 	if (analog_gain < cis->cis_data->min_analog_gain[0]) {
 		analog_gain = cis->cis_data->min_analog_gain[0];
 	}
@@ -1355,9 +1408,20 @@ int sensor_gc5035_cis_set_analog_gain(struct v4l2_subdev *subdev, struct ae_para
 	if (ret < 0)
 		 goto p_err;
 
+	/* Analog gain */
 	ret = fimc_is_sensor_addr8_write8(client, 0xb6, analog_gain);
 	if (ret < 0)
 		goto p_err;
+	
+	/* Digital gain int*/
+	ret = fimc_is_sensor_addr8_write8(client, 0xb1, 0x01);
+	if (ret < 0)
+		goto p_err;
+
+	/* Digital gain decimal*/
+	ret = fimc_is_sensor_addr8_write8(client, 0xb2, digital_gain);
+		if (ret < 0)
+			goto p_err;
 
 #ifdef DEBUG_SENSOR_TIME
 	do_gettimeofday(&end);
@@ -1373,6 +1437,89 @@ p_err:
 
 	return ret;
 }
+
+#else
+int sensor_gc5035_cis_set_analog_gain(struct v4l2_subdev *subdev, struct ae_param *again)
+{
+	int ret = 0;
+	int hold = 0;
+	u8 write_value = 0;
+	struct fimc_is_cis *cis;
+	struct i2c_client *client;
+	cis_shared_data *cis_data;
+
+	u32 analog_gain = 0;
+
+#ifdef DEBUG_SENSOR_TIME
+	struct timeval st, end;
+	do_gettimeofday(&st);
+#endif
+
+	FIMC_BUG(!subdev);
+	FIMC_BUG(!again);
+
+	cis = (struct fimc_is_cis *)v4l2_get_subdevdata(subdev);
+
+	FIMC_BUG(!cis);
+	FIMC_BUG(!cis->cis_data);
+
+	client = cis->client;
+	if (unlikely(!client)) {
+		err("client is NULL");
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	cis_data = cis->cis_data;
+
+	analog_gain = sensor_gc5035_cis_calc_again_code(again->val);
+
+	if (analog_gain < cis->cis_data->min_analog_gain[0]) {
+		analog_gain = cis->cis_data->min_analog_gain[0];
+	}
+
+	if (analog_gain > cis->cis_data->max_analog_gain[0]) {
+		analog_gain = cis->cis_data->max_analog_gain[0];
+	}
+
+	dbg_sensor(2, "[MOD:D:%d] %s, input_again = %d us, analog_gain(%#x)\n",
+			cis->id, __func__, again->val, analog_gain);
+
+	I2C_MUTEX_LOCK(cis->i2c_lock);
+
+	hold = sensor_gc5035_cis_group_param_hold_func(subdev, 0x01);
+	if (hold < 0) {
+		ret = hold;
+		goto p_err;
+	}
+
+	write_value = (u8)(analog_gain & 0x1F);
+
+	ret = fimc_is_sensor_addr8_write8(client, 0xfe, 0x00);
+	if (ret < 0)
+		 goto p_err;
+
+	ret = fimc_is_sensor_addr8_write8(client, 0xb6, write_value);
+	if (ret < 0)
+		goto p_err;
+
+#ifdef DEBUG_SENSOR_TIME
+	do_gettimeofday(&end);
+	dbg_sensor(2, "[%s] time %lu us\n", __func__, (end.tv_sec - st.tv_sec)*1000000 + (end.tv_usec - st.tv_usec));
+#endif
+
+p_err:
+	if (hold > 0) {
+		hold = sensor_gc5035_cis_group_param_hold_func(subdev, 0x00);
+		if (hold < 0)
+			ret = hold;
+	}
+
+	I2C_MUTEX_UNLOCK(cis->i2c_lock);
+
+	return ret;
+}
+#endif
 
 int sensor_gc5035_cis_get_analog_gain(struct v4l2_subdev *subdev, u32 *again)
 {
@@ -1916,8 +2063,8 @@ int cis_gc5035_probe(struct i2c_client *client,
 	char const *setfile;
 
 #if defined(CONFIG_VENDER_MCD_V2) || defined(CONFIG_CAMERA_OTPROM_SUPPORT_FRONT) || defined(CONFIG_CAMERA_OTPROM_SUPPORT_REAR)
-//struct fimc_is_vender_specific *specific = NULL;
-//	u32 rom_position = 0;
+struct fimc_is_vender_specific *specific = NULL;
+	u32 rom_position = 0;
 #endif
 
 	BUG_ON(!client);
@@ -1969,7 +2116,6 @@ int cis_gc5035_probe(struct i2c_client *client,
 	cis->client = client;
 	sensor_peri->module->client = cis->client;
 
-#if 0
 #if defined(CONFIG_VENDER_MCD_V2)
 	if (of_property_read_bool(dnode, "use_sensor_otp")) {
 		ret = of_property_read_u32(dnode, "rom_position", &rom_position);
@@ -2000,9 +2146,7 @@ int cis_gc5035_probe(struct i2c_client *client,
 	specific = core->vender.private_data;
 	specific->rear_cis_client = client;
 #endif
-#endif
-
-	cis->ctrl_delay = N_PLUS_TWO_FRAME;
+	//cis->ctrl_delay = N_PLUS_TWO_FRAME;
 #endif
 	cis->cis_data = kzalloc(sizeof(cis_shared_data), GFP_KERNEL);
 	if (!cis->cis_data) {

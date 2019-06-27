@@ -906,7 +906,7 @@ static int sm5705_chg_set_property(struct power_supply *psy,
 
 		sm5705_enable_charging_on_switch(charger, charger->is_charging);
 		if (!buck_state) {
-			sm5705_update_reg(charger->i2c, SM5705_REG_CNTL, SM5705_CHARGER_OP_MODE_SUSPEND, 0x07);
+			sm5705_charger_oper_push_event(SM5705_CHARGER_OP_EVENT_SUSPEND_MODE, ENABLE);
 			pr_info("update op_mode : SM5705_CHARGER_OP_MODE_SUSPEND\n");
 		} else {
 			unsigned char wpcin_state;
@@ -917,7 +917,7 @@ static int sm5705_chg_set_property(struct power_supply *psy,
 			wpcin_state = (wpcin_state & SM5705_STATUS1_WPCINPOK) ? 1 : 0;
 
 			if (!sm5705_charger_check_oper_otg_mode_on()) {
-				sm5705_charger_oper_push_event(SM5705_CHARGER_OP_EVENT_VBUS, charger->is_charging);
+				sm5705_charger_oper_push_event(SM5705_CHARGER_OP_EVENT_SUSPEND_MODE, DISABLE);
 				pr_info("update op_mode : SM5705_CHARGER_OP_MODE_CHG_ON\n");
 			} else {
 				sm5705_charger_oper_push_event(SM5705_CHARGER_OP_EVENT_VBUS, DISABLE);

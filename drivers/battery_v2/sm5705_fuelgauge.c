@@ -1797,6 +1797,11 @@ static int sm5705_fg_parse_dt(struct sec_fuelgauge_info *fuelgauge)
 				&fuelgauge->pdata->capacity_min);
 		if (ret < 0)
 			pr_err("error reading capacity_min %d\n", ret);
+		
+		ret = of_property_read_u32(np, "fuelgauge,capacity_full",
+				&fuelgauge->capacity_full);
+		if (ret < 0)
+			pr_err("%s error reading capacity_full %d\n", __func__, ret);
 
 		pr_info("capacity_max: %d, "
 				"capacity_max_margin: 0x%x, "
@@ -2409,6 +2414,9 @@ static int sm5705_fg_get_property(struct power_supply *psy,
 		sm5705_fg_get_batt_present(fuelgauge->client);
 		break;
 	/* Cell voltage (VCELL, mV) */
+	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
+		val->intval = fuelgauge->capacity_full * fuelgauge->raw_capacity;
+		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
 		sm5705_get_vbat(fuelgauge->client);
 		val->intval = fuelgauge->info.batt_voltage;
@@ -2470,7 +2478,8 @@ static int sm5705_fg_get_property(struct power_supply *psy,
 			val->intval = 1000;
 		if (val->intval < 0)
 			val->intval = 0;
-
+		
+		fuelgauge->raw_capacity = val->intval;
 		/* get only integer part */
 		val->intval /= 10;
 

@@ -191,8 +191,10 @@ static int send_cmd(unsigned int cmd,
 	}
 
 	msg = kzalloc(msg_len, GFP_KERNEL);
-	if (!msg)
+	if (!msg) {
+		mutex_unlock(&itee_driver_lock);
 		return -ENOMEM;
+	}
 
 	msg->hash_algo = algo;
 	memcpy(msg->hash, hash, hash_len);

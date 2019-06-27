@@ -84,6 +84,7 @@ int gpu_job_fence_status_dump(struct sync_fence *timeout_fence)
 	unsigned long lflags;
 	int i;
 	int cnt[5] = {0 ,};
+	struct kbasep_js_device_data *js_devdata;	
 
 	/* dev_warn(dev,"GPU JOB STATUS DUMP\n"); */
 
@@ -108,7 +109,10 @@ int gpu_job_fence_status_dump(struct sync_fence *timeout_fence)
 		list_for_each_entry(element, &kbdev->kctx_list, link) {
 			kctx = element->kctx;
 			mutex_lock(&kctx->jctx.lock);
-			dev_warn(dev, "\t[%p] kctx(%d_%d_%d)_jobs_nr(%d)\n", kctx, kctx->pid, kctx->tgid, kctx->id, kctx->jctx.job_nr);
+			dev_warn(dev, "\t[%p] kctx(%d_%d_%d)_jobs_nr(%d)_as_nr(%d)_refcount(%d)_job_fault_count(%d)_age_count(%d)_flags(0x%x)_slots_pullable(%d)_atoms_pulled(%d))\n",
+						kctx, kctx->pid, kctx->tgid, kctx->id, kctx->jctx.job_nr,
+						kctx->as_nr, atomic_read(&kctx->refcount), atomic_read(&kctx->job_fault_count), kctx->age_count,
+						atomic_read(&kctx->flags), kctx->slots_pullable, atomic_read(&kctx->atoms_pulled));
 			if (kctx->jctx.job_nr > 0) {
 				for (i = BASE_JD_ATOM_COUNT-1; i > 0; i--) {
 					if (kctx->jctx.atoms[i].status == KBASE_JD_ATOM_STATE_UNUSED) {
@@ -149,6 +153,27 @@ int gpu_job_fence_status_dump(struct sync_fence *timeout_fence)
 			mutex_unlock(&kctx->jctx.lock);
 		}
 		mutex_unlock(&kbdev->kctx_list_lock);
+
+		js_devdata = &kbdev->js_data;
+		dev_warn(dev, "nr_compute_ctxs : %d nr_noncompute_ctxs : %d\n",
+				js_devdata->runpool_irq.ctx_attr_ref_count[KBASEP_JS_CTX_ATTR_COMPUTE],
+				js_devdata->runpool_irq.ctx_attr_ref_count[KBASEP_JS_CTX_ATTR_NON_COMPUTE]);
+		dev_warn(dev, "nr_contexts_pullable : %d nr_contexts_runnable : %d\n",
+				js_devdata->nr_contexts_pullable,
+				atomic_read(&js_devdata->nr_contexts_runnable));
+
+		if (kbdev->hwaccess.active_kctx == NULL)
+			dev_warn(dev, "active kctx: empty\n");
+		else
+			dev_warn(dev, "active kctx: %p\n", kbdev->hwaccess.active_kctx);
+
+		dev_warn(dev, "address space info:\n");
+		for (i = BASE_MAX_NR_AS - 1; i >= 0; --i) {
+			if (kbdev->as_to_kctx[i] == NULL)
+				dev_warn(dev, "\tas_to_kctx[%d] : not used\n", i);
+			else
+				dev_warn(dev, "\tas_to_kctx[%d] : %p\n", i, kbdev->as_to_kctx[i]);
+		}
 		/* katom list in backed slot rb */
 		kbase_gpu_dump_slots(kbdev);
 	}

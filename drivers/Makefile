@@ -191,6 +191,7 @@ obj-$(CONFIG_TRUSTONIC_TEE)	+= gud/
 
 # FIVE TEE driver
 obj-$(CONFIG_FIVE_TEE_DRIVER)	+= five/
+obj-$(CONFIG_ICD)		+= icdrv/
 
 #haptic driver
 obj-$(CONFIG_ANDROID_TIMED_OUTPUT)	+= motor/

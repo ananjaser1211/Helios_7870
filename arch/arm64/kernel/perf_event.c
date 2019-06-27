@@ -402,9 +402,10 @@ armpmu_release_hardware(struct arm_pmu *armpmu)
 	} else {
 		for (i = 0; i < irqs; ++i) {
 			int cpu = i;
+
 			if (armpmu->irq_affinity)
 				cpu = armpmu->irq_affinity[i];
-			
+
 			if (!cpumask_test_and_clear_cpu(cpu, &armpmu->active_irqs))
 				continue;
 			irq = platform_get_irq(pmu_device, i);
@@ -460,12 +461,12 @@ armpmu_reserve_hardware(struct arm_pmu *armpmu)
 	} else {
 		for (i = 0; i < irqs; ++i) {
 			int cpu = i;
-			
+
 			err = 0;
 			irq = platform_get_irq(pmu_device, i);
 			if (irq <= 0)
 				continue;
-			
+
 			if (armpmu->irq_affinity)
 				cpu = armpmu->irq_affinity[i];
 
@@ -1304,9 +1305,10 @@ static const struct of_device_id armpmu_of_device_ids[] = {
 static int armpmu_device_probe(struct platform_device *pdev)
 {
 	int i, *irqs;
-	
+
 	if (!cpu_pmu)
 		return -ENODEV;
+
 	irqs = kcalloc(pdev->num_resources, sizeof(*irqs), GFP_KERNEL);
 	if (!irqs)
 		return -ENOMEM;

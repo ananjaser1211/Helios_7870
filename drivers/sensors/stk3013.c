@@ -577,8 +577,8 @@ static int32_t stk3013_set_flag(struct stk3013_data *ps_data,
 	w_flag = org_flag_reg | (STK_FLG_PSINT_MASK | STK_FLG_OUI_MASK |
 					STK_FLG_IR_RDY_MASK);
 	w_flag &= (~clr);
-	/*SENSOR_INFO(" org_flag_reg=0x%x, w_flag = 0x%x\n",
-		org_flag_reg, w_flag);*/
+	SENSOR_INFO(" org_flag_reg=0x%x, w_flag = 0x%x\n",
+		org_flag_reg, w_flag);
 	ret = stk3013_i2c_smbus_write_byte_data(ps_data->client,
 						STK_FLAG_REG, w_flag);
 	if (ret < 0)
@@ -653,10 +653,6 @@ static int32_t stk3013_enable_ps(struct device *dev,
 					ps_data->ps_enabled, ps_data->ps_alert_enabled);
 
 	if (enable) {
-		/*stk3013_regulator_onoff(dev, ON);*/
-		if(ps_data->pdata->vled_ldo)
-			stk3013_vled_onoff(dev,ON);
-		usleep_range(20000,20000);
 		ret = stk3013_init_all_setting(ps_data->client,
 							ps_data->pdata);
 		if (ret < 0) {
@@ -688,6 +684,7 @@ static int32_t stk3013_enable_ps(struct device *dev,
 		stk3013_set_ps_offset(ps_data, ps_data->ps_offset);
 #endif
 		enable_irq(ps_data->irq);
+		enable_irq_wake(ps_data->irq);
 #ifdef STK_CHK_REG
 		if (!validate_reg) {
 			ps_data->ps_distance_last = 1;
@@ -716,10 +713,8 @@ static int32_t stk3013_enable_ps(struct device *dev,
 					near_far_state, read_value);
 		}
 	} else {
+		disable_irq_wake(ps_data->irq);
 		disable_irq(ps_data->irq);
-		if(ps_data->pdata->vled_ldo)
-			stk3013_vled_onoff(dev,OFF);
-		/*stk3013_regulator_onoff(dev, OFF);*/
 	}
 	return ret;
 }
@@ -1532,37 +1527,14 @@ err_request_any_context_irq:
 static int stk3013_suspend(struct device *dev)
 {
 	struct stk3013_data *ps_data = dev_get_drvdata(dev);
-	int ret;
-	struct i2c_client *client = to_i2c_client(dev);
 
 	SENSOR_INFO("\n");
 	mutex_lock(&ps_data->io_lock);
-
-#ifdef STK_CHK_REG
-	ret = stk3013_validate_n_handle(ps_data->client);
-	if (ret < 0) {
-		SENSOR_ERR("stk3013_validate_n_handle fail: %d\n", ret);
-	} else if (ret == 0xFF) {
-		if (ps_data->ps_enabled)
-			stk3013_enable_ps(ps_data, 1, 0);
-	}
-#endif /* #ifdef STK_CHK_REG */
 
 	if (ps_data->ps_alert_enabled) {
 		hrtimer_cancel(&ps_data->prox_alert_timer);
 		cancel_work_sync(&ps_data->work_prox_alert);
 		stk3013_enable_ps(dev, 0, 0);
-	}
-
-	if (ps_data->ps_enabled) {
-		if (device_may_wakeup(&client->dev)) {
-			ret = enable_irq_wake(ps_data->irq);
-			if (ret)
-				SENSOR_WARN("set_irq_wake(%d) failed(%d)\n",
-						ps_data->irq, ret);
-		} else {
-			SENSOR_ERR("not support wakeup source");
-		}
 	}
 
 	mutex_unlock(&ps_data->io_lock);
@@ -1573,29 +1545,10 @@ static int stk3013_suspend(struct device *dev)
 static int stk3013_resume(struct device *dev)
 {
 	struct stk3013_data *ps_data = dev_get_drvdata(dev);
-	int ret;
-	struct i2c_client *client = to_i2c_client(dev);
 
 	SENSOR_INFO("\n");
 
 	mutex_lock(&ps_data->io_lock);
-#ifdef STK_CHK_REG
-	ret = stk3013_validate_n_handle(ps_data->client);
-	if (ret < 0) {
-		SENSOR_ERR("stk3013_validate_n_handle fail: %d\n", ret);
-	} else if (ret == 0xFF) {
-		if (ps_data->ps_enabled)
-			stk3013_enable_ps(ps_data, 1, 0);
-	}
-#endif/* #ifdef STK_CHK_REG */
-	if (ps_data->ps_enabled) {
-		if (device_may_wakeup(&client->dev)) {
-			ret = disable_irq_wake(ps_data->irq);
-			if (ret)
-				SENSOR_WARN("disable_irq_wake(%d) fail(%d)\n",
-						ps_data->irq, ret);
-		}
-	}
 	
 	if (ps_data->ps_alert_enabled) {
 		ps_data->ps_alert_enabled = 0; // state check disable
@@ -2101,10 +2054,6 @@ static int stk3013_probe(struct i2c_client *client,
 		}
 		SENSOR_INFO("prox alert set up done!");
 	}
-
-	/*stk3013_regulator_onoff(&client->dev, OFF);*/
-	if(ps_data->pdata->vled_ldo)
-		stk3013_vled_onoff(&client->dev,OFF);
 
 	SENSOR_INFO("success\n");
 	return 0;

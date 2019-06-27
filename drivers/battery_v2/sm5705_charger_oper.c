@@ -52,6 +52,7 @@ struct sm5705_charger_oper_table_info {
 struct sm5705_charger_oper_info {
 	struct i2c_client *i2c;
 
+	bool suspend_mode;
 	int max_table_num;
 	struct sm5705_charger_oper_table_info current_table;
 };
@@ -141,6 +142,12 @@ static inline void sm5705_charger_oper_change_state(unsigned char new_status)
 		pr_err("sm5705-charger: %s: can't find matched Charger Operation Mode Table (status = 0x%x)\n", __func__, new_status);
 		return;
 	}
+	
+	if (oper_info.suspend_mode) {
+		pr_info("sm5705-charger: %s: skip setting by suspend mode(MODE: %d)\n",
+			__func__, oper_info.current_table.oper_mode);
+		goto skip_oper_change_state;
+	}
 
 	if (sm5705_charger_operation_mode_table[i].BST_OUT != oper_info.current_table.BST_OUT) {
 		sm5705_charger_oper_set_BSTOUT(oper_info.i2c, sm5705_charger_operation_mode_table[i].BST_OUT);
@@ -163,6 +170,7 @@ static inline void sm5705_charger_oper_change_state(unsigned char new_status)
 		sm5705_charger_oper_set_mode(oper_info.i2c, sm5705_charger_operation_mode_table[i].oper_mode);
 		oper_info.current_table.oper_mode = sm5705_charger_operation_mode_table[i].oper_mode;
 	}
+skip_oper_change_state:
 	oper_info.current_table.status = new_status;
 
 	pr_info("sm5705-charger: %s: New table[%d] info (STATUS: 0x%x, MODE: %d, BST_OUT: 0x%x, OTG_CURRENT: 0x%x\n", \
@@ -179,6 +187,17 @@ int sm5705_charger_oper_push_event(int event_type, bool enable)
 	}
 
 	pr_info("sm5705-charger: %s: event_type=%d, enable=%d\n", __func__, event_type, enable);
+
+	if (event_type == SM5705_CHARGER_OP_EVENT_SUSPEND_MODE) {
+		oper_info.suspend_mode = enable;
+		if (oper_info.suspend_mode) {
+			oper_info.current_table.oper_mode = SM5705_CHARGER_OP_MODE_SUSPEND;
+			sm5705_charger_oper_set_mode(oper_info.i2c, SM5705_CHARGER_OP_MODE_SUSPEND);			
+		} else if (oper_info.current_table.oper_mode == SM5705_CHARGER_OP_MODE_SUSPEND) {
+			sm5705_charger_oper_change_state(oper_info.current_table.status);
+		}
+		goto out;
+	}
 
 	new_status = _update_status(event_type, enable);
 	if (new_status == oper_info.current_table.status) {
@@ -201,6 +220,7 @@ int sm5705_charger_oper_table_init(struct i2c_client *i2c)
 	oper_info.i2c = i2c;
 
 	/* set default operation mode condition */
+	oper_info.suspend_mode = false;
 	oper_info.max_table_num = ARRAY_SIZE(sm5705_charger_operation_mode_table);
 	oper_info.current_table.status = make_OP_STATUS(0, 0, 0, 0, 0, 0);
 	oper_info.current_table.oper_mode = SM5705_CHARGER_OP_MODE_CHG_ON;

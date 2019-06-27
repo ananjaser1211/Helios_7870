@@ -141,7 +141,14 @@ void kbase_ctx_sched_retain_ctx_refcount(struct kbase_context *kctx)
 	struct kbase_device *const kbdev = kctx->kbdev;
 
 	lockdep_assert_held(&kbdev->hwaccess_lock);
-	WARN_ON(atomic_read(&kctx->refcount) == 0);
+	/* MALI_SEC_INTEGRATION */
+	/* only debug patch @ exynos7870 */
+	if (WARN_ON(atomic_read(&kctx->refcount) == 0)) {
+		dev_warn(kbdev->dev, "warning : mali kctx %p, age_count %d, as_nr %d, job_fault_count %d, flags 0x%x",
+				kctx, kctx->age_count, kctx->as_nr,
+				atomic_read(&kctx->job_fault_count),
+				atomic_read(&kctx->flags));
+	}
 	WARN_ON(kctx->as_nr == KBASEP_AS_NR_INVALID);
 	WARN_ON(kbdev->as_to_kctx[kctx->as_nr] != kctx);
 

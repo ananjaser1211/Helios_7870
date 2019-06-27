@@ -3618,6 +3618,48 @@ exit:
 	return ret;
 }
 #else //CAMERA_OTPROM_SUPPORT_FRONT_5E9 end
+
+#if defined(CONFIG_CAMERA_CIS_GC5035_OBJ)
+int fimc_is_i2c_read_otp_gc5035(struct i2c_client *client, char *buf)
+{
+	int index_h = 0;
+	int index_l = 0;
+	u8 start_addr_h = 0;
+	u8 start_addr_l = 0;
+	int ret = 0;
+
+	ret = fimc_is_sec_set_registers(client,sensor_Global_gc5035, sensor_Global_gc5035_size);
+	
+	if (unlikely(ret)) {
+		err("failed to fimc_is_sec_set_registers (%d)\n", ret);
+		ret = -EINVAL;
+	}
+
+	fimc_is_sec_set_registers(client, sensor_mode_read_initial_setting,sensor_mode_read_initial_setting_size);
+
+	start_addr_h = 0x10;//otp start address high in bits
+	start_addr_l = 0x00;//otp start address low in bits
+	
+	for(index_h = 0; index_h < 8 ; index_h++)
+	{
+		start_addr_l = 0x00;
+		for(index_l = 0; index_l < 32 ; index_l++)
+		{
+			fimc_is_sensor_addr8_write8(client, 0x69, start_addr_h);//addr High Bit
+			fimc_is_sensor_addr8_write8(client, 0x6a, start_addr_l);//addr Low Bit
+			fimc_is_sensor_addr8_write8(client, 0xf3, 0x20);//OTP Read pulse
+			msleep(1);
+			fimc_is_sensor_addr8_read8(client, 0x6c, buf+ (index_h*32 + index_l));
+			//pr_info("Camera otp data = 0x%x  0x%x %d %c \n", start_addr_h,start_addr_l,(index_h*32 + index_l),buf[index_h*32 + index_l]);
+			start_addr_l = start_addr_l + 8;
+		}
+		start_addr_h++ ;
+	}
+
+	return ret;
+}
+#endif
+
 int fimc_is_sec_readcal_otprom_legacy(struct device *dev, int position)
 {
 	int ret = 0;
@@ -3783,6 +3825,9 @@ crc_retry:
 	pr_info("Camera: I2C read cal data\n\n");
 	fimc_is_i2c_read(client, buf, start_addr, OTP_USED_CAL_SIZE);
 #endif
+#endif
+#if defined(CONFIG_CAMERA_CIS_GC5035_OBJ)
+	ret = fimc_is_i2c_read_otp_gc5035(client,buf);
 #endif
 
 	if (position == SENSOR_POSITION_FRONT) {
@@ -6107,7 +6152,7 @@ int fimc_is_sec_fw_find(struct fimc_is_core *core, int position)
 	   } else if (sensor_id == SENSOR_NAME_GC5035) {
 			/* GC5035 */
 			snprintf(sysfs_finfo.load_fw_name, sizeof(FIMC_IS_FW_GC5035), "%s", FIMC_IS_FW_GC5035);
-			snprintf(sysfs_finfo.load_setfile_name, sizeof(FIMC_IS_GC5035_SETF), "%s", FIMC_IS_GC5035_SETF);			
+			snprintf(sysfs_finfo.load_setfile_name, sizeof(FIMC_IS_GC5035_SETF), "%s", FIMC_IS_GC5035_SETF);
 		} else {
 			snprintf(sysfs_finfo.load_fw_name, sizeof(FIMC_IS_FW_2P2), "%s", FIMC_IS_FW_2P2);
 			snprintf(sysfs_finfo.load_setfile_name, sizeof(FIMC_IS_2P2_SETF), "%s", FIMC_IS_2P2_SETF);

@@ -30,6 +30,8 @@
 #include <crypto/hash.h>
 #include <crypto/hash_info.h>
 #include "five.h"
+#include "five_crypto_comp.h"
+#include "five_porting.h"
 
 struct ahash_completion {
 	struct completion completion;
@@ -71,36 +73,6 @@ MODULE_PARM_DESC(ahash_bufsize, "Maximum ahash buffer size");
 
 static struct crypto_shash *five_shash_tfm;
 static struct crypto_ahash *five_ahash_tfm;
-
-/**
- * five_kernel_read - read file content
- *
- * This is a function for reading file content instead of kernel_read().
- * It does not perform locking checks to ensure it cannot be blocked.
- * It does not perform security checks because it is irrelevant for FIVE.
- *
- */
-static int five_kernel_read(struct file *file, loff_t offset,
-			   char *addr, unsigned long count)
-{
-	mm_segment_t old_fs;
-	char __user *buf = addr;
-	ssize_t ret = -EINVAL;
-
-	if (!(file->f_mode & FMODE_READ))
-		return -EBADF;
-
-	old_fs = get_fs();
-	set_fs(get_ds());
-	if (file->f_op->read)
-		ret = file->f_op->read(file, buf, count, &offset);
-	else if (file->f_op->aio_read)
-		ret = do_sync_read(file, buf, count, &offset);
-	else if (file->f_op->read_iter)
-		ret = new_sync_read(file, buf, count, &offset);
-	set_fs(old_fs);
-	return ret;
-}
 
 int __init five_init_crypto(void)
 {
@@ -162,7 +134,7 @@ static void *five_alloc_pages(loff_t max_size, size_t *allocated_size,
 {
 	void *ptr;
 	int order = five_maxorder;
-	gfp_t gfp_mask = __GFP_WAIT | __GFP_NOWARN | __GFP_NORETRY;
+	gfp_t gfp_mask = __GFP_RECLAIM | __GFP_NOWARN | __GFP_NORETRY;
 
 	if (order)
 		order = min(get_order(max_size), order);
@@ -332,7 +304,7 @@ static int five_calc_file_hash_atfm(struct file *file,
 		}
 		/* read buffer */
 		rbuf_len = min_t(loff_t, i_size - offset, rbuf_size[active]);
-		rc = five_kernel_read(file, offset, rbuf[active],
+		rc = integrity_kernel_read(file, offset, rbuf[active],
 					   rbuf_len);
 		if (rc != rbuf_len)
 			goto out3;
@@ -429,7 +401,7 @@ static int five_calc_file_hash_tfm(struct file *file,
 	while (offset < i_size) {
 		int rbuf_len;
 
-		rbuf_len = five_kernel_read(file, offset, rbuf, PAGE_SIZE);
+		rbuf_len = integrity_kernel_read(file, offset, rbuf, PAGE_SIZE);
 		if (rbuf_len < 0) {
 			rc = rbuf_len;
 			break;

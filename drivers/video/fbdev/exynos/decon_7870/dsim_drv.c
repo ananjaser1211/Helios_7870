@@ -864,7 +864,6 @@ static int dsim_disable(struct dsim_device *dsim)
 #ifdef CONFIG_EXYNOS_MIPI_DSI_ENABLE_EARLY
 	if (dsim->enable_early == DSIM_ENABLE_EARLY_DONE) {
 		dsim_info("%s: Jump to disable_early\n", __func__);
-		dsim->enable_early = DSIM_ENABLE_EARLY_NORMAL;
 		goto disable_early;
 	}
 #endif
@@ -906,6 +905,9 @@ disable_early:
 	dsim_runtime_suspend(dsim->dev);
 #endif
 
+#ifdef CONFIG_EXYNOS_MIPI_DSI_ENABLE_EARLY
+	dsim->enable_early = DSIM_ENABLE_EARLY_NORMAL;
+#endif
 exit:
 	dsim_info("%s: --\n", __func__);
 
@@ -1398,6 +1400,7 @@ static int dsim_enable_early_resume(struct dsim_device *dsim)
 	struct irq_desc *desc;
 	int i;
 	struct decon_device *decon = get_decon_drvdata(0);
+	struct fb_info *info = decon->windows[decon->pdata->default_win]->fbinfo;
 
 	if (!dsim->enable_early_irq)
 		goto exit;
@@ -1409,6 +1412,10 @@ static int dsim_enable_early_resume(struct dsim_device *dsim)
 			desc = irq_to_desc(dsim->enable_early_irq[i]);
 			dsim_info("%s: irq: %d, %s\n", __func__, dsim->enable_early_irq[i],
 				(desc && desc->action && desc->action->name) ? desc->action->name : "");
+
+			if (!lock_fb_info(info))
+				return 0;
+
 			dsim->enable_early = DSIM_ENABLE_EARLY_REQUEST;
 
 			/* disable idle status for display */
@@ -1417,6 +1424,7 @@ static int dsim_enable_early_resume(struct dsim_device *dsim)
 
 			dsim_enable(dsim);
 
+			unlock_fb_info(info);
 			goto exit;
 		}
 	}
@@ -1429,9 +1437,17 @@ exit:
 
 static int dsim_enable_early_suspend(struct dsim_device *dsim)
 {
+	struct decon_device *decon = get_decon_drvdata(0);
+	struct fb_info *info = decon->windows[decon->pdata->default_win]->fbinfo;
+
 	dsim_info("%s: +\n", __func__);
 
+	if (!lock_fb_info(info))
+		return 0;
+
 	dsim_disable(dsim);
+
+	unlock_fb_info(info);
 
 	dsim_info("%s: -\n", __func__);
 

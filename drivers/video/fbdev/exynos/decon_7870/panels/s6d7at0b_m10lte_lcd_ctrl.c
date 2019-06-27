@@ -30,9 +30,6 @@
 #define S6D7AT0B_ID_LEN			3
 #define BRIGHTNESS_REG			0x51
 
-#define VGL_READ_REG			0xF4
-#define VGL_READ_LEN			5
-
 #define get_bit(value, shift, width)	((value >> shift) & (GENMASK(width - 1, 0)))
 
 #define DSI_WRITE(cmd, size)		do {				\
@@ -66,8 +63,6 @@ struct lcd_info {
 
 	struct notifier_block		fb_notif_panel;
 	struct i2c_client		*backlight_client;
-
-	unsigned char			vgl_reg[VGL_READ_LEN+1];
 };
 
 static int dsim_write_hl_data(struct lcd_info *lcd, const u8 *cmd, u32 cmdsize)
@@ -239,25 +234,6 @@ static int s6d7at0b_read_id(struct lcd_info *lcd)
 
 	return ret;
 }
-
-static int vgl_read_reg(struct lcd_info *lcd)
-{
-	int ret = 0;
-	unsigned char buf[VGL_READ_LEN] = {0, };
-	unsigned int pwrctl_cmd_cnt = VGL_READ_LEN + 1;
-
-	ret = dsim_read_hl_data(lcd, VGL_READ_REG, VGL_READ_LEN, buf);
-	if (ret < 0)
-		dev_err(&lcd->ld->dev, "%s: read fail\n", __func__);
-
-	lcd->vgl_reg[0] = VGL_READ_REG;
-
-	memcpy(&lcd->vgl_reg[1], buf, VGL_READ_LEN);
-
-	dev_info(&lcd->ld->dev, "%s: %*ph\n", __func__, pwrctl_cmd_cnt, lcd->vgl_reg);
-
-	return ret;
-}
 #endif
 
 static int s6d7at0b_displayon_late(struct lcd_info *lcd)
@@ -341,10 +317,6 @@ static int s6d7at0b_init(struct lcd_info *lcd)
 	DSI_WRITE(SEQ_S6D7AT0B_51, ARRAY_SIZE(SEQ_S6D7AT0B_51));
 	DSI_WRITE(SEQ_S6D7AT0B_53, ARRAY_SIZE(SEQ_S6D7AT0B_53));
 	DSI_WRITE(SEQ_S6D7AT0B_55, ARRAY_SIZE(SEQ_S6D7AT0B_55));
-
-#if defined(CONFIG_SEC_FACTORY)
-	vgl_read_reg(lcd);
-#endif
 
 	DSI_WRITE(SEQ_SLEEP_OUT, ARRAY_SIZE(SEQ_SLEEP_OUT));
 	msleep(120);
@@ -463,12 +435,6 @@ static int s6d7at0b_probe(struct lcd_info *lcd)
 
 	lm3632_id->driver_data = (kernel_ulong_t)lcd;
 	i2c_add_driver(&lm3632_i2c_driver);
-
-#if defined(CONFIG_SEC_FACTORY)
-	DSI_WRITE(SEQ_TEST_KEY_ON_F0, ARRAY_SIZE(SEQ_TEST_KEY_ON_F0));
-	vgl_read_reg(lcd);
-	DSI_WRITE(SEQ_TEST_KEY_OFF_F0, ARRAY_SIZE(SEQ_TEST_KEY_OFF_F0));
-#endif
 
 	dev_info(&lcd->ld->dev, "- %s\n", __func__);
 

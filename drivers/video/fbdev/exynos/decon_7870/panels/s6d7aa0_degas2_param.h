@@ -59,7 +59,7 @@ static const unsigned char SEQ_FD_PARAM_MDNIE[] = {
 
 static const unsigned char SEQ_FE_PARAM_MDNIE[] = {
 	0xFE,
-	0x00, 0x02, 0x03, 0x21, 0x00, 0x78
+	0x00, 0x02, 0x03, 0x21, 0x00, 0x58
 };
 
 static const unsigned char SEQ_B3_PARAM[] = {

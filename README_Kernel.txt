@@ -10,7 +10,7 @@
         - to Build
                 $ export ANDROID_MAJOR_VERSION=p
                 $ export ARCH=arm64
-                $ make exynos7870-a6lte_defconfig
+                $ make exynos7870-j7y17lte_defconfig
                 $ make
 
 2. Output files

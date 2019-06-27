@@ -146,6 +146,7 @@ struct sm5703_platform_data {
 	int capacity_max;
 	int capacity_max_margin;
 	int capacity_min;
+	int capacity_full;
 	int capacity_calculation_type;
 	int fuel_alert_soc;
 	int fullsocthr;
@@ -186,7 +187,8 @@ struct sm5703_fuelgauge_data {
 	unsigned int capacity_old;      /* only for atomic calculation */
 	unsigned int capacity_max;      /* only for dynamic calculation */
 	unsigned int standard_capacity;
-	
+	unsigned int raw_capacity;
+
 #if defined(CONFIG_BATTERY_AGE_FORECAST)
 	unsigned int chg_float_voltage; /* BATTERY_AGE_FORECAST */
 #endif

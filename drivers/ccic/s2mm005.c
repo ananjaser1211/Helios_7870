@@ -1044,8 +1044,6 @@ skip_update:
 	send_otg_notify(o_notify, NOTIFY_EVENT_POWER_SOURCE, 0);
 #endif
 #if defined(CONFIG_CCIC_ALTERNATE_MODE)
-	init_completion(&usbpd_data->uvdm_out_wait);
-	init_completion(&usbpd_data->uvdm_longpacket_in_wait);
 	usbpd_data->alternate_state = 0;
 	usbpd_data->acc_type = 0;
 	usbpd_data->dp_is_connect = 0;

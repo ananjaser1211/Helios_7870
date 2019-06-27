@@ -712,7 +712,7 @@ static int vidioc_g_fmt_vid_cap_mplane(struct file *file, void *priv,
 		 */
 		if ((ctx->raw_buf.total_plane_size * (ctx->dpb_count + 5 + 3)) > (600 * 1024 * 1024)) {
 			mfc_info_ctx("Total memory size is too big. width(%d), height(%d), dpb(%d)\n",
-						ctx->img_width, ctx->img_height, ctx->dpb_count);
+					ctx->img_width, ctx->img_height, ctx->dpb_count);
 			return -EIO;
 		}
 

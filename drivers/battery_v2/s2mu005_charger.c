@@ -458,12 +458,15 @@ static int s2mu005_get_topoff_current(struct s2mu005_charger_data *charger)
 	return data * 25 + 100;
 }
 
-static void s2mu005_set_topoff_current(struct i2c_client *i2c,
+static void s2mu005_set_topoff_current(struct s2mu005_charger_data *charger,
 		int eoc_1st_2nd, int current_limit)
 {
 	int data;
-
+#if defined(CONFIG_S2MU005_MODE_CHANGE_BY_TOPOFF)
+	union power_supply_propval value;
+#endif
 	pr_info("[DEBUG]%s: current  %d\n", __func__, current_limit);
+	
 	if (current_limit <= 100)
 		data = 0;
 	else if (current_limit > 100 && current_limit <= 475)
@@ -473,11 +476,16 @@ static void s2mu005_set_topoff_current(struct i2c_client *i2c,
 
 	switch(eoc_1st_2nd) {
 	case 1:
-		s2mu005_update_reg(i2c, S2MU005_CHG_CTRL10, data << FIRST_TOPOFF_CURRENT_SHIFT,
+		s2mu005_update_reg(charger->client, S2MU005_CHG_CTRL10, data << FIRST_TOPOFF_CURRENT_SHIFT,
 			FIRST_TOPOFF_CURRENT_MASK);
+#if defined(CONFIG_S2MU005_MODE_CHANGE_BY_TOPOFF)
+		value.intval = current_limit;
+		psy_do_property("s2mu005-fuelgauge", set , 
+				POWER_SUPPLY_PROP_CURRENT_FULL, value);
+#endif
 		break;
 	case 2:
-		s2mu005_update_reg(i2c, S2MU005_CHG_CTRL10, data << SECOND_TOPOFF_CURRENT_SHIFT,
+		s2mu005_update_reg(charger->client, S2MU005_CHG_CTRL10, data << SECOND_TOPOFF_CURRENT_SHIFT,
 			SECOND_TOPOFF_CURRENT_MASK);
 		break;
 	default:
@@ -672,9 +680,9 @@ static void s2mu005_charger_initialize(struct s2mu005_charger_data *charger)
 			charger->pdata->chg_float_voltage);
 	/* topoff current */
 	charger->topoff_current = 100;
-	s2mu005_set_topoff_current(charger->client, 1, charger->topoff_current);
+	s2mu005_set_topoff_current(charger, 1, charger->topoff_current);
 	if (charger->pdata->chg_eoc_dualpath) {
-		s2mu005_set_topoff_current(charger->client, 2, charger->topoff_current);
+		s2mu005_set_topoff_current(charger, 2, charger->topoff_current);
 	}
 
 	dev_info(charger->dev, "%s: Re-initialize Charger completely\n", __func__);
@@ -962,11 +970,11 @@ static int sec_chg_set_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CURRENT_FULL:
 		charger->topoff_current = val->intval;
 		if (charger->pdata->chg_eoc_dualpath) {
-			s2mu005_set_topoff_current(charger->client, 1, val->intval);
-			s2mu005_set_topoff_current(charger->client, 2, 100);
+			s2mu005_set_topoff_current(charger, 1, val->intval);
+			s2mu005_set_topoff_current(charger, 2, 100);
 		}
 		else
-			s2mu005_set_topoff_current(charger->client, 1, val->intval);
+			s2mu005_set_topoff_current(charger, 1, val->intval);
 		break;
 #if defined(CONFIG_BATTERY_SWELLING)
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
@@ -1155,7 +1163,10 @@ static int sec_chg_set_property(struct power_supply *psy,
 					s2mu005_update_reg(charger->client, 0xA1, 0 << 6, 1 << 6);
 					/* OVP Level Recover */
 					s2mu005_update_reg(charger->client, S2MU005_CHG_CTRL1, 1 << 2, 1 << 2);
-
+					/* SCP On */
+					s2mu005_update_reg(charger->client, 0x27, 0x10, 0x30);
+					/* VIO Reset Enable default set */
+					s2mu005_update_reg(charger->client, 0x7B, 0x00, 1 << 2);
 					s2mu005_read_reg(charger->client, S2MU005_CHG_CTRL0, &temp);
 					pr_info("[DEBUG]%s: 0x0E : 0x%x\n", __func__, temp);
 					s2mu005_read_reg(charger->client, 0xAF, &temp);
@@ -1176,6 +1187,10 @@ static int sec_chg_set_property(struct power_supply *psy,
 					pr_info("[DEBUG]%s: 0xA1 : 0x%x\n", __func__, temp);
 					s2mu005_read_reg(charger->client, 0x0F, &temp);
 					pr_info("[DEBUG]%s: 0x0F : 0x%x\n", __func__, temp);
+					s2mu005_read_reg(charger->client, 0x27, &temp);
+					pr_info("[DEBUG]%s: 0x27 : 0x%x\n", __func__, temp);
+					s2mu005_read_reg(charger->client, 0x7B, &temp);
+					pr_info("[DEBUG]%s: 0x7B : 0x%x\n", __func__, temp);
 				}
 			}
 			break;
