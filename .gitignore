@@ -143,3 +143,6 @@ scripts/sortextable
 security/selinux_n/av_permissions.h
 security/selinux_n/flask.h
 usr/gen_init_cpio
+security/proca/proca_certificate-asn1.c
+security/proca/proca_certificate-asn1.h
+
