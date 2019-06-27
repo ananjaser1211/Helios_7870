@@ -145,4 +145,10 @@ security/selinux_n/flask.h
 usr/gen_init_cpio
 security/proca/proca_certificate-asn1.c
 security/proca/proca_certificate-asn1.h
+include/config/auto.conf
+include/config/auto.conf.cmd
+include/config/tristate.conf
+include/generated/autoconf.h
+security/samsung/defex_lsm/file_list
+
 
