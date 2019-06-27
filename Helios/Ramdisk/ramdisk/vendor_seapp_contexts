@@ -1,12 +1,3 @@
-user=system seinfo=platform name=com.aricent.ims.service domain=vendor_telephony_app type=vendor_telephony_data_file
-user=system seinfo=platform name=com.sec.jniril domain=vendor_telephony_app type=vendor_telephony_data_file
-user=radio seinfo=platform name=com.samsung.slsi.telephony.autoanswer domain=vendor_telephony_app type=vendor_telephony_data_file
-user=system seinfo=platform name=com.samsung.slsi.telephony.silentlogging domain=vendor_telephony_app type=vendor_telephony_data_file
-user=system seinfo=platform name=com.samsung.slsi.telephony.testmode domain=vendor_telephony_app type=vendor_telephony_data_file
-user=system seinfo=platform name=com.samsung.slsi.telephony.usbmodeswitch domain=vendor_telephony_app type=vendor_telephony_data_file
-user=system seinfo=platform name=com.samsung.slsi.engineermode domain=vendor_telephony_app type=vendor_telephony_data_file
-user=system seinfo=platform name=com.samsung.slsi.uartswitch domain=vendor_telephony_app type=vendor_telephony_data_file
-user=system seinfo=platform name=com.samsung.slsi.sysdebugmode domain=vendor_telephony_app type=vendor_telephony_data_file
 user=system seinfo=platform name=com.samsung.aasaservice domain=aasa_service_app type=aasa_service_app_data_file
 user=_app seinfo=platform name=com.samsung.ucm.baiplugin domain=sec_untrusted_app type=app_data_file levelFrom=user
 user=_app seinfo=platform name=com.sec.smartcard.manager domain=sec_untrusted_app type=app_data_file levelFrom=user
@@ -46,6 +37,7 @@ user=vendor_spass seinfo=platform domain=platform_app type=app_data_file levelFr
 user=vendor_spay seinfo=spay domain=platform_app type=app_data_file
 user=dsms seinfo=platform name=com.samsung.android.dsms domain=dsms_app type=app_data_file levelFrom=user
 user=adaptive_brightness seinfo=platform name=com.samsung.adaptivebrightnessgo domain=platform_app type=app_data_file levelFrom=user
+user=system seinfo=platform name=com.sec.android.systemupdate domain=spu_app type=app_data_file
 user=drm seinfo=platform name=com.sec.android.SamsungDrmProvider domain=platform_app type=app_data_file levelFrom=user
 user=smartcard seinfo=platform domain=platform_app type=app_data_file levelFrom=user
 user=msgcom seinfo=platform domain=platform_app type=app_data_file levelFrom=user
@@ -108,3 +100,12 @@ user=oem_5502 domain=felica_app type=app_data_file levelFrom=user
 user=oem_5503 domain=felica_app type=app_data_file levelFrom=user
 user=oem_5504 domain=felica_app type=app_data_file
 user=vendor_felicalock domain=felica_app type=app_data_file levelFrom=user
+user=system seinfo=platform name=com.aricent.ims.service domain=vendor_telephony_app type=vendor_telephony_data_file
+user=system seinfo=platform name=com.sec.jniril domain=vendor_telephony_app type=vendor_telephony_data_file
+user=radio seinfo=platform name=com.samsung.slsi.telephony.autoanswer domain=vendor_telephony_app type=vendor_telephony_data_file
+user=system seinfo=platform name=com.samsung.slsi.telephony.silentlogging domain=vendor_telephony_app type=vendor_telephony_data_file
+user=system seinfo=platform name=com.samsung.slsi.telephony.testmode domain=vendor_telephony_app type=vendor_telephony_data_file
+user=system seinfo=platform name=com.samsung.slsi.telephony.usbmodeswitch domain=vendor_telephony_app type=vendor_telephony_data_file
+user=system seinfo=platform name=com.samsung.slsi.engineermode domain=vendor_telephony_app type=vendor_telephony_data_file
+user=system seinfo=platform name=com.samsung.slsi.uartswitch domain=vendor_telephony_app type=vendor_telephony_data_file
+user=system seinfo=platform name=com.samsung.slsi.sysdebugmode domain=vendor_telephony_app type=vendor_telephony_data_file

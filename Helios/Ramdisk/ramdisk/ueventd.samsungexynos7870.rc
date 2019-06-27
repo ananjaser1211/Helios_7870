@@ -104,7 +104,7 @@
 #/dev/mobicore-user        0660   drm        drmrpc
 
 # Secure MEM driver
-#/dev/s5p-smem             0660   drm        drmrpc
+/dev/s5p-smem             0660   system        system
 
 # cbd modem block
 /dev/block/mmcblk0p5     0400  radio   system
