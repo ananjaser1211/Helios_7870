@@ -40,6 +40,7 @@
 			fuelgauge,capacity_max = <950>;
 			fuelgauge,capacity_max_margin = <150>;
 			fuelgauge,capacity_min = <0>;
+			fuelgauge,capacity_full = <3000>;
 			fuelgauge,capacity_calculation_type = <28>;
 			fuelgauge,fg_log_enable = <1>;
 			fuelgauge,evt2_val = <0x07>;
@@ -343,6 +344,7 @@
 		battery,expired_time = <12000>;
 		battery,recharginig_expired_time = <5400>;
 		battery,standard_curr = <2100>;
+		battery,battery_full_capacity = <3000>;
 
 		battery,charging_total_time = <21600>;
 		battery,recharging_total_time = <5400>;
