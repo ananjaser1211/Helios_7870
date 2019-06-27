@@ -1937,6 +1937,7 @@ static ssize_t lsm6dsl_smart_alert_store(struct device *dev,
 		return size;
 	}
 
+	mutex_lock(&cdata->mutex_enable);
 	if ((enable == 1) && (cdata->sa_flag == 0)) {
 		cdata->sa_irq_state = 0;
 		cdata->sa_flag = 1;
@@ -1945,7 +1946,7 @@ static ssize_t lsm6dsl_smart_alert_store(struct device *dev,
 					   LSM6DSL_ACCEL_ODR_ADDR,
 					   LSM6DSL_ACCEL_ODR_MASK,
 					   LSM6DSL_ACCEL_ODR_POWER_DOWN, true);
-		mdelay(100);
+		mdelay(50);
 
 		if (factory_mode == 1) {
 			threshold = 0;
@@ -1966,6 +1967,7 @@ static ssize_t lsm6dsl_smart_alert_store(struct device *dev,
 				fs = 16000;
 				break;
 			default:
+				mutex_unlock(&cdata->mutex_enable);
 				return size;
 			}
 
@@ -2003,7 +2005,7 @@ static ssize_t lsm6dsl_smart_alert_store(struct device *dev,
 					   LSM6DSL_ACCEL_ODR_ADDR,
 					   LSM6DSL_ACCEL_ODR_MASK,
 					   odr, true);
-		mdelay(100);
+		mdelay(50);
 
 		lsm6dsl_set_irq(cdata, 1);
 		SENSOR_INFO("smart alert is on!\n");
@@ -2041,6 +2043,7 @@ static ssize_t lsm6dsl_smart_alert_store(struct device *dev,
 		SENSOR_INFO("smart alert is off! irq = %d, odr 0x%x\n",
 						cdata->sa_irq_state, odr);
 	}
+	mutex_unlock(&cdata->mutex_enable);
 
 	return size;
 }

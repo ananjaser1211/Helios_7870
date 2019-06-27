@@ -146,6 +146,8 @@ static uintptr_t mdnie_request_firmware(char *path, char *name, int *ret)
 	while (!IS_ERR_OR_NULL(ptr)) {
 		ptr = (name) ? strstr(ptr, name) : ptr;
 		while ((token = strsep(&ptr, "\n")) != NULL) {
+			if (*token == '\0')
+				continue;
 			numperline = sscanf(token, "%8i, %8i", &data[0], &data[1]);
 			if (numperline < 0)
 				goto exit;

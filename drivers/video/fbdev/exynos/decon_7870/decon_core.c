@@ -3177,7 +3177,7 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 				ret = 0;
 			}
 			blank = FB_BLANK_UNBLANK;
-			decon_notifier_call_chain(FB_EVENT_BLANK, &v);
+			decon_notifier_call_chain(DECON_EVENT_DOZE, &v);
 			break;
 		case DECON_POWER_MODE_DOZE_SUSPEND:
 			decon_info("%s: DECON_POWER_MODE_DOZE_SUSPEND\n", __func__);
@@ -3187,7 +3187,7 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 				ret = 0;
 			}
 			blank = FB_BLANK_POWERDOWN;
-			decon_notifier_call_chain(FB_EVENT_BLANK, &v);
+			decon_notifier_call_chain(DECON_EVENT_DOZE, &v);
 			break;
 		default:
 			decon_info("%s: pwr_mode: %d\n", __func__, decon->pwr_mode);
@@ -4590,8 +4590,17 @@ static int decon_remove(struct platform_device *pdev)
 static void decon_shutdown(struct platform_device *pdev)
 {
 	struct decon_device *decon = platform_get_drvdata(pdev);
+	struct fb_info *fbinfo = decon->windows[decon->pdata->default_win]->fbinfo;
+	struct fb_event v = {0, };
+	int blank = FB_BLANK_POWERDOWN;
 
 	dev_info(decon->dev, "%s + state:%d\n", __func__, decon->state);
+
+	if (!lock_fb_info(fbinfo)) {
+		decon_warn("%s: fblock is failed\n", __func__);
+		return;
+	}
+
 	DISP_SS_EVENT_LOG(DISP_EVT_DECON_SHUTDOWN, &decon->sd, ktime_set(0, 0));
 
 	if (decon->pdata->psr_mode == DECON_MIPI_COMMAND_MODE)
@@ -4599,10 +4608,17 @@ static void decon_shutdown(struct platform_device *pdev)
 
 	decon_lpd_block_exit(decon);
 	/* Unused DECON state is DECON_STATE_INIT */
-	if (decon->state == DECON_STATE_ON)
-		decon_disable(decon);
+	if (decon->state == DECON_STATE_ON) {
+		v.info = fbinfo;
+		v.data = &blank;
 
-	decon_lpd_unblock(decon);
+		decon_notifier_call_chain(FB_EARLY_EVENT_BLANK, &v);
+		decon_disable(decon);
+		decon_notifier_call_chain(FB_EVENT_BLANK, &v);
+	}
+
+	/* decon_lpd_unblock(decon); */
+	unlock_fb_info(fbinfo);
 
 	dev_info(decon->dev, "%s -\n", __func__);
 }

@@ -126,7 +126,9 @@ int cnss_wlan_oob_shutdown(void)
              return -ENOSYS;
 }
 #endif /* CONFIG_CNSS_SDIO */
-
+#ifdef SEC_WRITE_VERSION_IN_SYSFS
+tANI_U8 sec_versionString[128];
+#endif /* SEC_WRITE_VERSION_IN_SYSFS */
 extern int wlan_hdd_cfg80211_update_band(struct wiphy *wiphy, eCsrBand eBand);
 static int ioctl_debug;
 module_param(ioctl_debug, int, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
@@ -872,6 +874,11 @@ void hdd_wlan_get_version(hdd_adapter_t *pAdapter, union iwreq_data *wrqu,
                                      CRMId,
                                      pHWversion);
     } else {
+#ifdef SEC_WRITE_VERSION_IN_SYSFS
+        scnprintf(sec_versionString, 128,
+				"Host SW:%s, FW:%d.%d.%d.%d, HW:%s",
+				QWLAN_VERSIONSTR, MSPId, mSPId, SIId, CRMId, pHWversion);
+#endif /* SEC_WRITE_VERSION_IN_SYSFS */
         pr_info("Host SW:%s, FW:%d.%d.%d.%d, HW:%s\n",
                 QWLAN_VERSIONSTR,
                 MSPId,

@@ -603,6 +603,18 @@ config ENABLE_100MA_CHARGING_BEFORE_USB_CONFIGURED
 	help
 	  Say Y to enable 100mA before usb configured
 
+config S2MU005_MODE_CHANGE_BY_TOPOFF
+	bool "enable s2mu005 mode change by topoff"
+	default n
+	help
+	  Say Y to enable s2mu005 mode change by topoff
+
+config ABNORMAL_BAT_THM_WA
+	bool "enable SW Workaround for abnormal jump in battery thermistor ADC"
+	default n
+	help
+	  Say Y to enable SW Workaround for abnormal jump in battery thermistor ADC
+
 config TYPEB_WATERPROOF_MODEL
 	bool "enable typeb_waterproof_model"
 	default n

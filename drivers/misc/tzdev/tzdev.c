@@ -734,10 +734,6 @@ static struct tz_cdev tzdev_cdev = {
 	.owner = THIS_MODULE,
 };
 
-static struct syscore_ops tzdev_syscore_ops = {
-	.shutdown = tzdev_shutdown
-};
-
 static int __init init_tzdev(void)
 {
 	int rc;
@@ -774,8 +770,6 @@ static int __init init_tzdev(void)
 	}
 #endif /* CONFIG_TZDEV_EARLY_SWD_INIT */
 
-	register_syscore_ops(&tzdev_syscore_ops);
-
 	return rc;
 
 #if defined(CONFIG_TZDEV_EARLY_SWD_INIT)
@@ -800,8 +794,6 @@ static void __exit exit_tzdev(void)
 	tzdev_mem_fini();
 
 	tzdev_cma_mem_release(tzdev_cdev.device);
-
-	unregister_syscore_ops(&tzdev_syscore_ops);
 
 	tzdev_shutdown();
 

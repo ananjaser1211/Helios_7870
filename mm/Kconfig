@@ -578,6 +578,14 @@ config ZSWAP_ENABLE_WRITEBACK
 	depends on ZSWAP
 	default n
 
+config ZSWAP_SAME_PAGE_SHARING
+	bool "Enable same page sharing support in zswap"
+	depends on ZSWAP && !ZSWAP_ENABLE_WRITEBACK
+	default n
+	help
+	  This option adds a feature to share the compressed pages
+	  written to zswap if the pages are found to be same.
+
 config ZSWAP_COMPACTION
 	bool "Enable runtime zswap compaction"
 	depends on ZSWAP && ZPOOL && ZSMALLOC
@@ -724,3 +732,9 @@ config MAX_DIRTY_THRESH_PAGES
     This value is the upper bound of VM dirty-thresh. (0 means no limit.)
     It is only effective when dirty_ratio is used.
     (Setting dirty_bytes disables this option.)
+
+config FAULT_AROUND_4KB
+	bool "Fault around bytes 4KB"
+	default n
+	help
+	  Reduce fault around bytes to 4KB for android GO models.

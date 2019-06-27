@@ -198,7 +198,6 @@ fw-shipped-$(CONFIG_SENSORS_A96T3X6_A6) += abov/a96t326_a6lte.fw abov/a96t346_a6
 fw-shipped-$(CONFIG_SENSORS_A96T3X6_J6) += abov/a96t326_j6lte.fw
 fw-shipped-$(CONFIG_SENSORS_A96T3X6_J6KOR) += abov/a96t326_j6ltekor.fw
 fw-shipped-$(CONFIG_SENSORS_TC3XXK_M10) += coreriver/tc305k_m10_grip.fw
-fw-shipped-$(CONFIG_SENSORS_A96T3X6_A2CORE) += abov/a96t346_a2core.fw
 
 #Sensor Hub
 fw-shipped-$(CONFIG_SENSORS_SSP_2017A3) += ssp_stmf410_a2017.fw

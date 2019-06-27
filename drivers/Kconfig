@@ -216,4 +216,6 @@ source "drivers/sensorhub/Kconfig"
 
 source "drivers/five/Kconfig"
 
+source "drivers/icdrv/Kconfig"
+
 endmenu

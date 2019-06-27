@@ -13,9 +13,9 @@ deps_config := \
 	drivers/crypto/Kconfig \
 	crypto/async_tx/Kconfig \
 	crypto/Kconfig \
-	security/dsms/Kconfig \
+	security/samsung/dsms/Kconfig \
 	security/proca/Kconfig \
-	security/defex_lsm/Kconfig \
+	security/samsung/defex_lsm/Kconfig \
 	security/tz_iccc/Kconfig \
 	security/integrity/five/Kconfig \
 	security/integrity/evm/Kconfig \
@@ -114,6 +114,7 @@ deps_config := \
 	drivers/firmware/efi/Kconfig \
 	drivers/firmware/google/Kconfig \
 	drivers/firmware/Kconfig \
+	drivers/icdrv/Kconfig \
 	drivers/five/five_tee_driver/Kconfig \
 	drivers/five/Kconfig \
 	drivers/sensorhub/stm_v2/factory/Barometer/Kconfig \

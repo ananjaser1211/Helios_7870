@@ -425,6 +425,11 @@ static void *zs_zpool_map(void *pool, unsigned long handle,
 	case ZPOOL_MM_RO:
 		zs_mm = ZS_MM_RO;
 		break;
+#ifdef CONFIG_ZSWAP_SAME_PAGE_SHARING
+	case ZPOOL_MM_RO_NOWAIT:
+		zs_mm = ZS_MM_RO_NOWAIT;
+		break;
+#endif
 	case ZPOOL_MM_WO:
 		zs_mm = ZS_MM_WO;
 		break;
@@ -1509,7 +1514,15 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
 	BUG_ON(in_interrupt());
 
 	/* From now on, migration cannot move the object */
+#ifdef CONFIG_ZSWAP_SAME_PAGE_SHARING
+	if (mm == ZS_MM_RO_NOWAIT) {
+		if (!trypin_tag(handle))
+			return NULL;
+	} else
+		pin_tag(handle);
+#else
 	pin_tag(handle);
+#endif
 
 	obj = handle_to_obj(handle);
 	obj_to_location(obj, &page, &obj_idx);

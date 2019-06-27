@@ -50,6 +50,7 @@ static enum power_supply_property sm5703_fuelgauge_props[] = {
 	POWER_SUPPLY_PROP_TEMP,
 	POWER_SUPPLY_PROP_TEMP_AMBIENT,
 	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
+	POWER_SUPPLY_PROP_CHARGE_COUNTER,
 };
 
 static bool sm5703_fg_reg_init(struct sm5703_fuelgauge_data *fuelgauge,
@@ -1104,6 +1105,9 @@ static int sm5703_fg_get_property(struct power_supply *psy,
 		case POWER_SUPPLY_PROP_CHARGE_FULL:
 		case POWER_SUPPLY_PROP_ENERGY_NOW:
 			return -ENODATA;
+		case POWER_SUPPLY_PROP_CHARGE_COUNTER:
+			val->intval = fuelgauge->pdata->capacity_full * fuelgauge->raw_capacity;
+			break;
 		/* Cell voltage (VCELL, mV) */
 		case POWER_SUPPLY_PROP_VOLTAGE_NOW:
 			val->intval = sm5703_get_vbat(fuelgauge);
@@ -1146,6 +1150,7 @@ static int sm5703_fg_get_property(struct power_supply *psy,
 				if (val->intval < 0)
 					val->intval = 0;
 
+				fuelgauge->raw_capacity = val->intval;
 				/* get only integer part */
 				val->intval /= 10;
 
@@ -1443,6 +1448,11 @@ static int sm5703_fg_parse_dt(struct sm5703_fuelgauge_data *fuelgauge)
 				&fuelgauge->pdata->capacity_min);
 		if (ret < 0)
 			pr_err("%s error reading capacity_min %d\n", __func__, ret);
+
+		ret = of_property_read_u32(np, "fuelgauge,capacity_full",
+				&fuelgauge->pdata->capacity_full);
+		if (ret < 0)
+			pr_err("%s error reading capacity_full %d\n", __func__, ret);
 
 		ret = of_property_read_u32(np, "fuelgauge,capacity_calculation_type",
 				&fuelgauge->pdata->capacity_calculation_type);

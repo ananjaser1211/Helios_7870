@@ -86,7 +86,11 @@ efi_head:
 	.quad	_kernel_size_le			// Effective size of kernel image, little-endian
 	.quad	_kernel_flags_le		// Informative flags, little-endian
 	.quad	0				// reserved
-	.quad	0				// reserved
+#ifdef CONFIG_PROCA
+	.quad	_proca_conf_offset		// memory info for proca ta
+#else
+	.quad	0xecefecef				// Magic number for proca ta
+#endif
 	.quad	0				// reserved
 	.byte	0x41				// Magic number, "ARM\x64"
 	.byte	0x52

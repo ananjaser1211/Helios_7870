@@ -85,7 +85,7 @@ static const unsigned char SEQ_S6D7AT0B_73[] = {
 
 static const unsigned char SEQ_S6D7AT0B_B1[] = {
 	0xB1,
-	0x11, 0x32, 0x11, 0x00,
+	0x1D, 0x32, 0x11, 0x00, 0xFF
 };
 
 static const unsigned char SEQ_S6D7AT0B_B3[] = {

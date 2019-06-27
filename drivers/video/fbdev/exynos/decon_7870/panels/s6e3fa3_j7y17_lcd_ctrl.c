@@ -1710,6 +1710,11 @@ static ssize_t alpm_doze_store(struct device *dev,
 
 	dev_info(dev, "%s: %d\n", __func__, value);
 
+	if (lcd->state != PANEL_STATE_RESUMED) {
+		dev_info(&lcd->ld->dev, "%s: panel state is %d\n", __func__, lcd->state);
+		return -EINVAL;
+	}
+
 	if (value >= ALPM_MODE_MAX) {
 		dev_err(&lcd->ld->dev, "%s: undefined alpm mode: %d\n", __func__, value);
 		return -EINVAL;

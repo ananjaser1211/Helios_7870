@@ -31,7 +31,7 @@
 #define __FS_HAS_ENCRYPTION IS_ENABLED(CONFIG_F2FS_FS_ENCRYPTION)
 #include <linux/fscrypt.h>
 
-#ifdef CONFIG_F2FS_CHECK_FS
+#ifdef CONFIG_F2FS_STRICT_BUG_ON
 #define f2fs_down_write(x, y)	down_write_nest_lock(x, y)
 #define	BUG_ON_CHKFS	BUG_ON
 #else
@@ -44,13 +44,14 @@ extern int ignore_fs_panic;
 	do {									\
 		if (unlikely(condition)) {					\
 			if (is_sbi_flag_set(sbi, SBI_POR_DOING)) {		\
-				WARN_ON(1);					\
 				set_sbi_flag(sbi, SBI_NEED_FSCK);		\
 				sbi->sec_stat.fs_por_error++;			\
-			} else {						\
-				BUG_ON_CHKFS(!ignore_fs_panic);			\
-				set_sbi_flag(sbi, SBI_NEED_FSCK);		\
+				WARN_ON(1);					\
+			} else if (unlikely(!ignore_fs_panic)) {		\
+				f2fs_set_sb_extra_flag(sbi,			\
+						F2FS_SEC_EXTRA_FSCK_MAGIC);	\
 				sbi->sec_stat.fs_error++;			\
+				BUG_ON_CHKFS(1);				\
 			}							\
 		}								\
 	} while (0)
@@ -1609,6 +1610,18 @@ static inline unsigned int f2fs_time_to_wait(struct f2fs_sb_info *sbi,
 }
 
 /*
+ * SEC Specific Patch
+ * <------ SB -----><----------- CP -------------><-------- .... ----->
+ * [SB0][SB1]....[ ][CP1][CP Payload...]...[CP2]....
+ *                ^ (cp_blkaddr - 1) Reserved block for extra flags
+ * - struct f2fs_sb_extra_flag_blk
+ *   - need_fsck : force fsck request flags - F2FS_SEC_EXTRA_FSC_MAGIC
+ *   - spo_counter : count by fsck (!CP_UMOUNT)
+ *   - rsvd
+ */
+void f2fs_set_sb_extra_flag(struct f2fs_sb_info *sbi, int flag);
+
+/*
  * Inline functions
  */
 static inline u32 __f2fs_crc32(struct f2fs_sb_info *sbi, u32 crc,
@@ -1815,7 +1828,11 @@ static inline void disable_nat_bits(struct f2fs_sb_info *sbi, bool lock)
 {
 	unsigned long flags;
 
-	set_sbi_flag(sbi, SBI_NEED_FSCK);
+	/*
+	 * In order to re-enable nat_bits we need to call fsck.f2fs by
+	 * set_sbi_flag(sbi, SBI_NEED_FSCK). But it may give huge cost,
+	 * so let's rely on regular fsck or unclean shutdown.
+	 */
 
 	if (lock)
 		spin_lock_irqsave(&sbi->cp_lock, flags);
@@ -2092,7 +2109,11 @@ static inline void *__bitmap_ptr(struct f2fs_sb_info *sbi, int flag)
 	if (is_set_ckpt_flags(sbi, CP_LARGE_NAT_BITMAP_FLAG)) {
 		offset = (flag == SIT_BITMAP) ?
 			le32_to_cpu(ckpt->nat_ver_bitmap_bytesize) : 0;
-		return &ckpt->sit_nat_version_bitmap + offset;
+		/*
+		 * if large_nat_bitmap feature is enabled, leave checksum
+		 * protection for all nat/sit bitmaps.
+		 */
+		return &ckpt->sit_nat_version_bitmap + offset + sizeof(__le32);
 	}
 
 	if (__cp_payload(sbi) > 0) {

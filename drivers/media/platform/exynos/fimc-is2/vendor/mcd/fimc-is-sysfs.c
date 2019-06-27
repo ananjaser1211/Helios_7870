@@ -2037,7 +2037,7 @@ static ssize_t camera_rear3_checkfw_factory_show(struct device *dev,
 static ssize_t camera_rear3_info_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	char camera_info[110] = {0, };
+	char camera_info[125] = {0, };
 #ifdef CONFIG_OF
 	struct fimc_is_cam_info *rear_cam_info = &(cam_infos[CAM_INFO_REAR3]);
 

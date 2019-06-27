@@ -256,6 +256,8 @@ static int td4101_displayon_late(struct lcd_info *lcd)
 
 	DSI_WRITE(SEQ_DISPLAY_ON, ARRAY_SIZE(SEQ_DISPLAY_ON));
 
+	s2dps01_array_write(lcd->backlight_client, S2DPS01_INIT, ARRAY_SIZE(S2DPS01_INIT));
+
 	dsim_panel_set_brightness(lcd, 1);
 
 	return ret;
@@ -268,6 +270,8 @@ static int td4101_exit(struct lcd_info *lcd)
 	dev_info(&lcd->ld->dev, "%s\n", __func__);
 
 	DSI_WRITE(SEQ_DISPLAY_OFF, ARRAY_SIZE(SEQ_DISPLAY_OFF));
+
+	s2dps01_array_write(lcd->backlight_client, S2DPS01_SUSPEND, ARRAY_SIZE(S2DPS01_SUSPEND));
 
 	msleep(20);
 
@@ -613,10 +617,6 @@ static int dsim_panel_resume_early(struct dsim_device *dsim)
 	struct lcd_info *lcd = dsim->priv.par;
 
 	dev_info(&lcd->ld->dev, "+ %s\n", __func__);
-
-	/* VSP VSN setting, So, It should be called before power enabling */
-
-	s2dps01_array_write(lcd->backlight_client, S2DPS01_INIT, ARRAY_SIZE(S2DPS01_INIT));
 
 	dev_info(&lcd->ld->dev, "- %s: %d, %d\n", __func__, lcd->state, lcd->connected);
 

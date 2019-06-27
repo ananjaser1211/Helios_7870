@@ -68,9 +68,9 @@ static ssize_t param_write(struct file *f, const char __user *user_buf,
 
 	unsigned char ibuf[MAX_INPUT] = {0, };
 	unsigned int tbuf[MAX_INPUT] = {0, };
-	unsigned int value = 0, input_w = 0, input_h = 0, offset_w = 0, offset_h = 0;
+	unsigned int value = 0, end = 0, input_w = 0, input_h = 0, offset_w = 0, offset_h = 0, param_old, param_new;
 	char *pbuf, *token = NULL;
-	int ret = 0, end = 0;
+	int ret = 0;
 
 	ret = dd_simple_write_to_buffer(ibuf, sizeof(ibuf), ppos, user_buf, count);
 	if (ret < 0) {
@@ -92,14 +92,19 @@ static ssize_t param_write(struct file *f, const char __user *user_buf,
 	}
 
 	pbuf = ibuf;
-	while ((token = strsep(&pbuf, " "))) {
+	/* scan x, y first */
+	while ((token = strsep(&pbuf, ", "))) {
+		if (*token == '\0')
+			continue;
 		ret = kstrtou32(token, 0, &value);
 		if (ret < 0 || end == ARRAY_SIZE(tbuf))
 			break;
 
-		dbg_info("[%2d] 0x%x, %d, %s\n", end, value, value, token);
+		dbg_info("[%2d] 0x%02x(%4d), %s\n", end, value, value, token);
 		tbuf[end] = value;
 		end++;
+		if (end >= 2)
+			break;
 	}
 
 	dbg_info("end: %d\n", end);
@@ -109,16 +114,8 @@ static ssize_t param_write(struct file *f, const char __user *user_buf,
 		goto exit;
 	}
 
-	if (end < 3 || end == ARRAY_SIZE(tbuf)) {
-		dbg_info("invalid input: end(%d), input should be 3~%zu\n", end, ARRAY_SIZE(tbuf) - 1);
-		goto exit;
-	}
-
 	input_w = tbuf[0];
 	input_h = tbuf[1];
-	end -= 2;
-
-	dbg_info("end: %d\n", end);
 
 	if (unlikely(list_empty(&params_list->node))) {
 		dbg_info("list_empty of %s\n", params_list->name ? params_list->name : "null");
@@ -143,6 +140,36 @@ static ssize_t param_write(struct file *f, const char __user *user_buf,
 		goto exit;
 	}
 
+	/* scan remain */
+	while ((token = strsep(&pbuf, ", "))) {
+		if (*token == '\0')
+			continue;
+		if (param->ptr_type == 8)
+			ret = kstrtou32(token, 16, &value);
+		else if (param->ptr_type == 32)
+			ret = kstrtou32(token, 0, &value);
+		if (ret < 0 || end == ARRAY_SIZE(tbuf))
+			break;
+
+		dbg_info("[%2d] 0x%02x(%4d), %s\n", end, value, value, token);
+		tbuf[end] = value;
+		end++;
+	}
+
+	if (ret < 0) {
+		dbg_info("invalid input: ret(%d), %s\n", ret, user_buf);
+		goto exit;
+	}
+
+	if (end < 3 || end == ARRAY_SIZE(tbuf)) {
+		dbg_info("invalid input: end(%d), input should be 3~%zu\n", end, ARRAY_SIZE(tbuf) - 1);
+		goto exit;
+	}
+
+	end -= 2;
+
+	dbg_info("end: %d\n", end);
+
 	dbg_info("input_w(%d), input_h(%d), end(%d), max_w(%d), max_h(%d)\n", input_w, input_h, end, param->ptr_size, params_list->max_h);
 
 	if (input_w + end - 1 > param->ptr_size) {
@@ -152,13 +179,21 @@ static ssize_t param_write(struct file *f, const char __user *user_buf,
 
 	if (param->ptr_type == 8) {
 		for (offset_w = 0; offset_w < end; offset_w++) {
-			dbg_info("[%2d] 0x%x -> 0x%x\n", input_w + offset_w, param->ptr_u08[input_w + offset_w], tbuf[2 + offset_w]);
-			param->ptr_u08[input_w + offset_w] = (tbuf[2 + offset_w] > U8_MAX) ? U8_MAX : tbuf[2 + offset_w];
+			param_old = param->ptr_u08[input_w + offset_w];
+			param_new = tbuf[2 + offset_w];
+			param_new = (param_new > U8_MAX) ? U8_MAX : param_new;
+
+			dbg_info("[%2d] 0x%02x -> 0x%02x%s\n", input_w + offset_w, param_old, param_new, (param_old != param_new) ? " (!)" : "");
+			param->ptr_u08[input_w + offset_w] = param_new;
 		}
 	} else if (param->ptr_type == 32) {
 		for (offset_w = 0; offset_w < end; offset_w++) {
-			dbg_info("[%2d] %d -> %d\n", input_w + offset_w, param->ptr_u32[input_w + offset_w], tbuf[2 + offset_w]);
-			param->ptr_u32[input_w + offset_w] = (tbuf[2 + offset_w] > U32_MAX) ? U32_MAX : tbuf[2 + offset_w];
+			param_old =  param->ptr_u32[input_w + offset_w];
+			param_new = tbuf[2 + offset_w];
+			param_new = (param_new > U32_MAX) ? U32_MAX : param_new;
+
+			dbg_info("[%2d] %d -> %d%s\n", input_w + offset_w, param_old, param_new, (param_old != param_new) ? " (!)" : "");
+			param->ptr_u32[input_w + offset_w] = param_new;
 		}
 	}
 
@@ -170,34 +205,40 @@ static int param_show(struct seq_file *m, void *unused)
 {
 	struct params_list_info *params_list = m->private;
 	struct param_info *param = NULL;
-	u32 i = 0, j = 0;
+	u32 i = 0, j = 0, changed = 0;
 
-	seq_puts(m, "--|");
+	seq_puts(m, "  |");
 	for (i = 0; i < params_list->max_size; i++)
 		seq_printf(m, (params_list->max_type == 32) ? " %4d" : " %2d", i);
-	seq_puts(m, "| <- input col position first\n");
+	seq_puts(m, "| <- input X first\n");
+	seq_puts(m, "--+");
+	for (i = 0; i < params_list->max_size * ((params_list->max_type == 32) ? 5 : 3) ; i++)
+		seq_puts(m, "-");
+	seq_puts(m, "\n");
 
 	i = 0;
 	if (params_list->max_type == 8) {
 		list_for_each_entry(param, &params_list->node, node) {
-			seq_printf(m, "%2d| %*ph\n", i, param->ptr_size, param->ptr_u08);
+			changed = memcmp(param->org_u08, param->ptr_u08, param->ptr_size);
+			seq_printf(m, "%2d| %*ph%s\n", i, param->ptr_size, param->ptr_u08, changed ? " (!)" : "");
 			i++;
 		}
 	} else if (params_list->max_type == 32) {
 		list_for_each_entry(param, &params_list->node, node) {
+			changed = memcmp(param->org_u32, param->ptr_u32, param->ptr_size);
+
 			seq_printf(m, "%2d|", i);
 			for (j = 0; j < param->ptr_size; j++)
 				seq_printf(m, " %4d", param->ptr_u32[j]);
-			seq_puts(m, "\n");
+			seq_printf(m, "%s\n", changed ? " (!)" : "");
 			i++;
 		}
 	}
 
 	seq_puts(m, "\n");
-	seq_printf(m, "# echo 1 2 0x34 > %s\n", params_list->name);
-	seq_printf(m, "# echo 1 2 3456 > %s\n", params_list->name);
-	seq_printf(m, "# echo col(width,horizontal as dec) row(height,vertical as dec) val_1 ... val_N > %s (N <= %d if col is 0)\n", params_list->name, params_list->max_size);
-	seq_puts(m, "if you want to input hexadecimal for val_1 ... val_N, please input format with prefix '0x'(ex: 0xff)\n");
+	seq_printf(m, "# echo 1 0 0x34 > %s\n", params_list->name);
+	seq_printf(m, "# echo 1 0 3456 > %s\n", params_list->name);
+	seq_printf(m, "# echo X(dec) Y(dec) val_1 ... val_N > %s (N <= %d if X is 0)\n", params_list->name, params_list->max_size);
 
 	return 0;
 }
@@ -246,10 +287,9 @@ static int help_show(struct seq_file *m, void *unused)
 			continue;
 		}
 
-		seq_printf(m, "# echo 1 2 0x34 > %s\n", params_list->name);
-		seq_printf(m, "# echo 1 2 3456 > %s\n", params_list->name);
-		seq_printf(m, "# echo col(width,horizontal as dec) row(height,vertical as dec) val_1 ... val_N > %s (N <= %d if col is 0)\n", params_list->name, params_list->max_size);
-		seq_puts(m, "if you want to input hexadecimal for val_1 ... val_N, please input format with prefix '0x'(ex: 0xff)\n");
+		seq_printf(m, "# echo 1 0 0x34 > %s\n", params_list->name);
+		seq_printf(m, "# echo 1 0 3456 > %s\n", params_list->name);
+		seq_printf(m, "# echo X(dec) Y(dec) val_1 ... val_N > %s (N <= %d if X is 0)\n", params_list->name, params_list->max_size);
 	}
 	seq_puts(m, "----------\n");
 
@@ -269,9 +309,9 @@ static int help_show(struct seq_file *m, void *unused)
 	seq_puts(m, "'echo 0' is for reset param to default\n");
 	seq_puts(m, "----------\n");
 
-	seq_puts(m, "you can write sequential parameter starts from col(width,horizontal)\n");
-	seq_puts(m, "you can NOT write col(width,horizontal) exceed each row's max col(width,horizontal)\n");
-	seq_puts(m, "you can NOT write sequential parameter exceed each row's max col(width,horizontal)\n");
+	seq_puts(m, "you can write sequential parameter starts from X\n");
+	seq_puts(m, "you can NOT write X(width,horizontal) exceed each row's max X\n");
+	seq_puts(m, "you can NOT write sequential parameter exceed each row's max X\n");
 
 	return 0;
 }
@@ -366,9 +406,19 @@ void init_debugfs_param(const char *name, void *ptr, u32 ptr_type, u32 sum_size,
 		return;
 	}
 
-	if (ptr_unit > 64) {
+	if (sum_size > 64) {
 		dbg_info("sum_size(%d) invalid\n", sum_size);
 		return;
+	}
+
+	if (ptr_unit > 64) {
+		dbg_info("ptr_unit(%d) invalid\n", ptr_unit);
+		return;
+	}
+
+	if (ptr_unit == 0) {
+		dbg_info("ptr_unit use sum_size(%d)\n", sum_size);
+		ptr_unit = sum_size;
 	}
 
 	if (!debugfs_root) {

@@ -1195,6 +1195,19 @@ int do_send_sig_info(int sig, struct siginfo *info, struct task_struct *p,
 {
 	unsigned long flags;
 	int ret = -ESRCH;
+#ifdef CONFIG_OLAF_SUPPORT
+	struct task_struct *t;
+	if ((sig == SIGKILL || sig == SIGTERM || sig == SIGABRT || sig == SIGQUIT)) {
+		for_each_thread(p, t) {
+			if (!strncmp(t->comm, "Jit ", strlen("Jit "))) {
+				if (t->flags & PF_FROZEN) {
+					t->flags |= PF_NOFREEZE;
+					__thaw_task(t);
+				}
+			}
+		}
+	}
+#endif
 
 	if (lock_task_sighand(p, &flags)) {
 		ret = send_signal(sig, info, p, group);

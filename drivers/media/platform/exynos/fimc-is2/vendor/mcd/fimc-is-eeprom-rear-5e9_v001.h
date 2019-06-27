@@ -19,7 +19,6 @@
 #define EEP_HEADER_AP_SHADING_START_ADDR                0x10
 #define EEP_HEADER_AP_SHADING_END_ADDR                  0x14
 #define EEP_HEADER_PROJECT_NAME_START_ADDR              0x38
-#define EEP_HEADER_MODULE_ID_ADDR                       0xA8
 #define EEP_HEADER_SENSOR_ID_ADDR                       0xB8
 #define EEP_HEADER_VERSION_START_ADDR_REAR2             0x20
 #define EEP_HEADER_CAL_MAP_VER_START_ADDR_REAR2         0x30
@@ -45,7 +44,6 @@
 #define EEP_HEADER_SENSOR_ID_ADDR_REAR3                 0xB8
 
 /* OEM referenced section */
-#define EEP_OEM_VER_START_ADDR                          0x1D0
 #define EEP_OEM_VER_START_ADDR_REAR2                    0x1E0
 #define EEP_OEM_VER_START_ADDR_REAR3                    0x1E0
 
@@ -55,7 +53,6 @@
 #define EEP_AWB_VER_START_ADDR_REAR3                    0x2E0
 
 /* AP Shading referenced section */
-#define EEP_AP_SHADING_VER_START_ADDR                   0x1FE0
 #define EEP_AP_SHADING_VER_START_ADDR_REAR2             0x1EE0
 #define EEP_AP_SHADING_VER_START_ADDR_REAR3             0x1EE0
 
@@ -63,7 +60,6 @@
 #define EEP_CHECKSUM_HEADER_ADDR                        0xFC
 #define EEP_CHECKSUM_OEM_ADDR                           0x1FC
 #define EEP_CHECKSUM_AWB_ADDR                           0x2FC
-#define EEP_CHECKSUM_AP_SHADING_ADDR                    0x1FFC
 #define EEP_CHECKSUM_HEADER_ADDR_REAR2                  0xFC
 #define EEP_CHECKSUM_OEM_ADDR_REAR2                     0x1FC
 #define EEP_CHECKSUM_AWB_ADDR_REAR2                     0x2FC
@@ -127,9 +123,7 @@
 #define HEADER_CRC32_LEN_REAR2                          (216)
 #define HEADER_CRC32_LEN_REAR3                          (216)
 /*LEN is calculated as END_ADDRESS - START_ADDRESS + 1*/
-#define OEM_CRC32_LEN                                   ((0x1CF-0x100)+0x1)
-#define AWB_CRC32_LEN                                   ((0x21F-0x200)+0x1)
-#define SHADING_CRC32_LEN                               ((0x1CEF-0x300)+0x1)
+
 #define EEPROM_AF_CAL_PAN_ADDR                          0x0100
 #define EEPROM_AF_CAL_MACRO_ADDR                        0x0108
 #define OEM_CRC32_LEN_REAR2                             ((0x1CF-0x100)+0x1)

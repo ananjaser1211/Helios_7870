@@ -19,6 +19,8 @@
 #define __LINUX_PROCA_PORTING_H
 
 #include <linux/version.h>
+#include <linux/memory.h>
+#include <linux/fs.h>
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 9, 0)
 
@@ -58,10 +60,54 @@ __vfs_getxattr(struct dentry *dentry, struct inode *inode, const char *name,
 #define security_add_hooks(hooks, count, name)
 #else
 #define LINUX_LSM_SUPPORTED
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 9, 0)
+#include <linux/lsm_hooks.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0)
 #define security_add_hooks(hooks, count, name) security_add_hooks(hooks, count)
 #endif
-#include <linux/lsm_hooks.h>
+#endif
+
+/*
+ * VA_BITS is present only on 64 bit kernels
+ */
+#if defined(CONFIG_ARM)
+#define VA_BITS 30
+#endif
+
+/*
+ * VA_START macro is backported to SDM450 kernel (3.18.120)
+ */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 0) && \
+	!(defined(CONFIG_ARCH_SDM450) && defined(CONFIG_ARM64))
+#define VA_START		(UL(0xffffffffffffffff) - \
+	(UL(1) << VA_BITS) + 1)
+#endif
+
+/*
+ * KASLR is backported to 4.4 kernels
+ */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 0)
+
+static inline uintptr_t get_kimage_vaddr(void)
+{
+	return PAGE_OFFSET;
+}
+
+static inline uintptr_t get_kimage_voffset(void)
+{
+	return get_kimage_vaddr() - virt_to_phys((void *)get_kimage_vaddr());
+}
+
+#else
+
+static inline u64 get_kimage_vaddr(void)
+{
+	return kimage_vaddr;
+}
+
+static inline u64 get_kimage_voffset(void)
+{
+	return kimage_voffset;
+}
 #endif
 
 #endif /* __LINUX_PROCA_PORTING_H */

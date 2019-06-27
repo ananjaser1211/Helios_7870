@@ -38,13 +38,13 @@
 			     <0 52 4>,
 			     <0 53 4>;
 		interrupt-affinity = <&cpu4>,
-				<&cpu5>,
-				<&cpu6>,
-				<&cpu7>,
-				<&cpu0>,
-				<&cpu1>,
-				<&cpu2>,
-				<&cpu3>;
+					<&cpu5>,
+					<&cpu6>,
+					<&cpu7>,
+					<&cpu0>,
+					<&cpu1>,
+					<&cpu2>,
+					<&cpu3>;
 	};
 
 	aliases {

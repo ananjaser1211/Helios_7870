@@ -904,8 +904,13 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 	list_del(&req->list);
 
 	/* temporarily stop TX queue when the freelist empties */
+#ifdef CONFIG_USB_RNDIS_MULTIPACKET
+	if (list_empty(&dev->tx_reqs) && (dev->tx_skb_hold_count >= (dev->dl_max_pkts_per_xfer -1)))
+		netif_stop_queue(net);
+#else
 	if (list_empty(&dev->tx_reqs))
 		netif_stop_queue(net);
+#endif
 	spin_unlock_irqrestore(&dev->req_lock, flags);
 
 	/* no buffer copies needed, unless the network stack did it

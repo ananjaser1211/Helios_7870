@@ -241,9 +241,6 @@ static int fb_notifier_callback(struct notifier_block *self,
 	if (evdata->info->node)
 		return NOTIFY_DONE;
 
-	dbg_info("%s: %d\n",
-		(event == FB_EVENT_BLANK) ? "FB_EVENT_BLANK" : "FB_EARLY_EVENT_BLANK", fb_blank);
-
 	log_boot = true;
 
 	if (event == FB_EVENT_BLANK && fb_blank == FB_BLANK_UNBLANK)
@@ -290,6 +287,8 @@ static ssize_t u32_array_write(struct file *f, const char __user *user_buf,
 	pbuf = ibuf;
 	while (--array_size >= 0 && (token = strsep(&pbuf, " "))) {
 		dbg_info("%d, %s\n", array_size, token);
+		if (*token == '\0')
+			continue;
 		ret = kstrtou32(token, 0, &value);
 		if (ret < 0) {
 			dbg_info("kstrtou32 fail: ret: %d\n", ret);

@@ -17,7 +17,10 @@
 #include <linux/key-type.h>
 #include <crypto/public_key.h>
 #include <keys/asymmetric-type.h>
+#include <crypto/hash_info.h>
 #include "five.h"
+#include "five_crypto_comp.h"
+#include "five_porting.h"
 
 static struct key *five_keyring;
 
@@ -79,7 +82,7 @@ static int five_asymmetric_verify(struct five_cert *cert,
 	int ret = -ENOMEM;
 
 	header = (struct five_cert_header *)cert->body.header->value;
-	if (header->hash_algo >= PKEY_HASH__LAST)
+	if (header->hash_algo >= HASH_ALGO__LAST)
 		return -ENOPKG;
 
 	key = five_request_asymmetric_key(__be32_to_cpu(header->key_id));
@@ -88,17 +91,10 @@ static int five_asymmetric_verify(struct five_cert *cert,
 
 	memset(&pks, 0, sizeof(pks));
 
-	pks.pkey_hash_algo = header->hash_algo;
 	pks.digest = (u8 *)data;
 	pks.digest_size = datalen;
-	pks.nr_mpi = 1;
-	pks.rsa.s = mpi_read_raw_data(cert->signature->value,
-			cert->signature->length);
+	ret = five_verify_signature(key, &pks, cert, header);
 
-	if (pks.rsa.s)
-		ret = verify_signature(key, &pks);
-
-	mpi_free(pks.rsa.s);
 	key_put(key);
 	pr_debug("%s() = %d\n", __func__, ret);
 	return ret;
@@ -194,12 +190,12 @@ int __init five_keyring_init(void)
 	const struct cred *cred = current_cred();
 	int err = 0;
 
-	five_keyring = keyring_alloc(five_keyring_name, KUIDT_INIT(0),
+	five_keyring = five_keyring_alloc(five_keyring_name, KUIDT_INIT(0),
 		    KGIDT_INIT(0), cred,
 		    ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
 		     KEY_USR_VIEW | KEY_USR_READ |
 		     KEY_USR_SEARCH),
-		    KEY_ALLOC_NOT_IN_QUOTA, NULL);
+		    KEY_ALLOC_NOT_IN_QUOTA);
 	if (IS_ERR(five_keyring)) {
 		err = PTR_ERR(five_keyring);
 		pr_info("Can't allocate %s keyring (%d)\n",
