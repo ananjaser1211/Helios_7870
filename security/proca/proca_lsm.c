@@ -19,7 +19,6 @@
 #include "proca_task_descr.h"
 #include "proca_table.h"
 #include "proca_log.h"
-#include "proca_config.h"
 
 #include "five_hooks.h"
 
@@ -70,7 +69,6 @@ static struct five_hook_list five_ops[] = {
 };
 
 static struct proca_table g_proca_table;
-struct proca_config g_proca_config;
 
 static int g_proca_inited;
 
@@ -137,15 +135,13 @@ static struct proca_task_descr *prepare_proca_task_descr(
 	}
 
 	if (!five_sign_xattr_value) {
-		PROCA_INFO_LOG(
-			"Failed to read five xattr from file with pa xattr\n");
+		pr_info("Failed to read five xattr from file with pa xattr\n");
 		goto proca_cert_cleanup;
 	}
 
 	if (!compare_with_five_signature(&parsed_cert, five_sign_xattr_value,
 					 five_sign_xattr_size)) {
-		PROCA_INFO_LOG(
-			"Comparison with five signature for %s failed.\n",
+		pr_info("Comparison with five signature for %s failed.\n",
 			parsed_cert.app_name);
 		goto five_xattr_cleanup;
 	}
@@ -362,10 +358,6 @@ static __init int proca_module_init(void)
 {
 	int ret;
 
-	ret = init_proca_config(&g_proca_config, &g_proca_table);
-	if (ret)
-		return ret;
-
 	ret = init_certificate_validation_hash();
 	if (ret)
 		return ret;
@@ -375,7 +367,7 @@ static __init int proca_module_init(void)
 	security_add_hooks(proca_ops, ARRAY_SIZE(proca_ops), "proca_lsm");
 	five_add_hooks(five_ops, ARRAY_SIZE(five_ops));
 
-	PROCA_INFO_LOG("LSM module was initialized\n");
+	pr_info("PROCA LSM was initialized\n");
 	g_proca_inited = 1;
 
 	return 0;

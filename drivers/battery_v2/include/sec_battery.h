@@ -285,11 +285,6 @@ struct sec_battery_info {
 	unsigned int temp_low_cnt;
 	unsigned int temp_recover_cnt;
 
-#if defined(CONFIG_ABNORMAL_BAT_THM_WA)
-	bool temp_control;
-	int prev_bat_temp;
-#endif
-
 	/* charging */
 	unsigned int charging_mode;
 	bool is_recharging;

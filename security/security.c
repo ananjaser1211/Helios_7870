@@ -836,11 +836,7 @@ int security_file_open(struct file *file, const struct cred *cred)
 	if (ret)
 		return ret;
 
-	ret = fsnotify_perm(file, MAY_OPEN);
-	if (ret)
-		return ret;
-
-	return five_file_open(file, cred);
+	return fsnotify_perm(file, MAY_OPEN);
 }
 
 int security_task_create(unsigned long clone_flags)

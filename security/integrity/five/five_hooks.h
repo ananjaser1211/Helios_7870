@@ -36,8 +36,6 @@ void five_hook_file_signed(struct task_struct *task,
 				struct file *file, void *xattr,
 				size_t xattr_size, int result);
 
-void five_hook_integrity_reset(struct task_struct *task);
-
 union five_list_options {
 	void (*file_processed)(struct task_struct *task,
 				enum task_integrity_value tint_value,
@@ -59,7 +57,6 @@ union five_list_options {
 				enum task_integrity_value tint_value,
 				struct file *file, void *xattr,
 				size_t xattr_size, int result);
-	void (*integrity_reset)(struct task_struct *task);
 };
 
 struct five_hook_heads {
@@ -67,7 +64,6 @@ struct five_hook_heads {
 	struct list_head file_skipped;
 	struct list_head file_signed;
 	struct list_head task_forked;
-	struct list_head integrity_reset;
 };
 
 /*

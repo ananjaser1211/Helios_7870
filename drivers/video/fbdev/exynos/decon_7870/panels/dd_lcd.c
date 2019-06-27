@@ -274,8 +274,6 @@ static int make_tx(struct d_info *d, struct rw_info *rw, unsigned char *ibuf)
 	}
 
 	while ((token = strsep(&pbuf, " ,"))) {
-		if (*token == '\0')
-			continue;
 		ret = kstrtou8(token, 16, &data);
 		if (ret < 0 || end == ARRAY_SIZE(obuf))
 			break;
@@ -882,8 +880,6 @@ static ssize_t write_store(struct kobject *kobj,
 
 	pos = (char *)buf;
 	while ((token = strsep(&pos, " ")) != NULL) {
-		if (*token == '\0')
-			continue;
 		ret = kstrtouint(token, 16, &val);
 		if (!ret) {
 			seqbuf[len] = val;

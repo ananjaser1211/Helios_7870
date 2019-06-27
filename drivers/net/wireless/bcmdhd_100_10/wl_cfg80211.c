@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wl_cfg80211.c 814858 2019-04-15 07:21:16Z $
+ * $Id: wl_cfg80211.c 801773 2019-01-29 12:47:08Z $
  */
 /* */
 #include <typedefs.h>
@@ -1197,10 +1197,6 @@ static const struct {
 #define S(x) _S(x)
 
 #define SOFT_AP_IF_NAME         "swlan0"
-
-#ifdef P2P_LISTEN_OFFLOADING
-void wl_cfg80211_cancel_p2plo(struct bcm_cfg80211 *cfg);
-#endif /* P2P_LISTEN_OFFLOADING */
 
 #ifdef CUSTOMER_HW4_DEBUG
 uint prev_dhd_console_ms = 0;
@@ -8331,7 +8327,6 @@ wl_cfg80211_remain_on_channel(struct wiphy *wiphy, bcm_struct_cfgdev *cfgdev,
 	struct net_device *ndev = NULL;
 	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
 
-	RETURN_EIO_IF_NOT_UP(cfg);
 #ifdef DHD_IFDEBUG
 	PRINT_WDEV_INFO(cfgdev);
 #endif /* DHD_IFDEBUG */
@@ -8355,15 +8350,18 @@ wl_cfg80211_remain_on_channel(struct wiphy *wiphy, bcm_struct_cfgdev *cfgdev,
 		goto exit;
 	}
 
+#ifdef P2P_LISTEN_OFFLOADING
+	if (wl_get_p2p_status(cfg, DISC_IN_PROGRESS)) {
+		WL_ERR(("P2P_FIND: Discovery offload is in progress\n"));
+		return -EAGAIN;
+	}
+#endif /* P2P_LISTEN_OFFLOADING */
+
 #ifndef WL_CFG80211_VSDB_PRIORITIZE_SCAN_REQUEST
 	if (wl_get_drv_status_all(cfg, SCANNING)) {
 		wl_cfg80211_cancel_scan(cfg);
 	}
 #endif /* not WL_CFG80211_VSDB_PRIORITIZE_SCAN_REQUEST */
-
-#ifdef P2P_LISTEN_OFFLOADING
-	wl_cfg80211_cancel_p2plo(cfg);
-#endif /* P2P_LISTEN_OFFLOADING */
 
 	target_channel = ieee80211_frequency_to_channel(channel->center_freq);
 	memcpy(&cfg->remain_on_chan, channel, sizeof(struct ieee80211_channel));
@@ -16801,27 +16799,10 @@ static void wl_scan_timeout(unsigned long data)
 #ifdef DHD_FW_COREDUMP
 	uint32 prev_memdump_mode = dhdp->memdump_enabled;
 #endif /* DHD_FW_COREDUMP */
-	unsigned long flags;
 
-	spin_lock_irqsave(&cfg->cfgdrv_lock, flags);
 	if (!(cfg->scan_request)) {
 		WL_ERR(("timer expired but no scan request\n"));
-		spin_unlock_irqrestore(&cfg->cfgdrv_lock, flags);
 		return;
-	} else {
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 6, 0))
-		if (cfg->scan_request->dev) {
-			wdev = cfg->scan_request->dev->ieee80211_ptr;
-		}
-#else
-		wdev = cfg->scan_request->wdev;
-#endif /* LINUX_VERSION < KERNEL_VERSION(3, 6, 0) */
-		spin_unlock_irqrestore(&cfg->cfgdrv_lock, flags);
-
-		if (!wdev) {
-			WL_ERR(("No wireless_dev present\n"));
-			return;
-		}
 	}
 
 #if defined(DHD_KERNEL_SCHED_DEBUG) && defined(DHD_FW_COREDUMP)
@@ -16876,7 +16857,18 @@ static void wl_scan_timeout(unsigned long data)
 		}
 	}
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 6, 0))
+	if (cfg->scan_request->dev)
+		wdev = cfg->scan_request->dev->ieee80211_ptr;
+#else
+	wdev = cfg->scan_request->wdev;
+#endif /* LINUX_VERSION < KERNEL_VERSION(3, 6, 0) */
+	if (!wdev) {
+		WL_ERR(("No wireless_dev present\n"));
+		return;
+	}
 	ndev = wdev_to_wlc_ndev(wdev, cfg);
+
 	bzero(&msg, sizeof(wl_event_msg_t));
 	WL_ERR(("timer expired\n"));
 #ifdef BCMPCIE

@@ -25,7 +25,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_linux.c 813537 2019-04-05 07:50:12Z $
+ * $Id: dhd_linux.c 799707 2019-01-17 06:02:24Z $
  */
 
 #include <typedefs.h>
@@ -2906,7 +2906,7 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 	uint roamvar = 1;
 #endif /* ENABLE_FW_ROAM_SUSPEND */
 #ifdef ENABLE_BCN_LI_BCN_WAKEUP
-	int bcn_li_bcn = 1;
+	int bcn_li_bcn;
 #endif /* ENABLE_BCN_LI_BCN_WAKEUP */
 	uint nd_ra_filter = 0;
 #ifdef ENABLE_IPMCAST_FILTER
@@ -3087,9 +3087,7 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 				}
 #endif /* ENABLE_FW_ROAM_SUSPEND */
 #ifdef ENABLE_BCN_LI_BCN_WAKEUP
-				if (bcn_li_dtim) {
-					bcn_li_bcn = 0;
-				}
+				bcn_li_bcn = 0;
 				ret = dhd_iovar(dhd, 0, "bcn_li_bcn", (char *)&bcn_li_bcn,
 						sizeof(bcn_li_bcn), NULL, 0, TRUE);
 				if (ret < 0) {
@@ -3256,6 +3254,7 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 				}
 #endif /* ENABLE_FW_ROAM_SUSPEND */
 #ifdef ENABLE_BCN_LI_BCN_WAKEUP
+				bcn_li_bcn = 1;
 				ret = dhd_iovar(dhd, 0, "bcn_li_bcn", (char *)&bcn_li_bcn,
 						sizeof(bcn_li_bcn), NULL, 0, TRUE);
 				if (ret < 0) {
@@ -7189,7 +7188,6 @@ dhd_add_monitor_if(dhd_info_t *dhd)
 		DHD_ERROR(("%s, register_netdev failed for %s\n",
 			__FUNCTION__, dev->name));
 		free_netdev(dev);
-		return;
 	}
 
 	if (FW_SUPPORTED((&dhd->pub), monitor)) {
@@ -11036,7 +11034,6 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 #else
 	dhd->max_dtim_enable = FALSE;
 #endif /* ENABLE_MAX_DTIM_IN_SUSPEND */
-	dhd->disable_dtim_in_suspend = FALSE;
 #ifdef CUSTOM_SET_OCLOFF
 	dhd->ocl_off = FALSE;
 #endif /* CUSTOM_SET_OCLOFF */
@@ -14571,26 +14568,6 @@ int net_os_set_max_dtim_enable(struct net_device *dev, int val)
 			dhd->pub.max_dtim_enable = TRUE;
 		} else {
 			dhd->pub.max_dtim_enable = FALSE;
-		}
-	} else {
-		return -1;
-	}
-
-	return 0;
-}
-
-int
-net_os_set_disable_dtim_in_suspend(struct net_device *dev, int val)
-{
-	dhd_info_t *dhd = DHD_DEV_INFO(dev);
-
-	if (dhd) {
-		DHD_ERROR(("%s: Disable bcn_li_dtim in suspend : %s\n",
-			__FUNCTION__, (val ? "Enable" : "Disable")));
-		if (val) {
-			dhd->pub.disable_dtim_in_suspend = TRUE;
-		} else {
-			dhd->pub.disable_dtim_in_suspend = FALSE;
 		}
 	} else {
 		return -1;
@@ -19296,7 +19273,7 @@ int custom_rps_map_set(struct netdev_rx_queue *queue, char *buf, size_t len)
 	}
 
 	map = kzalloc(max_t(unsigned int,
-		(unsigned int)RPS_MAP_SIZE(cpumask_weight(mask)), L1_CACHE_BYTES),
+		RPS_MAP_SIZE(cpumask_weight(mask)), L1_CACHE_BYTES),
 		GFP_KERNEL);
 	if (!map) {
 		free_cpumask_var(mask);

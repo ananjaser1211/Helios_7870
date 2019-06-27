@@ -4530,10 +4530,8 @@ cantfind_ext4:
 	/* for debugging, sangwoo2.lee */
 	/* If you wanna use the flag 'MS_SILENT', call */
 	/* 'print_bh' function within below 'if'. */
-	if (!silent) {
-		printk(KERN_ERR "printing data of superblock-bh\n");
-		print_bh(sb, bh, 0, EXT4_BLOCK_SIZE(sb));
-	}
+	printk(KERN_ERR "printing data of superblock-bh\n");
+	print_bh(sb, bh, 0, EXT4_BLOCK_SIZE(sb));
 	/* for debugging */
 
 	if (!silent)

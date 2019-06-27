@@ -789,9 +789,6 @@ struct sec_battery_platform_data {
 	unsigned int normal_charging_total_time;
 	unsigned int usb_charging_total_time;
 
-	/* moisture detect function support for non-water proof USB type-b models */
-	bool detect_moisture;
-
 	/* fuel gauge */
 	char *fuelgauge_name;
 	int fg_irq;
@@ -867,8 +864,8 @@ struct sec_battery_platform_data {
 
 	bool fake_capacity;
 
-	unsigned int battery_full_capacity;
 #if defined(CONFIG_BATTERY_CISD)
+	unsigned int battery_full_capacity;
 	unsigned int cisd_cap_high_thr;
 	unsigned int cisd_cap_low_thr;
 	unsigned int cisd_cap_limit;

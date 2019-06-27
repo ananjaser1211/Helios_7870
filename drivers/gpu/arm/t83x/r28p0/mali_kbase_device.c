@@ -349,7 +349,7 @@ bool check_trace_code(enum kbase_trace_code code)
 	unsigned int temp = code;
 
 	switch (temp) {
-/*	case KBASE_TRACE_CODE(CORE_CTX_DESTROY):
+	case KBASE_TRACE_CODE(CORE_CTX_DESTROY):
 	case KBASE_TRACE_CODE(CORE_GPU_SOFT_RESET):
 	case KBASE_TRACE_CODE(CORE_GPU_HARD_RESET):
 	case KBASE_TRACE_CODE(JM_SOFTSTOP):
@@ -394,11 +394,7 @@ bool check_trace_code(enum kbase_trace_code code)
 	case KBASE_TRACE_CODE(LSI_SECURE_WORLD_EXIT):
 		return true;
 	default:
-		return false;*/
-	case KBASE_TRACE_CODE(DUMMY):
 		return false;
-	default:
-		return true;
 	}
 	return true;
 }

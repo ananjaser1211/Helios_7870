@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wl_android.c 814858 2019-04-15 07:21:16Z $
+ * $Id: wl_android.c 800948 2019-01-24 07:15:09Z $
  */
 
 #include <linux/module.h>
@@ -93,7 +93,6 @@
 #define CMD_SETSUSPENDMODE      "SETSUSPENDMODE"
 #define CMD_SETDTIM_IN_SUSPEND  "SET_DTIM_IN_SUSPEND"
 #define CMD_MAXDTIM_IN_SUSPEND  "MAX_DTIM_IN_SUSPEND"
-#define CMD_DISDTIM_IN_SUSPEND  "DISABLE_DTIM_IN_SUSPEND"
 #define CMD_P2P_DEV_ADDR	"P2P_DEV_ADDR"
 #define CMD_SETFWPATH		"SETFWPATH"
 #define CMD_SETBAND		"SETBAND"
@@ -1222,24 +1221,6 @@ wl_android_set_max_dtim(struct net_device *dev, char *command)
 
 	if (!(ret = net_os_set_max_dtim_enable(dev, dtim_flag))) {
 		DHD_TRACE(("%s: use Max bcn_li_dtim in suspend %s\n",
-			__FUNCTION__, (dtim_flag ? "Enable" : "Disable")));
-	} else {
-		DHD_ERROR(("%s: failed %d\n", __FUNCTION__, ret));
-	}
-
-	return ret;
-}
-
-static int
-wl_android_set_disable_dtim_in_suspend(struct net_device *dev, char *command)
-{
-	int ret = 0;
-	int dtim_flag;
-
-	dtim_flag = *(command + strlen(CMD_DISDTIM_IN_SUSPEND) + 1) - '0';
-
-	if (!(ret = net_os_set_disable_dtim_in_suspend(dev, dtim_flag))) {
-		DHD_TRACE(("%s: use Disable bcn_li_dtim in suspend %s\n",
 			__FUNCTION__, (dtim_flag ? "Enable" : "Disable")));
 	} else {
 		DHD_ERROR(("%s: failed %d\n", __FUNCTION__, ret));
@@ -5833,6 +5814,7 @@ wl_cfg80211_p2plo_deinit(struct bcm_cfg80211 *cfg)
 {
 	s32 bssidx;
 	int ret = 0;
+	int p2plo_pause = 0;
 	dhd_pub_t *dhd = NULL;
 	if (!cfg || !cfg->p2p) {
 		WL_ERR(("Wl %p or cfg->p2p %p is null\n",
@@ -5848,7 +5830,7 @@ wl_cfg80211_p2plo_deinit(struct bcm_cfg80211 *cfg)
 
 	bssidx = wl_to_p2p_bss_bssidx(cfg, P2PAPI_BSSCFG_DEVICE);
 	ret = wldev_iovar_setbuf_bsscfg(bcmcfg_to_prmry_ndev(cfg),
-			"p2po_stop", NULL, 0,
+			"p2po_stop", (void*)&p2plo_pause, sizeof(p2plo_pause),
 			cfg->ioctl_buf, WLC_IOCTL_SMLEN, bssidx, &cfg->ioctl_buf_sync);
 	if (ret < 0) {
 		WL_ERR(("p2po_stop Failed :%d\n", ret));
@@ -5968,35 +5950,6 @@ wl_cfg80211_p2plo_offload(struct net_device *dev, char *cmd, char* buf, int len)
 		ret = -EINVAL;
 	}
 	return ret;
-}
-void
-wl_cfg80211_cancel_p2plo(struct bcm_cfg80211 *cfg)
-{
-	struct wireless_dev *wdev;
-	if (!cfg) {
-		return;
-	}
-
-	wdev = bcmcfg_to_p2p_wdev(cfg);
-
-	if (wl_get_p2p_status(cfg, DISC_IN_PROGRESS)) {
-		WL_INFORM_MEM(("P2P_FIND: Discovery offload is already in progress."
-				"it aborted\n"));
-		wl_clr_p2p_status(cfg, DISC_IN_PROGRESS);
-		if (wdev != NULL) {
-#if defined(WL_CFG80211_P2P_DEV_IF)
-			cfg80211_remain_on_channel_expired(wdev,
-					cfg->last_roc_id,
-					&cfg->remain_on_chan, GFP_KERNEL);
-#else
-			cfg80211_remain_on_channel_expired(wdev,
-					cfg->last_roc_id,
-					&cfg->remain_on_chan,
-					cfg->remain_on_chan_type, GFP_KERNEL);
-#endif /* WL_CFG80211_P2P_DEV_IF */
-		}
-		wl_cfg80211_p2plo_deinit(cfg);
-	}
 }
 #endif /* P2P_LISTEN_OFFLOADING */
 
@@ -6274,7 +6227,7 @@ wl_android_get_lqcm_report(struct net_device *dev, char *command, int total_len)
 	tx_lqcm_idx = (lqcm_report & LQCM_TX_INDEX_MASK) >> LQCM_TX_INDEX_SHIFT;
 	rx_lqcm_idx = (lqcm_report & LQCM_RX_INDEX_MASK) >> LQCM_RX_INDEX_SHIFT;
 
-	WL_DBG(("lqcm report EN:%d, TX:%d, RX:%d\n", lqcm_enable, tx_lqcm_idx, rx_lqcm_idx));
+	WL_ERR(("lqcm report EN:%d, TX:%d, RX:%d\n", lqcm_enable, tx_lqcm_idx, rx_lqcm_idx));
 
 	bytes_written = snprintf(command, total_len, "%s %d",
 			CMD_GET_LQCM_REPORT, lqcm_report);
@@ -7259,9 +7212,6 @@ wl_handle_private_cmd(struct net_device *net, char *command, u32 cmd_len)
 	}
 	else if (strnicmp(command, CMD_MAXDTIM_IN_SUSPEND, strlen(CMD_MAXDTIM_IN_SUSPEND)) == 0) {
 		bytes_written = wl_android_set_max_dtim(net, command);
-	}
-	else if (strnicmp(command, CMD_DISDTIM_IN_SUSPEND, strlen(CMD_DISDTIM_IN_SUSPEND)) == 0) {
-		bytes_written = wl_android_set_disable_dtim_in_suspend(net, command);
 	}
 	else if (strnicmp(command, CMD_SETBAND, strlen(CMD_SETBAND)) == 0) {
 		bytes_written = wl_android_set_band(net, command);
