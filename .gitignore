@@ -143,3 +143,13 @@ scripts/sortextable
 security/selinux_n/av_permissions.h
 security/selinux_n/flask.h
 usr/gen_init_cpio
+Helios/Out/*.img
+dev_kobj
+dev_obj
+device
+init_name
+name
+p
+p-
+security/proca/proca_certificate-asn1.c
+security/proca/proca_certificate-asn1.h
