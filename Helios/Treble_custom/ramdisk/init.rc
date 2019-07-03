@@ -8,7 +8,8 @@ import /init.usb.rc
 import /init.${ro.hardware}.rc
 import /vendor/etc/init/hw/init.${ro.hardware}.rc
 import /init.usb.configfs.rc
-import /init.${ro.zygote}.rc
+import /init.zygote32.rc
+import /init.zygote64_32.rc
 import /init.container.rc
 
 on early-init
