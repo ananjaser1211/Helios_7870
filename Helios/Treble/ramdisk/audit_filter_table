@@ -260,6 +260,9 @@ auditfilter hal_wifi_supplicant_default dumplog_data_file:dir search;
 # P181228-00203
 auditfilter tzdaemon unlabeled:dir search;
 
+# P181228-01907
+auditfilter rild default_prop:file read;
+
 # http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1187
 auditfilter surfaceflinger vendor_log_file:dir write;
 
@@ -362,6 +365,12 @@ auditfilter umount_service hiddenblk_device:blk_file read;
 # P190123-05913
 auditfilter lxd_cont_app lxd_cont_app:netlink_audit_socket create;
 
+# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1344
+auditfilter rild system_file:file setattr;
+
+# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1363
+auditfilter rild omc_vendor_file:file setattr;
+
 # http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1360
 auditfilter platform_app bluetooth_data_file:dir getattr;
 
@@ -414,52 +423,4 @@ auditfilter policyloader_app dalvikcache_data_file:file write;
 # http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1498
 auditfilter aasa_service_app dalvikcache_data_file:file write;
 
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1489
-auditfilter hal_neuralnetworks_default default_prop:file read;
-
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1516
-auditfilter ephemeral_app proc_vmstat:file read;
-
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1523
-auditfilter adsprpcd adsprpcd:capability kill;
-
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1543
-auditfilter hal_camera_default unlabeled:file read;
-
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1545
-auditfilter sec_diag sec_diag:capability kill;
-
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1540
-auditfilter hal_ofi_default dumplog_data_file:dir search;
-
-# P190312-02781
-auditfilter timeservice_app vendor_factory_prop:file read;
-
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1577
-auditfilter digital_tv_fullseg dtv_data_file:dir search;
-
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1590
-auditfilter hal_wifi_hostapd_default system_prop:file read;
-
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1592
-auditfilter hal_wifi_supplicant_default system_prop:file read;
-
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1596
-auditfilter hal_camera_default system_prop:file read;
-
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1598
-auditfilter hal_audio_default sysfs:file read;
-
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1603
-auditfilter platform_app platform_app:udp_socket ioctl;
-auditfilter platform_app proc_uptime:file read;
-
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1611
-auditfilter hal_graphics_composer_default cgroup:file ioctl;
-auditfilter hal_graphics_composer_default hal_graphics_composer_default:netlink_kobject_uevent_socket ioctl; 
-auditfilter hal_graphics_composer_default hal_graphics_composer_default:unix_dgram_socket ioctl; 
-auditfilter hal_graphics_composer_default pmsg_device:chr_file ioctl; 
-
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-1612
-auditfilter mediaextractor app_data_file:dir read;
 

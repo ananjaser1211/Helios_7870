@@ -1,1 +1,15 @@
-system/etc/prop.default
+#
+# Helios tweaks
+#
+ro.security.vaultkeeper.feature=0
+ro.config.dmverity=false
+ro.config.kap=false
+persist.sys.usb.config=mtp,adb
+persist.service.adb.enable=1
+persist.service.debuggable=1
+ro.securestorage.support=false
+wlan.wfd.hdcp=disable
+
+
+# import original default.prop
+import /system/etc/prop.default

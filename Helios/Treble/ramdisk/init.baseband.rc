@@ -18,6 +18,10 @@ on fs
     chmod 0660 /sys/devices/virtual/misc/umts_dm0/dm_state
     chown radio system /sys/devices/virtual/misc/umts_dm0/dm_state
 
+    # /efs/factory.prop for Dual / Single SIM settings
+    chown radio radio /efs/factory.prop
+    chmod 0600 /efs/factory.prop
+
     #For cpdebug partition
     wait /dev/block/platform/13540000.dwmmc0/by-name/EFS
     mkdir /efs/cpdebug
@@ -59,7 +63,7 @@ on property:ril.clatd.v4-rmnet7=up
     write /sys/class/net/rmnet7/queues/rx-0/rps_cpus 4
     write /sys/class/net/v4-rmnet7/queues/rx-0/rps_cpus 2
 
-service cpboot-daemon /vendor/bin/cbd -d -tss310 -bm -mm -P platform/13540000.dwmmc0/by-name/RADIO -n /efs
+service cpboot-daemon /sbin/cbd -d -tss310 -bm -mm -P platform/13540000.dwmmc0/by-name/RADIO -n /efs
     class main
     user root
     group radio cache inet misc audio sdcard_rw log sdcard_r shell system
@@ -69,8 +73,7 @@ on property:ro.multisim.simslotcount=*
    write /sys/module/modem_ctrl_ss310ap/parameters/ds_detect ${ro.multisim.simslotcount}
 
 on property:ro.multisim.simslotcount=1
-    setprop persist.radio.multisim.config ss
+   setprop persist.radio.multisim.config ss
 
 on property:ro.multisim.simslotcount=2
-    setprop persist.radio.multisim.config dsds
-
+   setprop persist.radio.multisim.config dsds

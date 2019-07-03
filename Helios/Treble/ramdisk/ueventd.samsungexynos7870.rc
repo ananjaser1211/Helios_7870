@@ -99,8 +99,12 @@
 # audio
 /dev/seiren               0660   system     audio
 
+# MobiCore
+#/dev/mobicore             0600   drmrpc     drmrpc
+#/dev/mobicore-user        0660   drm        drmrpc
+
 # Secure MEM driver
-/dev/s5p-smem             0660   system        system
+#/dev/s5p-smem             0660   drm        drmrpc
 
 # cbd modem block
 /dev/block/mmcblk0p5     0400  radio   system
@@ -133,8 +137,28 @@
 /sys/devices/system/cpu/cpu*   cpufreq/interactive/boostpulse_duration         0660    system  system
 /sys/devices/system/cpu/cpu*   cpufreq/interactive/io_is_busy                  0660    system  system
 
+# sensor sysfs properties
+/sys/devices/virtual/input/input*    poll_delay    0660    system    radio
+/sys/devices/virtual/input/input*    enable        0660    system    radio
+/dev/input/event*	  0660   system		input
+
 # Google FRP solution
 /dev/block/platform/13540000.dwmmc0/by-name/PERSISTENT    0660    system    system
 
 # Reactivation Lock
 /dev/block/platform/13540000.dwmmc0/by-name/STEADY    0660    system    system
+
+# Sensorhub IIO
+/dev/ssp_sensorhub        0660   system       system
+/dev/iio:device*          0660   system       system
+/sys/devices/13930000.spi/spi_master/spi2/spi2.0/iio:device*    buffer/enable       0660    system    system
+/sys/devices/13930000.spi/spi_master/spi2/spi2.0/iio:device*    buffer/length       0660    system    system
+/sys/bus/iio/devices/iio:device*    0664   system     radio
+
+# TEEGRIS
+/dev/tzdev		0660	system		system
+/dev/ionfd2phys		0660	system		radio
+/dev/tuihw		0660	system		system
+/dev/tzirs		0660	system		system
+/dev/tz_shmem_validator	0666    system		system
+/dev/tz_wormhole   	0666    system		system

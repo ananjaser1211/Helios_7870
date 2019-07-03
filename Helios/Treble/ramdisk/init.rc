@@ -8,7 +8,8 @@ import /init.usb.rc
 import /init.${ro.hardware}.rc
 import /vendor/etc/init/hw/init.${ro.hardware}.rc
 import /init.usb.configfs.rc
-import /init.${ro.zygote}.rc
+import /init.zygote32.rc
+import /init.zygote64_32.rc
 import /init.container.rc
 
 on early-init
@@ -58,6 +59,10 @@ on init
     # Link /vendor to /system/vendor for devices without a vendor partition.
     symlink /system/odm /odm
     symlink /system/vendor /vendor
+
+    # Link /efs and /cpefs to /mnt/vendor to be able to use pie cbd.
+    symlink /efs /mnt/vendor/efs
+    symlink /cpefs /mnt/vendor/cpefs
 
     # MirrorLink permission
     mkdir /dev/socket/mlaudio 0770 audioserver system
@@ -119,6 +124,7 @@ on init
     mkdir /mnt/appfuse 0711 root root
 
     # Storage views to support runtime permissions
+    mkdir /storage 0755 root root
     mkdir /mnt/runtime 0700 root root
     mkdir /mnt/runtime/default 0755 root root
     mkdir /mnt/runtime/default/self 0755 root root
@@ -468,43 +474,13 @@ on late-fs
     # HALs required before storage encryption can get unlocked (FBE/FDE)
     class_start early_hal
 
-    # For kperfmond.
-    chown system log /data/log/remaining_olog
-    chmod 0440 /data/log/remaining_olog
-
 on post-fs-data
-    chmod 0755 /sys/kernel/debug/tracing
-    restorecon /sys/kernel/debug/tracing/trace_marker
 
     # We chown/chmod /data again so because mount is run as root + defaults
     chown system system /data
     chmod 0771 /data
     # We restorecon /data in case the userdata partition has been reset.
     restorecon /data
-    # KNOX_NAP
-    chmod 0660 /dev/ncm_dev
-    chown system system /dev/ncm_dev
-	
-    chown system radio /efs
-    chmod 0771 /efs
-    restorecon /efs
-
-    chown system system /carrier
-    chmod 0771 /carrier
-    restorecon /carrier
-
-    chown system system /dqmdbg
-    chmod 0770 /dqmdbg
-    restorecon /dqmdbg
-
-    # Samsung ODE
-    chown system system /keydata
-    chmod 0771 /keydata
-    restorecon /keydata
-	
-    chown system system /keyrefuge
-    chmod 0771 /keyrefuge
-    restorecon /keyrefuge
 
     # mobicore
     export MC_AUTH_TOKEN_PATH /efs
@@ -530,39 +506,10 @@ on post-fs-data
 
     # start icd before vold
     start icd
-    start icd_tz_drm
-    start icd_fido
-    start icd_cc
-    start icd_etc
-
-    # Stork Daemon socket
-    mkdir /dev/socket/stork 0770 system system
-
-    # Start Stork Daemon
-    start storkd
-
-    # VaultKeeper socket
-    #mkdir /dev/socket/vaultkeeper 0770 system system
-    #chown system system /dev/socket/vaultkeeper
-    #chmod 0770 /dev/socket/vaultkeeper
-
-    #start VaultKeeper
-    #start vaultkeeper
-
-    #start VaultKeeper_HAL
-    start vaultkeeper_hal
-
-    #start CASS
-    start cass
 
     # Make sure we have the device encryption key.
     start vold
     installkey /data
-
-    # CAS key data
-    mkdir /data/.cas 0771
-    chown media system /data/.cas
-    chmod 0771 /data/.cas
 
     # Decide to trigger LACKING_STORAGE_BOOT
     trigger_lsb
@@ -574,16 +521,6 @@ on post-fs-data
 
     # Avoid predictable entropy pool. Carry over entropy from previous boot.
     copy /data/system/entropy.dat /dev/urandom
-
-    # barnswallow Daemon socket
-    mkdir /dev/socket/bsd 0770 system system
-
-    # eRR.p
-    chown root system /efs/lpm_boot.log
-    chmod 0660 /efs/lpm_boot.log
-
-    chown system system /efs/lpm/lpm_info.log
-    chmod 0660 /efs/lpm/lpm_info.log
 
     # create basic filesystem structure
     mkdir /data/misc 01771 system misc
@@ -623,10 +560,16 @@ on post-fs-data
     mkdir /data/misc/vpn 0770 system vpn
     mkdir /data/misc/shared_relro 0771 shared_relro shared_relro
     mkdir /data/misc/systemkeys 0700 system system
+    mkdir /data/misc/wifi 0770 wifi wifi
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/wifi/wpa_supplicant 0770 wifi wifi
+    mkdir /data/misc/wifi_hostapd 0771 wifi system
     mkdir /data/misc/ethernet 0770 system system
     mkdir /data/misc/dhcp 0770 dhcp dhcp
     mkdir /data/misc/user 0771 root root
     mkdir /data/misc/perfprofd 0775 root root
+    # give system access to wpa_supplicant.conf for backup and restore
+    chmod 0660 /data/misc/wifi/wpa_supplicant.conf
     mkdir /data/local 0751 root root
     mkdir /data/misc/media 0700 media media
     mkdir /data/misc/audioserver 0700 audioserver audioserver
@@ -647,6 +590,8 @@ on post-fs-data
 
     #lpnetConfig AppSync
     mkdir /data/misc/lpnet 0700 system system
+    # Professioanl Audio
+    mkdir /data/misc/jack 0770 jack system
 
     #MCPS
     #ARGOS with MCPS
@@ -771,6 +716,18 @@ on post-fs-data
     mkdir /data/mediadrm 0770 mediadrm mediadrm
 
     mkdir /data/anr 0775 system system
+
+    # Create all remaining /data root dirs so that they are made through init
+    # and get proper encryption policy installed
+    mkdir /data/backup 0700 system system
+    mkdir /data/ss 0700 system system
+
+    # Permission for Fingerprint sensor
+    chown system radio /sys/class/fingerprint/fingerprint/type_check
+    chown system radio /sys/class/fingerprint/fingerprint/name
+    chown system radio /sys/class/fingerprint/fingerprint/vendor
+    chown system radio /sys/class/fingerprint/fingerprint/adm
+    chown system radio /sys/class/fingerprint/fingerprint/bfs_values
 
     # Samsung Pay
     # mkdir /efs/pfw_data 0760 spay spay
@@ -1070,6 +1027,20 @@ on boot
     chown system system /sys/devices/system/cpu/cpufreq/interactive/io_is_busy
     chmod 0660 /sys/devices/system/cpu/cpufreq/interactive/io_is_busy
 
+    # Change permission for input booster
+    chown system radio /sys/class/input_booster/level
+    chown system radio /sys/class/input_booster/head
+    chown system radio /sys/class/input_booster/tail
+    chown system radio /sys/class/input_booster/touchkey/level
+    chown system radio /sys/class/input_booster/touchkey/freq
+    chown system radio /sys/class/input_booster/touchkey/time
+    chmod 0664 /sys/class/input_booster/level
+    chmod 0664 /sys/class/input_booster/head
+    chmod 0664 /sys/class/input_booster/tail
+    chmod 0664 /sys/class/input_booster/touchkey/level
+    chmod 0664 /sys/class/input_booster/touchkey/freq
+    chmod 0664 /sys/class/input_booster/touchkey/time
+
     # Assume SMP uses shared cpufreq policy for all CPUs
     chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
     chmod 0660 /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
@@ -1314,6 +1285,9 @@ on boot
     chmod 771 /efs/usb_hw_param
     chown system system /efs/usb_hw_param/usb_hw_param.log
     chmod 0660 /efs/usb_hw_param/usb_hw_param.log
+
+#Meta event
+    chown system radio /sys/class/sensors/sensor_dev/flush
 
     chown system system /sys/class/leds/vibrator/trigger
     chown system system /sys/class/leds/vibrator/activate
@@ -2002,18 +1976,28 @@ service esecomm /system/bin/tlc_server ESECOMM
     group system
     disabled
 
+# [ Professional audio
+service apaservice /system/bin/apaservice
+    class main
+    user jack
+    group inet sdcard_rw sdcard_r media_rw shell
+
+# ApexServer
+service apexserver /system/bin/apexserver
+    class main
+    user system
+    group system graphics drmrpc media media_rw m2mscaler
+    disabled
+
+service jackservice /system/bin/jackservice
+    class main
+    user jack
+    group audio inet shell
+# Professional audio ]
+
 on property:security.ucm_ese_applet_installed=1
     start esecomm
     setprop security.ucm_ese_applet_installed 0
-
-# [ Wi-Fi init
-service wlandutservice /system/bin/wlandutservice
-    class main
-    user system
-    group system wifi net_raw net_admin inet
-    disabled
-    oneshot
-# ] Wi-Fi init
 
 # IO stats Deamon
 service iod /system/bin/iod
