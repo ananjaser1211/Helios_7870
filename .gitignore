@@ -153,3 +153,10 @@ p
 p-
 security/proca/proca_certificate-asn1.c
 security/proca/proca_certificate-asn1.h
+security/selinux/av_permissions.h
+security/selinux/flask.h
+include/config/auto.conf
+include/config/auto.conf.cmd
+include/config/tristate.conf
+include/generated/autoconf.h
+security/samsung/defex_lsm/file_list
