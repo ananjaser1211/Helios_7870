@@ -593,19 +593,6 @@ static const struct fence_ops android_fence_ops = {
 	.timeline_value_str = android_fence_timeline_value_str,
 };
 
-static void sync_fence_free(struct kref *kref)
-{
-	struct sync_fence *fence = container_of(kref, struct sync_fence, kref);
-	int i;
-
-	for (i = 0; i < fence->num_fences; ++i) {
-		fence_remove_callback(fence->cbs[i].sync_pt, &fence->cbs[i].cb);
-		fence_put(fence->cbs[i].sync_pt);
-	}
-
-	kfree(fence);
-}
-
 static int sync_fence_release(struct inode *inode, struct file *file)
 {
 	struct sync_fence *fence = file->private_data;
