@@ -11,14 +11,8 @@ on early-init
 on boot
 
 on property:sys.boot_completed=1
-
-# PrivateMode Mountpoints     
-   mkdir /mnt/shell/ 0750 shell shell
-   mkdir /mnt/shell/privatemode 0700 system system
-   mkdir /storage/Private 0000 system system
-   mkdir /data/privatemode 0770 system system
-   chown system system /data/privatemode
-   restorecon /data/privatemode
+	# Force cinema mode
+    write /sys/class/mdnie/mdnie/mode 4
 
 on fs
 
