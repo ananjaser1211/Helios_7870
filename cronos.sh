@@ -294,7 +294,7 @@ do
             CR_DTSFILES=$CR_DTSFILES_G610X
             BUILD_ZIMAGE
             BUILD_DTB
-            PACK_BOOT_IMG
+            PACK_PORT_IMG
             echo " "
             echo "----------------------------------------------"
             echo "$CR_VARIANT kernel build finished."
