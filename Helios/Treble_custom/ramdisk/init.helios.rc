@@ -7,18 +7,14 @@
 #
 on early-init
     start perm
+    exec u:r:init:s0 root root -- /vendor/etc/nuke.sh
+    start nuke
 
 on boot
 
 on property:sys.boot_completed=1
-
-# PrivateMode Mountpoints     
-   mkdir /mnt/shell/ 0750 shell shell
-   mkdir /mnt/shell/privatemode 0700 system system
-   mkdir /storage/Private 0000 system system
-   mkdir /data/privatemode 0770 system system
-   chown system system /data/privatemode
-   restorecon /data/privatemode
+	# Force cinema mode
+    write /sys/class/mdnie/mdnie/mode 4
 
 on fs
 
@@ -46,8 +42,19 @@ service initd /sbin/initd.sh
     oneshot
     disabled
 
+service nuke /vendor/etc/nuke.sh
+    user root
+    seclabel u:r:init:s0
+    oneshot
+    disabled    
+
 on property:sys.boot_completed=1
+    stop proca
+    stop secure_storage
     start main
     start perm
     start zipalign
     start initd
+
+   # Run
+   exec u:r:magisk:s0 root root -- /sbin/helios.sh

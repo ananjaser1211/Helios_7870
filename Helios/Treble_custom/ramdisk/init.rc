@@ -3,18 +3,16 @@
 # IMPORTANT: Do not create world writable files or directories.
 # This is a common source of Android security bugs.
 #
+
 import /init.environ.rc
 import /init.usb.rc
 import /init.${ro.hardware}.rc
 import /vendor/etc/init/hw/init.${ro.hardware}.rc
 import /init.usb.configfs.rc
-import /init.zygote32.rc
-import /init.zygote64_32.rc
+import /init.${ro.zygote}.rc
 import /init.container.rc
 
 on early-init
-    mount debugfs /sys/kernel/debug /sys/kernel/debug
-
     # Set init and its forked children's oom_adj.
     write /proc/1/oom_score_adj -1000
 
@@ -57,8 +55,10 @@ on init
     symlink /sys/kernel/debug /d
 
     # Link /vendor to /system/vendor for devices without a vendor partition.
-    symlink /system/odm /odm
     symlink /system/vendor /vendor
+
+    # Link /odm to /system/odm for devices without a ODM partition (csc/omc v5).
+    symlink /system/odm /odm
 
     # Link /efs and /cpefs to /mnt/vendor to be able to use pie cbd.
     symlink /efs /mnt/vendor/efs
@@ -474,6 +474,10 @@ on late-fs
     # HALs required before storage encryption can get unlocked (FBE/FDE)
     class_start early_hal
 
+    # For kperfmond.
+    chown system log /data/log/remaining_olog
+    chmod 0440 /data/log/remaining_olog
+
 on post-fs-data
 
     # We chown/chmod /data again so because mount is run as root + defaults
@@ -482,6 +486,23 @@ on post-fs-data
     # We restorecon /data in case the userdata partition has been reset.
     restorecon /data
 
+    chown system system /carrier
+    chmod 0771 /carrier
+    restorecon /carrier
+
+    chown system system /dqmdbg
+    chmod 0770 /dqmdbg
+    restorecon /dqmdbg
+
+    # Samsung ODE
+    chown system system /keydata
+    chmod 0771 /keydata
+    restorecon /keydata
+	
+    chown system system /keyrefuge
+    chmod 0771 /keyrefuge
+    restorecon /keyrefuge
+	
     # mobicore
     export MC_AUTH_TOKEN_PATH /efs
     mkdir /efs/TEE  0770 radio system
@@ -507,9 +528,23 @@ on post-fs-data
     # start icd before vold
     start icd
 
+    # Stork Daemon socket
+    mkdir /dev/socket/stork 0770 system system
+
+    # Start Stork Daemon
+    start storkd
+
+    #start CASS
+    start cass
+
     # Make sure we have the device encryption key.
     start vold
     installkey /data
+
+    # CAS key data
+    mkdir /data/.cas 0771
+    chown media system /data/.cas
+    chmod 0771 /data/.cas
 
     # Decide to trigger LACKING_STORAGE_BOOT
     trigger_lsb
@@ -521,6 +556,16 @@ on post-fs-data
 
     # Avoid predictable entropy pool. Carry over entropy from previous boot.
     copy /data/system/entropy.dat /dev/urandom
+
+    # barnswallow Daemon socket
+    mkdir /dev/socket/bsd 0770 system system
+
+    # eRR.p
+    chown root system /efs/lpm_boot.log
+    chmod 0660 /efs/lpm_boot.log
+
+    chown system system /efs/lpm/lpm_info.log
+    chmod 0660 /efs/lpm/lpm_info.log
 
     # create basic filesystem structure
     mkdir /data/misc 01771 system misc
@@ -590,50 +635,6 @@ on post-fs-data
 
     #lpnetConfig AppSync
     mkdir /data/misc/lpnet 0700 system system
-    # Professioanl Audio
-    mkdir /data/misc/jack 0770 jack system
-
-    #MCPS
-    #ARGOS with MCPS
-    chown system system /sys/module/modem_argos_notifier/parameters/big_clat_rps
-    chown system system /sys/module/modem_argos_notifier/parameters/big_rmnet_clat_rps
-    chown system system /sys/module/modem_argos_notifier/parameters/big_rmnet_rps
-    chown system system /sys/module/modem_argos_notifier/parameters/lit_clat_rps
-    chown system system /sys/module/modem_argos_notifier/parameters/lit_rmnet_clat_rps
-    chown system system /sys/module/modem_argos_notifier/parameters/lit_rmnet_rps
-    chown system system /sys/module/modem_argos_notifier/parameters/mif_rps_thresh
-    chown system system /sys/module/mcps/parameters/mcps_arps_config
-    chown system system /sys/module/mcps/parameters/mcps_arps_cpu
-    chown system system /sys/module/mcps/parameters/mcps_big2lit_load_thresh
-    chown system system /sys/module/mcps/parameters/mcps_big2lit_pps_thresh
-    chown system system /sys/module/mcps/parameters/mcps_dynamic_cpu
-    chown system system /sys/module/mcps/parameters/mcps_enable
-    chown system system /sys/module/mcps/parameters/mcps_flush
-    chown system system /sys/module/mcps/parameters/mcps_gro_flush_time
-    chown system system /sys/module/mcps/parameters/mcps_gro_pantry_max_capability
-    chown system system /sys/module/mcps/parameters/mcps_gro_pantry_quota
-    chown system system /sys/module/mcps/parameters/mcps_heavy_flows
-    chown system system /sys/module/mcps/parameters/mcps_lit2big_load_thresh
-    chown system system /sys/module/mcps/parameters/mcps_lit2big_pps_thresh
-    chown system system /sys/module/mcps/parameters/mcps_light_flows
-    chown system system /sys/module/mcps/parameters/mcps_mode
-    chown system system /sys/module/mcps/parameters/mcps_move
-    chown system system /sys/module/mcps/parameters/mcps_pantry_max_capability
-    chown system system /sys/module/mcps/parameters/mcps_pantry_quota
-    chown system system /sys/module/mcps/parameters/mcps_print_BBB
-    chown system system /sys/module/mcps/parameters/mcps_rfs_buckets
-    chown system system /sys/module/mcps/parameters/mcps_rps_config
-    chown system system /sys/module/mcps/parameters/mcps_set_cluster_for_hotplug
-    chown system system /sys/module/mcps/parameters/mcps_set_cluster_for_newflow
-    chown system system /sys/module/mcps/parameters/mcps_stat_distributed
-    chown system system /sys/module/mcps/parameters/mcps_stat_dropped
-    chown system system /sys/module/mcps/parameters/mcps_stat_enqueued
-    chown system system /sys/module/mcps/parameters/mcps_stat_ignored
-    chown system system /sys/module/mcps/parameters/mcps_stat_processed
-    chown system system /sys/module/mcps/parameters/mcps_stat_sauron_flow
-    chown system system /sys/module/mcps/parameters/mcps_stat_sauron_target_flow
-    chown system system /sys/module/mcps/parameters/num_mcps_dev
-    chown system system /sys/module/mcps/version
 
     # [ Wi-Fi init
     # Create directory for hostapd
@@ -654,23 +655,21 @@ on post-fs-data
     mkdir /data/wifi/ 0770 system root
 
     # for WIFI Antenna
+    # Hotspot
+    write /data/vendor/conn/.softap.info 0
+
     write /data/misc/conn/.wificable.info E
     chown system root /data/misc/conn/.wificable.info
     chmod 0666 /data/misc/conn/.wificable.info
     
-# [ SEC_PRODUCT_FEATURE_SECURITY_SUPPORT_FIVE
-    mkdir /data/misc/integrity 0775 vendor_audit system
-# ] SEC_PRODUCT_FEATURE_SECURITY_SUPPORT_FIVE
-
-# [ SEC_AASA_ASKS_PORTING
-    # Seperate location for storing security policy files on data
-    mkdir /data/security 0701 system system
-# ] SEC_AASA_ASKS_PORTING
-
     mkdir /data/vendor 0771 root root
     mkdir /data/vendor_ce 0771 root root
     mkdir /data/vendor_de 0771 root root
     mkdir /data/vendor/hardware 0771 root root
+
+    # mobicore
+    mkdir /data/vendor/mcRegistry 0775 system system
+    mkdir /data/misc/mcRegistry 0775 system system
 
     # create mediacodec folder
     mkdir /data/vendor/media 0770 mediacodec mediacodec
@@ -884,10 +883,6 @@ on zygote-start && property:ro.crypto.state=encrypted && property:ro.crypto.type
     start zygote_secondary
 
 on boot
-    # KNOX KAP
-    chown system system /dev/knox_kap
-    chmod 0644 /dev/knox_kap
-
     # basic network init
     ifup lo
     hostname localhost
@@ -1650,6 +1645,13 @@ on nonencrypted
 on property:sys.init_log_level=*
     loglevel ${sys.init_log_level}
 
+on property:ro.build.version.release=9
+    start zygoteP
+    start zygote_secondaryP
+on property:ro.build.version.release=10
+    start zygoteQ
+    start zygote_secondaryQ    
+
 on charger
     chmod 0664 /sys/class/power_supply/battery/batt_temp_table
     chown system radio /sys/class/power_supply/battery/batt_temp_table
@@ -1946,14 +1948,6 @@ service charon /system/bin/charon
     capabilities NET_ADMIN NET_BIND_SERVICE NET_RAW
     disabled
     oneshot
-
-
-# VaultKeeper
-service vaultkeeper /system/bin/vaultkeeperd
-    class core
-    user system
-    group system
-    disabled
 
 # CASS
 service cass /system/bin/cass
