@@ -22,6 +22,13 @@ on fs
     chown radio radio /efs/factory.prop
     chmod 0600 /efs/factory.prop
 
+    # For cpefs partition
+    mkdir /cpefs 0771 radio system
+    wait /dev/block/platform/13540000.dwmmc0/by-name/CPEFS
+    mount ext4 /dev/block/platform/13540000.dwmmc0/by-name/CPEFS /cpefs nosuid nodev noatime noauto_da_alloc,discard,journal_async_commit,errors=panic
+    chown radio system /cpefs
+    chmod 0771 /cpefs
+
     #For cpdebug partition
     wait /dev/block/platform/13540000.dwmmc0/by-name/EFS
     mkdir /efs/cpdebug
