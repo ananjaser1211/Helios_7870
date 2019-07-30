@@ -1645,6 +1645,13 @@ on nonencrypted
 on property:sys.init_log_level=*
     loglevel ${sys.init_log_level}
 
+on property:ro.build.version.release=9
+    start zygoteP
+    start zygote_secondaryP
+on property:ro.build.version.release=10
+    start zygoteQ
+    start zygote_secondaryQ    
+
 on charger
     chmod 0664 /sys/class/power_supply/battery/batt_temp_table
     chown system radio /sys/class/power_supply/battery/batt_temp_table
