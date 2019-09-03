@@ -173,8 +173,8 @@ on boot
     chmod 0660 /sys/power/reset_enabled
 
     # CPU hotplug
-    chown system system /sys/power/cpuhotplug/enable
-    chmod 0660 /sys/power/cpuhotplug/enable
+    chown system system /sys/power/cpuhotplug/enabled
+    chmod 0660 /sys/power/cpuhotplug/enabled
     chown system system /sys/power/cpuhotplug/min_online_cpu
     chmod 0664 /sys/power/cpuhotplug/min_online_cpu
     chown system system /sys/power/cpuhotplug/max_online_cpu

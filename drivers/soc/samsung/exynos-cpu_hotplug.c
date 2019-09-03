@@ -388,7 +388,7 @@ static ssize_t store_cpu_hotplug_enable(struct kobject *kobj,
 }
 
 static struct kobj_attribute cpu_hotplug_enabled =
-__ATTR(enable, 0644, show_cpu_hotplug_enable, store_cpu_hotplug_enable);
+__ATTR(enabled, 0644, show_cpu_hotplug_enable, store_cpu_hotplug_enable);
 
 static struct attribute *cpu_hotplug_attrs[] = {
 	&control_online_cpus.attr,
