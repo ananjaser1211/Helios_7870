@@ -98,5 +98,9 @@ config MODEM_IF_QOS
 	depends on LINK_DEVICE_SHMEM
 	default n
 
+config MODEM_PIE_REV
+	bool "Android 9.0 Bootloader/Modem Support"
+	default n
+
 endmenu
 endif
