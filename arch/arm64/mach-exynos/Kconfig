@@ -25,7 +25,36 @@ config SEC_BAT_AUT
 
 config SAMSUNG_PRODUCT_SHIP
 	bool "set up for product shipping"
-	default n	  
+	default n
+
+config BOARD_J5Y17LTE
+	bool "Samsung Galaxy J5 2017 (J530X)
+	default n
+
+config BOARD_J7Y17LTE
+	bool "Samsung Galaxy J7 2017 (J730X)
+	default n
+
+config BOARD_J7XELTE
+	bool "Samsung Galaxy J7 2016 (J710X)
+	default n
+
+config BOARD_J7VELTE
+	bool "Samsung Galaxy J7 2016 NXT (J701X)
+	default n
+
+config BOARD_ON7XELTE
+	bool "Samsung Galaxy J7 Prime (G610X)
+	default n
+
+config BOARD_J6LTE
+	bool "Samsung Galaxy J6 2018 (J600X)
+	default n
+
+config BOARD_A6LTE
+	bool "Samsung Galaxy A6 2018 (A600X)
+	default n
+
 endmenu
 
 endif
