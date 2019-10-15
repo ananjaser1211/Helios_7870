@@ -155,7 +155,9 @@ dev_obj
 device
 init_name
 name
+arch/arm64/boot/Image
+boot.img-dtb
+security/samsung/defex_lsm/defex_packed_rules.inc
+security/samsung/defex_lsm/pack_rules
 p
 p-
-
-
