@@ -1,0 +1,161 @@
+#
+# NOTE! Don't add files that are generated in specific
+# subdirectories here. Add them in the ".gitignore" file
+# in that subdirectory instead.
+#
+# NOTE! Please use 'git ls-files -i --exclude-standard'
+# command after changing this file, to see if there are
+# any tracked files which get ignored after the change.
+#
+# Normal rules
+#
+.*
+*.o
+*.o.*
+*.a
+*.s
+*.ko
+*.so
+*.so.dbg
+*.mod.c
+*.i
+*.lst
+*.symtypes
+*.order
+modules.builtin
+*.elf
+*.gz
+*.bz2
+*.lzma
+*.xz
+*.lzo
+*.patch
+*.gcno
+
+#
+# Top-level generic files
+#
+/tags
+/TAGS
+/linux
+/vmlinux
+/vmlinuz
+/System.map
+/Module.markers
+/Module.symvers
+
+#
+# Debian directory (make deb-pkg)
+#
+/debian/
+
+#
+# git files that we don't want to ignore even it they are dot-files
+#
+!.gitignore
+!.mailmap
+
+#
+# Generated include files
+#
+include/config
+include/generated
+arch/*/include/generated
+
+# stgit generated dirs
+patches-*
+
+<<<<<<< HEAD
+# quilt's files
+patches
+series
+
+# cscope files
+cscope.*
+ncscope.*
+
+# gnu global files
+GPATH
+GRTAGS
+GSYMS
+GTAGS
+
+*.rej
+*.orig
+*~
+\#*#
+
+#
+# Leavings from module signing
+#
+extra_certificates
+signing_key.priv
+signing_key.x509
+x509.genkey
+
+#
+# Helios
+#
+Helios/A.I.K/*
+Helios/Out/*.img
+*.lds
+*.fw*
+*.bin*
+arch/arm64/kernel/vdso/vdso-offsets.h
+net/wireguard/
+crypto/asymmetric_keys/x509-asn1.c
+crypto/asymmetric_keys/x509-asn1.h
+crypto/asymmetric_keys/x509_rsakey-asn1.c
+crypto/asymmetric_keys/x509_rsakey-asn1.h
+firmware/five/ffffffff000000000000000000000072.tlbin
+firmware/five/ffffffff000000000000000000000072.tlbin.gen.S
+kernel/config_data.h
+kernel/time/hz.bc
+kernel/time/timeconst.h
+lib/crc32table.h
+lib/gen_crc32table
+lib/oid_registry_data.c
+net/wireless/regdb.c
+scripts/asn1_compiler
+scripts/basic/bin2c
+scripts/basic/fixdep
+scripts/dtc/dtc
+scripts/dtc/dtc-lexer.lex.c
+scripts/dtc/dtc-parser.tab.c
+scripts/dtc/dtc-parser.tab.h
+scripts/genksyms/genksyms
+scripts/genksyms/keywords.hash.c
+scripts/genksyms/lex.lex.c
+scripts/genksyms/parse.tab.c
+scripts/genksyms/parse.tab.h
+scripts/kallsyms
+scripts/kconfig/conf
+scripts/kconfig/zconf.hash.c
+scripts/kconfig/zconf.lex.c
+scripts/kconfig/zconf.tab.c
+scripts/mod/devicetable-offsets.h
+scripts/mod/elfconfig.h
+scripts/mod/mk_elfconfig
+scripts/mod/modpost
+scripts/selinux/genheaders/genheaders
+scripts/selinux/mdp/mdp
+scripts/sortextable
+security/selinux_n/av_permissions.h
+security/selinux_n/flask.h
+usr/gen_init_cpio
+security/proca/proca_certificate-asn1.c
+security/proca/proca_certificate-asn1.h
+include/config/auto.conf
+include/config/auto.conf.cmd
+include/config/tristate.conf
+include/generated/autoconf.h
+security/samsung/defex_lsm/file_list
+dev_kobj
+dev_obj
+device
+init_name
+name
+p
+p-
+
+
