@@ -1,0 +1,20 @@
+#
+# SYNAPTICS TOUCH driver configuration
+#
+
+config TOUCHSCREEN_SYNAPTICS_I2C_TD4X00
+	tristate "Synaptics DSX2 i2c touchscreen base on bootloader Ver7"
+	depends on I2C
+	help
+	  This enables support for Synaptics DSX2 over I2C based touchscreens.
+	  
+config TOUCHSCREEN_SYNAPTICS_I2C_TD4X01_A2CORELTE
+	tristate "Synaptics DSX2 i2c touchscreen base on bootloader Ver7"
+	depends on I2C
+	help
+	  This enables support for Synaptics DSX2 over I2C based touchscreens.
+
+config TOUCHSCREEN_SYNAPTICS_FB_OPEN_CLOSE
+	tristate "Synaptics touchscreen for Project A260 A2 Core"
+	help
+	  This enables support for Synaptics.

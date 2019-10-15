@@ -1,0 +1,276 @@
+config CAMERA_EEPROM_SUPPORT_REAR
+        bool "Enable eeprom for rear cam"
+        depends on VENDER_MCD
+        default n
+        help
+          Enable eeprom for rear cam.
+config CAMERA_EEPROM_SUPPORT_REAR3
+        bool "Enable eeprom for rear3 cam"
+        depends on VENDER_MCD
+        default n
+        help
+          Enable eeprom for rear2 cam.
+config CAMERA_EEPROM_SUPPORT_FRONT
+        bool "Enable eeprom for front cam"
+        depends on VENDER_MCD
+        default n
+        help
+          Enable eeprom for front cam.
+config CAMERA_EEPROM_SUPPORT_OIS
+        bool "Enable eeprom for ois"
+        depends on VENDER_MCD
+        default n
+        help
+          Enable eeprom for ois cam.
+config CAMERA_OTPROM_SUPPORT_REAR
+        bool "Enable otprom for rear cam"
+        depends on VENDER_MCD
+        default n
+        help
+          Enable otprom for rear cam.
+config CAMERA_OTPROM_SUPPORT_FRONT
+        bool "Enable otprom for front cam"
+        depends on VENDER_MCD
+        default n
+        help
+          Enable otprom for front cam.
+config COMPANION_USE
+        bool "Use companion"
+        depends on VENDER_MCD
+        default n
+        help
+          Use companion.
+ config COMPANION_C1_USE
+        bool "Use companion C1"
+        depends on VENDER_MCD
+        default n
+        help
+          Use companion C1.
+ config COMPANION_C2_USE
+        bool "Use companion C2"
+        depends on VENDER_MCD
+        default n
+        help
+          Use companion C2.
+ config CONFIG_DEVICE_COMPANION_C2_USE
+        bool "Use device companion C2"
+        depends on VENDER_MCD
+        default n
+        help
+          Use device companion C2.
+ config COMPANION_C3_USE
+        bool "Use companion C3"
+        depends on VENDER_MCD
+        default n
+        help
+          Use companion C3.
+config COMPANION_DCDC_USE
+        bool "Use companion DCDC regulator"
+        depends on VENDER_MCD
+        default n
+        help
+          Use companion DCDC regulator.
+config PREPROCESSOR_STANDBY_USE
+        bool "Use companion standby"
+        depends on VENDER_MCD
+        default n
+        help
+          Use companion standby.
+config OIS_USE
+        bool "Use ois"
+        depends on VENDER_MCD
+        default n
+        help
+          Use ois.
+config OIS_USE_BU24219
+        bool "Use ois BU24219"
+        depends on VENDER_MCD
+        default n
+        help
+          Use ois BU24219.
+config OIS_FW_UPDATE_THREAD_USE
+        bool "Enable ois fw update thread"
+        depends on OIS_USE
+        default n
+        help
+          Enable ois fw update thread.
+config AF_HOST_CONTROL
+        bool "Enable host af control"
+        depends on VENDER_MCD
+        default n
+        help
+          Enable host af control.
+config TORCH_CURRENT_CHANGE_SUPPORT
+        bool "Change torch current in recording mode"
+        depends on VENDER_MCD
+        default n
+        help
+          Change torch current in recording mode.
+config SECURE_CAMERA_USE
+        bool "Use secure camera"
+        depends on VENDER_MCD
+        default n
+        help
+          Use secure camera.
+config CAMERA_JOSHUA
+        bool "This camera is joshua project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is joshua project.
+config CAMERA_MATISSE10
+        bool "This camera is matisse10 project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is matisse10 project.
+config CAMERA_J7X
+        bool "This camera is j7x project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is j7x project.
+config CAMERA_GTAXL
+        bool "This camera is gtaxl project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is gtaxl project.
+config CAMERA_A7MAX
+        bool "This camera is a7max project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is a7max project.
+config CAMERA_ON7E
+        bool "This camera is on7e project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is on7e project.
+config CAMERA_ON7X
+        bool "This camera is on7x project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is on7x project.
+config CAMERA_A3XPREMIUM
+        bool "This camera is a3xpremium project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is a3xpremium project.
+config CAMERA_A3Y17
+        bool "This camera is a3y17 project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is a3y17 project.
+config CAMERA_J5Y17
+        bool "This camera is j5y17 project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is j5y17 project.
+config CAMERA_J7Y17
+        bool "This camera is j7y17 project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is j7y17 project.
+config CAMERA_J7POPKOR
+        bool "This camera is j7popkor project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is j7popkor project.
+config CAMERA_J7POP
+        bool "This camera is j7pop project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is j7pop project.
+config CAMERA_J7VE
+        bool "This camera is j7ve project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is j7ve project.
+config CAMERA_GTACTIVE2
+        bool "This camera is gtactive2 project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is gtactive2 project.
+config CAMERA_GRANDPPIRIS
+        bool "This camera is grandppiris project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is grandppiris project.
+config CAMERA_ON7XREF
+        bool "This camera is on7xref project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is on7xref project.
+config CAMERA_J7TOP
+        bool "This camera is j7top project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is j7top project.
+config CAMERA_DEGASY18
+        bool "This camera is degasy18 project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is degasy18 project.
+config CAMERA_J8
+        bool "This camera is j8 project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is j8 project.
+config CAMERA_GTAXLAD
+        bool "This camera is gtaxlad project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is gtaxlad project.
+config CAMERA_J6
+        bool "This camera is j6 project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is j6 project.
+config CAMERA_A6
+        bool "This camera is a6 project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is a6 project.
+config CAMERA_J7VEIRIS
+        bool "This camera is J7veiris project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is J7veiris project.
+config CAMERA_M10LTE
+        bool "This camera is M10 project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is M10 project.
+config CAMERA_A2CORELTE
+        bool "This camera is A2CORE project"
+        depends on VENDER_MCD
+        default n
+        help
+          This camera is A2CORE project.		  
+config CAMERA_5E6_USE_1P2_POWER
+        bool "5E6 sensor use 1p2 power pin"
+        depends on VENDER_MCD
+        default n
+        help
+          5E6 sensor use 1p2 power pin.

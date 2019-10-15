@@ -1,0 +1,9 @@
+#
+# UART_SWITCH Device Driver
+#
+
+config UART_SEL
+     bool "UART SWITCH Support"
+     default n
+	 help
+	   This enables UART_SEL driver to control the UART_SEL Device.

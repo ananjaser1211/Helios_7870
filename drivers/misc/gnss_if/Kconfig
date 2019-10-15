@@ -1,0 +1,13 @@
+config GNSS_SHMEM_IF
+	bool "Samsung Shared memory Interface for GNSS"
+	depends on MCU_IPC
+	default n
+	---help---
+	  Samsung Shared Memory Interface for GNSS.
+
+config GNSS_DISABLE
+	bool "Disable GNSS for WIFI only model"
+	depends on GNSS_SHMEM_IF
+	default n
+	---help---
+	  Disable GNSS for WIFI only model(Hibernation mode)
