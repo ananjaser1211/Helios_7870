@@ -1393,7 +1393,7 @@
 				 dev = "/dev/block/platform/13540000.dwmmc0/by-name/SYSTEM";
 				 type = "ext4";
 				 mnt_flags = "ro";
-				 fsmgr_flags = "wait,verify";
+				 fsmgr_flags = "wait";
 				};
 			};
 		};
