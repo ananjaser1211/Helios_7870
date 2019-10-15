@@ -1,0 +1,89 @@
+/*
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/ {
+	pinctrl@139F0000 {
+		btp_irq: btp-irq {
+			samsung,pins = "gpa2-4";
+			samsung,pin-function = <0xf>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <3>;
+		};
+		btp_irq_sleep: btp-irq-sleep {
+			samsung,pins = "gpa2-4";
+			samsung,pin-function = <0x0>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <3>;
+		};
+	};
+	pinctrl@139B0000 {
+		btp_ldo: btp-ldo {
+			samsung,pins = "gpd4-5";
+			samsung,pin-function = <1>;
+			samsung,pin-pud = <1>;
+			samsung,pin-drv = <0>;
+		};
+		btp_reset: btp-reset {
+			samsung,pins = "gpd4-6";
+			samsung,pin-function = <1>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <3>;
+		};
+	};
+
+	pinctrl@139E0000 {
+		btp_check: btp-check {
+			samsung,pins = "gpc7-4";
+			samsung,pin-function = <0>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <3>;
+		};
+	};
+
+	spi_1: spi@100C0000 {
+		status = "okay";
+		secure-mode;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		/delete-property/ pinctrl-names;
+		/delete-property/ pinctrl-0;
+
+		dma-mode;
+		dmas = <&pdma0 19
+			&pdma0 18>;
+
+		dma-names = "tx", "rx";
+		etspi-spi@0 {
+			compatible = "etspi,et5xx";
+			reg = <0>;
+			spi-max-frequency = <16000000>;
+			pinctrl-names = "default", "pins_poweron", "pins_poweroff";
+			pinctrl-0 = <&btp_irq &btp_reset &btp_ldo &btp_check &spi1_bus_inactive>;
+			pinctrl-1 = <&btp_irq &spi1_clk &spi1_cs &spi1_miso &spi1_mosi>;
+			pinctrl-2 = <&btp_irq_sleep &spi1_bus_inactive>;
+
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			etspi-sleepPin = <&gpd4 6 0x00>;
+			etspi-drdyPin = <&gpa2 4 0x00>;
+			etspi-ldoPin = <&gpd4 5 0x00>;
+			etspi-chipid = "ET510";
+			etspi-ldocontrol = <1>;
+			controller-data {
+				samsung,spi-feedback-delay = <0>;
+				samsung,spi-chip-select-mode = <0>;
+			};
+		};
+	};
+};
