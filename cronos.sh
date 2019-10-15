@@ -106,6 +106,11 @@ else
      rm -rf $CR_DTS/*.dtb
 fi
 
+BUILD_IMAGE_NAME()
+{
+	CR_IMAGE_NAME=$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT.img
+}
+
 BUILD_ZIMAGE()
 {
 	echo "----------------------------------------------"
@@ -163,8 +168,8 @@ PACK_RAMDISK_IMG()
 	# Remove red warning at boot
 	echo -n "SEANDROIDENFORCE" » $CR_AIK/image-new.img
 	# Move boot.img to out dir
-	mv $CR_AIK/image-new.img $CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT-Treble.img
-    du -k "$CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT-Treble.img" | cut -f1 >sizkT
+	mv $CR_AIK/image-new.img $CR_OUT/$CR_IMAGE_NAME
+    du -k "$CR_OUT/$CR_IMAGE_NAME" | cut -f1 >sizkT
     sizkT=$(head -n 1 sizkT)
     rm -rf sizkT
 	$CR_AIK/cleanup.sh
@@ -185,6 +190,7 @@ do
             CR_VARIANT=$CR_VARIANT_J530X
             CR_CONFG=$CR_CONFG_J530X
             CR_DTSFILES=$CR_DTSFILES_J530X
+            BUILD_IMAGE_NAME
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_RAMDISK_IMG
@@ -194,7 +200,7 @@ do
             echo "Compiled DTB Size = $sizdT Kb"
             echo "Kernel Image Size = $sizT Kb"
             echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT-Treble.img Ready"
+            echo "$CR_OUT/$CR_IMAGE_NAME Ready"
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
@@ -206,6 +212,7 @@ do
             CR_VARIANT=$CR_VARIANT_J730X
             CR_CONFG=$CR_CONFG_J730X
             CR_DTSFILES=$CR_DTSFILES_J730X
+            BUILD_IMAGE_NAME
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_RAMDISK_IMG
@@ -215,7 +222,7 @@ do
             echo "Compiled DTB Size = $sizdT Kb"
             echo "Kernel Image Size = $sizT Kb"
             echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT-Treble.img Ready"
+            echo "$CR_OUT/$CR_IMAGE_NAME Ready"
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
@@ -229,6 +236,7 @@ do
             export PLATFORM_VERSION=$CR_PLATFORM_J710X
             CR_CONFG=$CR_CONFG_J710X
             CR_DTSFILES=$CR_DTSFILES_J710X
+            BUILD_IMAGE_NAME
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_RAMDISK_IMG
@@ -238,7 +246,7 @@ do
             echo "Compiled DTB Size = $sizdT Kb"
             echo "Kernel Image Size = $sizT Kb"
             echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT-Treble.img Ready"
+            echo "$CR_OUT/$CR_IMAGE_NAME Ready"
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
@@ -250,6 +258,7 @@ do
             CR_VARIANT=$CR_VARIANT_J701X
             CR_CONFG=$CR_CONFG_J701X
             CR_DTSFILES=$CR_DTSFILES_J701X
+            BUILD_IMAGE_NAME
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_RAMDISK_IMG
@@ -259,7 +268,7 @@ do
             echo "Compiled DTB Size = $sizdT Kb"
             echo "Kernel Image Size = $sizT Kb"
             echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT-Treble.img Ready"
+            echo "$CR_OUT/$CR_IMAGE_NAME Ready"
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
@@ -271,6 +280,7 @@ do
             CR_VARIANT=$CR_VARIANT_G610X
             CR_CONFG=$CR_CONFG_G610X
             CR_DTSFILES=$CR_DTSFILES_G610X
+            BUILD_IMAGE_NAME
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_RAMDISK_IMG
@@ -280,7 +290,7 @@ do
             echo "Compiled DTB Size = $sizdT Kb"
             echo "Kernel Image Size = $sizT Kb"
             echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT-Treble.img Ready"
+            echo "$CR_OUT/$CR_IMAGE_NAME Ready"
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
@@ -294,6 +304,7 @@ do
             CR_DTSFILES=$CR_DTSFILES_J600X
             export ANDROID_MAJOR_VERSION=$CR_ANDROID
             export PLATFORM_VERSION=$CR_PLATFORM
+            BUILD_IMAGE_NAME
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_RAMDISK_IMG
@@ -303,7 +314,7 @@ do
             echo "Compiled DTB Size = $sizdT Kb"
             echo "Kernel Image Size = $sizT Kb"
             echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT-Treble.img Ready"
+            echo "$CR_OUT/$CR_IMAGE_NAME Ready"
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
@@ -317,6 +328,7 @@ do
             CR_DTSFILES=$CR_DTSFILES_A600X
             export ANDROID_MAJOR_VERSION=$CR_ANDROID
             export PLATFORM_VERSION=$CR_PLATFORM
+            BUILD_IMAGE_NAME
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_RAMDISK_IMG
@@ -326,7 +338,7 @@ do
             echo "Compiled DTB Size = $sizdT Kb"
             echo "Kernel Image Size = $sizT Kb"
             echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT-Treble.img Ready"
+            echo "$CR_OUT/$CR_IMAGE_NAME Ready"
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
