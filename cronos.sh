@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Cronos Build Script V3.2
+# Cronos Build Script V3.3
 # For Exynos7870
 # Coded by BlackMesa/AnanJaser1211 @2019
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -88,6 +88,11 @@ CR_VARIANT_J600X=J600X
 CR_DTSFILES_A600X="exynos7870-a6lte_eur_open_00.dtb exynos7870-a6lte_eur_open_01.dtb exynos7870-a6lte_eur_open_02.dtb exynos7870-a6lte_eur_open_03.dtb"
 CR_CONFG_A600X=a6lte_defconfig
 CR_VARIANT_A600X=A600X
+# Common configs
+CR_CONFIG_SPLIT=NULL
+CR_CONFIG_HELIOS=helios_defconfig
+#####################################################
+
 # Script functions
 
 read -p "Clean source (y/n) > " yn
@@ -98,6 +103,7 @@ if [ "$yn" = "Y" -o "$yn" = "y" ]; then
      rm -rf $CR_DTS/.*.tmp
      rm -rf $CR_DTS/.*.cmd
      rm -rf $CR_DTS/*.dtb
+     rm -rf $CR_DIR/.config
 else
      echo "Dirty Build"
      rm -r -f $CR_DTB
@@ -108,7 +114,32 @@ fi
 
 BUILD_IMAGE_NAME()
 {
-	CR_IMAGE_NAME=$CR_NAME-$CR_VERSION-$CR_DATE-$CR_VARIANT.img
+	CR_IMAGE_NAME=$CR_NAME-$CR_VERSION-$CR_VARIANT-$CR_DATE
+}
+
+BUILD_GENERATE_CONFIG()
+{
+  # Only use for devices that are unified with 2 or more configs
+  echo "----------------------------------------------"
+	echo " "
+	echo "Building defconfig for $CR_VARIANT"
+  echo " "
+  if [ -e $CR_DIR/arch/$CR_ARCH/configs/tmp_defconfig ]; then
+    echo " cleanup old configs "
+    rm -rf $CR_DIR/arch/$CR_ARCH/configs/tmp_defconfig
+  fi
+  echo " Copy $CR_CONFIG "
+  cp -f $CR_DIR/arch/$CR_ARCH/configs/$CR_CONFIG $CR_DIR/arch/$CR_ARCH/configs/tmp_defconfig
+  if [ $CR_CONFIG_SPLIT = NULL ]; then
+    echo " No split config support! "
+  else
+    echo " Copy $CR_CONFIG_SPLIT "
+    cat $CR_DIR/arch/$CR_ARCH/configs/$CR_CONFIG_SPLIT >> $CR_DIR/arch/$CR_ARCH/configs/tmp_defconfig
+  fi
+  echo " Copy $CR_CONFIG_HELIOS "
+  cat $CR_DIR/arch/$CR_ARCH/configs/$CR_CONFIG_HELIOS >> $CR_DIR/arch/$CR_ARCH/configs/tmp_defconfig
+  echo " Set $CR_VARIANT to generated config "
+  CR_CONFIG=tmp_defconfig
 }
 
 BUILD_ZIMAGE()
@@ -116,8 +147,9 @@ BUILD_ZIMAGE()
 	echo "----------------------------------------------"
 	echo " "
 	echo "Building zImage for $CR_VARIANT"
-	export LOCALVERSION=-$CR_NAME-$CR_VERSION-$CR_VARIANT-$CR_DATE
-	make  $CR_CONFG
+	export LOCALVERSION=-$CR_IMAGE_NAME
+	echo "Make $CR_CONFIG"
+	make $CR_CONFIG
 	make -j$CR_JOBS
 	if [ ! -e $CR_KERNEL ]; then
 	exit 0;
@@ -151,15 +183,13 @@ BUILD_DTB()
 	echo " "
 	echo "----------------------------------------------"
 }
-PACK_RAMDISK_IMG()
+PACK_BOOT_IMG()
 {
 	echo "----------------------------------------------"
 	echo " "
 	echo "Building Boot.img for $CR_VARIANT"
 	# Copy Ramdisk
 	cp -rf $CR_RAMDISK/* $CR_AIK
-	cp -rf $CR_RAMDISK_PORT/* $CR_AIK
-	#cp -rf $CR_RAMDISK_TREBLE/* $CR_AIK
 	# Move Compiled kernel and dtb to A.I.K Folder
 	mv $CR_KERNEL $CR_AIK/split_img/boot.img-zImage
 	mv $CR_DTB $CR_AIK/split_img/boot.img-dtb
@@ -168,10 +198,11 @@ PACK_RAMDISK_IMG()
 	# Remove red warning at boot
 	echo -n "SEANDROIDENFORCE" » $CR_AIK/image-new.img
 	# Move boot.img to out dir
-	mv $CR_AIK/image-new.img $CR_OUT/$CR_IMAGE_NAME
-    du -k "$CR_OUT/$CR_IMAGE_NAME" | cut -f1 >sizkT
-    sizkT=$(head -n 1 sizkT)
-    rm -rf sizkT
+	mv $CR_AIK/image-new.img $CR_OUT/$CR_IMAGE_NAME.img
+	du -k "$CR_OUT/$CR_IMAGE_NAME.img" | cut -f1 >sizkT
+	sizkT=$(head -n 1 sizkT)
+	rm -rf sizkT
+	echo " "
 	$CR_AIK/cleanup.sh
 }
 # Main Menu
@@ -188,19 +219,20 @@ do
             clear
             echo "Starting $CR_VARIANT_J530X kernel build..."
             CR_VARIANT=$CR_VARIANT_J530X
-            CR_CONFG=$CR_CONFG_J530X
+            CR_CONFIG=$CR_CONFG_J530X
             CR_DTSFILES=$CR_DTSFILES_J530X
             BUILD_IMAGE_NAME
+            BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
             BUILD_DTB
-            PACK_RAMDISK_IMG
+            PACK_BOOT_IMG
             echo " "
             echo "----------------------------------------------"
             echo "$CR_VARIANT kernel build finished."
             echo "Compiled DTB Size = $sizdT Kb"
             echo "Kernel Image Size = $sizT Kb"
             echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME Ready"
+            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
@@ -210,19 +242,20 @@ do
             clear
             echo "Starting $CR_VARIANT_J730X kernel build..."
             CR_VARIANT=$CR_VARIANT_J730X
-            CR_CONFG=$CR_CONFG_J730X
+            CR_CONFIG=$CR_CONFG_J730X
             CR_DTSFILES=$CR_DTSFILES_J730X
             BUILD_IMAGE_NAME
+            BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
             BUILD_DTB
-            PACK_RAMDISK_IMG
+            PACK_BOOT_IMG
             echo " "
             echo "----------------------------------------------"
             echo "$CR_VARIANT kernel build finished."
             echo "Compiled DTB Size = $sizdT Kb"
             echo "Kernel Image Size = $sizT Kb"
             echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME Ready"
+            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
@@ -234,19 +267,20 @@ do
             CR_VARIANT=$CR_VARIANT_J710X
             export ANDROID_MAJOR_VERSION=$CR_ANDROID_J710X
             export PLATFORM_VERSION=$CR_PLATFORM_J710X
-            CR_CONFG=$CR_CONFG_J710X
+            CR_CONFIG=$CR_CONFG_J710X
             CR_DTSFILES=$CR_DTSFILES_J710X
             BUILD_IMAGE_NAME
+            BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
             BUILD_DTB
-            PACK_RAMDISK_IMG
+            PACK_BOOT_IMG
             echo " "
             echo "----------------------------------------------"
             echo "$CR_VARIANT kernel build finished."
             echo "Compiled DTB Size = $sizdT Kb"
             echo "Kernel Image Size = $sizT Kb"
             echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME Ready"
+            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
@@ -256,19 +290,20 @@ do
             clear
             echo "Starting $CR_VARIANT_J701X kernel build..."
             CR_VARIANT=$CR_VARIANT_J701X
-            CR_CONFG=$CR_CONFG_J701X
+            CR_CONFIG=$CR_CONFG_J701X
             CR_DTSFILES=$CR_DTSFILES_J701X
             BUILD_IMAGE_NAME
+            BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
             BUILD_DTB
-            PACK_RAMDISK_IMG
+            PACK_BOOT_IMG
             echo " "
             echo "----------------------------------------------"
             echo "$CR_VARIANT kernel build finished."
             echo "Compiled DTB Size = $sizdT Kb"
             echo "Kernel Image Size = $sizT Kb"
             echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME Ready"
+            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
@@ -278,19 +313,20 @@ do
             clear
             echo "Starting $CR_VARIANT_G610X kernel build..."
             CR_VARIANT=$CR_VARIANT_G610X
-            CR_CONFG=$CR_CONFG_G610X
+            CR_CONFIG=$CR_CONFG_G610X
             CR_DTSFILES=$CR_DTSFILES_G610X
             BUILD_IMAGE_NAME
+            BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
             BUILD_DTB
-            PACK_RAMDISK_IMG
+            PACK_BOOT_IMG
             echo " "
             echo "----------------------------------------------"
             echo "$CR_VARIANT kernel build finished."
             echo "Compiled DTB Size = $sizdT Kb"
             echo "Kernel Image Size = $sizT Kb"
             echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME Ready"
+            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
@@ -300,21 +336,22 @@ do
             clear
             echo "Starting $CR_VARIANT_J600X kernel build..."
             CR_VARIANT=$CR_VARIANT_J600X
-            CR_CONFG=$CR_CONFG_J600X
+            CR_CONFIG=$CR_CONFG_J600X
             CR_DTSFILES=$CR_DTSFILES_J600X
             export ANDROID_MAJOR_VERSION=$CR_ANDROID
             export PLATFORM_VERSION=$CR_PLATFORM
             BUILD_IMAGE_NAME
+            BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
             BUILD_DTB
-            PACK_RAMDISK_IMG
+            PACK_BOOT_IMG
             echo " "
             echo "----------------------------------------------"
             echo "$CR_VARIANT kernel build finished."
             echo "Compiled DTB Size = $sizdT Kb"
             echo "Kernel Image Size = $sizT Kb"
             echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME Ready"
+            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
@@ -324,21 +361,22 @@ do
             clear
             echo "Starting $CR_VARIANT_A600X kernel build..."
             CR_VARIANT=$CR_VARIANT_A600X
-            CR_CONFG=$CR_CONFG_A600X
+            CR_CONFIG=$CR_CONFG_A600X
             CR_DTSFILES=$CR_DTSFILES_A600X
             export ANDROID_MAJOR_VERSION=$CR_ANDROID
             export PLATFORM_VERSION=$CR_PLATFORM
             BUILD_IMAGE_NAME
+            BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
             BUILD_DTB
-            PACK_RAMDISK_IMG
+            PACK_BOOT_IMG
             echo " "
             echo "----------------------------------------------"
             echo "$CR_VARIANT kernel build finished."
             echo "Compiled DTB Size = $sizdT Kb"
             echo "Kernel Image Size = $sizT Kb"
             echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME Ready"
+            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
