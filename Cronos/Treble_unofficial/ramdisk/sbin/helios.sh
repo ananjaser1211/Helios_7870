@@ -23,6 +23,12 @@ RUN=/sbin/busybox;
 LOGFILE=/data/helios/boot.log
 REBOOTLOGFILE=/data/helios/reboot.log
 
+if [ -e /data/helios ]; then
+for FILE in /data/helios/*; do
+  $RUN rm -f $FILE
+done;
+fi
+
 log_print() {
   echo "$1"
   echo "$1" >> $LOGFILE
@@ -31,6 +37,9 @@ rebootlog_print() {
   echo "$1"
   echo "$1" >> $REBOOTLOGFILE
 }
+
+log_print "------------------------------------------------------"
+log_print "**helios boot script started at $( date +"%d-%m-%Y %H:%M:%S" )**"
 
    log_print "Creat Dirs"
 
@@ -52,23 +61,38 @@ if [ -e /data/helios/Refined_logger.log ]; then
   cp "/data/helios/Refined_logger.log" "/data/heliosLogcat/Refined_Logger_$(date +"%d-%m-%Y %H:%M:%S").log"
 fi
 
-for FILE in /data/helios/*; do
-	$RUN rm -f $FILE
-done;
-
-log_print "------------------------------------------------------"
-
-
-log_print "------------------------------------------------------"
-log_print "**helios boot script started at $( date +"%d-%m-%Y %H:%M:%S" )**"
-
    log_print "Mounting"
+
 # Initial
 mount -o remount,rw -t auto /
 mount -t rootfs -o remount,rw rootfs
 mount -o remount,rw -t auto /system
+mount -o remount,rw /vendor
 mount -o remount,rw /data
 mount -o remount,rw /cache
+
+# Remount vendor rw
+mount -o remount,rw -t auto /vendor
+
+# Create init.d folder if not exist
+if [ ! -d /vendor/etc/init.d ]; then
+    mkdir -p /vendor/etc/init.d;
+fi
+
+chown -R root.root /vendor/etc/init.d;
+chmod 777 /vendor/etc/init.d;
+
+if [ "$(ls -A /vendor/etc/init.d)" ]; then
+    chmod 777 /vendor/etc/init.d/*;
+
+    for FILE in /vendor/etc/init.d/*; do
+        log_print "Trying to execute - $FILE"
+        sh $FILE >/dev/null;
+        log_print "$FILE executed"
+    done;
+else
+    log_print "No vendor init.d files found"
+fi
 
    log_print "Enforcing"
 # Change to Enforce Status.
@@ -112,13 +136,20 @@ fi
 
 # Disabling unauthorized changes warnings...
 if [ -d /system/app/SecurityLogAgent ]; then
-    rm -rf /system/app/SecurityLogAgent
+rm -rf /system/app/SecurityLogAgent
 fi
 
-   log_print "Add missing spammy files"
+   log_print "Add Personalists"
 
-	touch /data/system/fmmpassword.key
+# Write personalists xml for libpersona.so
+
+if [ ! -f /data/system/users/0/personalist.xml ]; then
 	touch /data/system/users/0/personalist.xml
+fi;
+if [ ! -r /data/system/users/0/personalist.xml ]; then
+ 	chmod 600 /data/system/users/0/personalist.xml
+ 	chown system:system /data/system/users/0/personalist.xml
+fi;
 
    log_print "Disable Tracing"
 
@@ -158,13 +189,15 @@ su -c "pm enable com.google.android.gsf/.update.SystemUpdateService$SecretCodeRe
 mount -o remount,ro -t auto /
 mount -t rootfs -o remount,ro rootfs
 mount -o remount,ro -t auto /system
+mount -o remount,ro /vendor
 mount -o remount,rw /data
 mount -o remount,rw /cache
 
-log_print "Start RefinedLogger"
+   log_print "Start RefinedLogger"
 
    log_print "**helios early boot script finished at $( date +"%d-%m-%Y %H:%M:%S" )**"
    log_print "------------------------------------------------------"
 
-# RefinedLogger
+   # RefinedLogger
 /system/bin/logcat *:E > /data/helios/Refined_logger.log
+

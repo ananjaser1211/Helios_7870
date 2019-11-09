@@ -58,12 +58,14 @@ on init
     symlink /sys/kernel/debug /d
 
     # Link /vendor to /system/vendor for devices without a vendor partition.
-    symlink /system/odm /odm
     symlink /system/vendor /vendor
 
     # Link /efs and /cpefs to /mnt/vendor to be able to use pie cbd.
     symlink /efs /mnt/vendor/efs
     symlink /cpefs /mnt/vendor/cpefs
+
+    # Link /odm to /system/odm for devices without a ODM partition (csc/omc v5).
+    symlink /system/odm /odm
 
     # MirrorLink permission
     mkdir /dev/socket/mlaudio 0770 audioserver system
@@ -521,11 +523,6 @@ on post-fs-data
     chmod 0771 /keyrefuge
     restorecon /keyrefuge
 	
-# [ SEC_SELINUX_PORTING_COMMON
-    # sec_efs_file
-    mkdir /efs/sec_efs 0775 radio system
-# ] SEC_SELINUX_PORTING_COMMON
-
     # mobicore
     export MC_AUTH_TOKEN_PATH /efs
     mkdir /efs/TEE  0770 radio system
@@ -533,30 +530,29 @@ on post-fs-data
     chown system system /dev/t-base-tui
     start mobicore
 
-    # tzic
+    # icd
+    check_icd
+    chown system system /dev/icd
+    chmod 0644 /dev/icd
+    chown system system /dev/icdr
+    chmod 0644 /dev/icdr
     chown system net_bt_admin /dev/tzic
     chmod 0660 /dev/tzic
-
-    # DeXonPC
+    restorecon /dev/icd
+    restorecon /dev/icdr
+    
+    #SideSync
     chown system system /dev/android_ssusbcon
     chmod 0660 /dev/android_ssusbcon
+
+    # start icd before vold
+    start icd
 
     # Stork Daemon socket
     mkdir /dev/socket/stork 0770 system system
 
     # Start Stork Daemon
     start storkd
-
-    # VaultKeeper socket
-    # mkdir /dev/socket/vaultkeeper 0770 system system
-    # chown system system /dev/socket/vaultkeeper
-    # chmod 0770 /dev/socket/vaultkeeper
-
-    #start VaultKeeper
-    $ start vaultkeeper
-
-    #start VaultKeeper_HAL
-    # start vaultkeeper_hal
 
     #start CASS
     start cass
@@ -725,6 +721,9 @@ on post-fs-data
     mkdir /data/wifi/ 0770 system root
 
     # for WIFI Antenna
+    # Hotspot
+    write /data/vendor/conn/.softap.info 0
+
     write /data/misc/conn/.wificable.info E
     chown system root /data/misc/conn/.wificable.info
     chmod 0666 /data/misc/conn/.wificable.info
@@ -759,6 +758,10 @@ on post-fs-data
     mkdir /data/vendor_ce 0771 root root
     mkdir /data/vendor_de 0771 root root
     mkdir /data/vendor/hardware 0771 root root
+
+    # mobicore
+    mkdir /data/vendor/mcRegistry 0775 system system
+    mkdir /data/misc/mcRegistry 0775 system system
 
     # create mediacodec folder
     mkdir /data/vendor/media 0770 mediacodec mediacodec
@@ -847,7 +850,7 @@ on post-fs-data
     mkdir /data/DownFilters/Tex   0775 system system
 
     # Open Theme
-    mkdir /data/overlays 0755 system system
+    mkdir /data/overlays 0745 system system
 
     # NFC: create data/nfc for nv storage
     mkdir /data/nfc 0770 nfc nfc
@@ -908,16 +911,6 @@ on post-fs-data
     # Check any timezone data in /data is newer than the copy in /system, delete if not.
     exec - system system -- /system/bin/tzdatacheck /system/usr/share/zoneinfo /data/misc/zoneinfo
 
-# [ SEC_SELINUX_PORTING_COMMON
-    restorecon --recursive --force /efs
-    restorecon --recursive --force /cpefs
-    restorecon --recursive --force /mnt/vendor/efs
-    restorecon --recursive --force /mnt/vendor/cpefs
-    restorecon --recursive --force /sec_efs
-    restorecon_recursive /carrier
-    restorecon /sys/kernel/debug/tracing/trace_marker
-# ] SEC_SELINUX_PORTING_COMMON
-
     # smart switch mobile
     mkdir /efs/ssm 0770 system system
 
@@ -948,7 +941,18 @@ on post-fs-data
     # won't work.
     # Set indication (checked by vold) that we have finished this action
     #setprop vold.post_fs_data_done 1
-    
+
+    # snap gpu kernel
+    mkdir /data/snap 0755 cameraserver cameraserver
+    copy /vendor/etc/snap_gpu_kernel_32.bin /data/snap/snap_gpu_kernel_32.bin
+    copy /vendor/etc/snap_gpu_kernel_64.bin /data/snap/snap_gpu_kernel_64.bin
+    chown cameraserver cameraserver /data/snap/snap_gpu_kernel_32.bin
+    chown cameraserver cameraserver /data/snap/snap_gpu_kernel_64.bin
+    chmod 0755 /data/snap/snap_gpu_kernel_32.bin
+    chmod 0755 /data/snap/snap_gpu_kernel_64.bin
+    rm /efs/snap/snap_gpu_kernel_64.bin
+    rm /efs/snap/snap_gpu_kernel_32.bin
+
 # It is recommended to put unnecessary data/ initialization from post-fs-data
 # to start-zygote in device's init.rc to unblock zygote start.
 on zygote-start && property:ro.crypto.state=unencrypted
@@ -973,10 +977,6 @@ on zygote-start && property:ro.crypto.state=encrypted && property:ro.crypto.type
     start zygote_secondary
 
 on boot
-    # KNOX KAP
-    chown system system /dev/knox_kap
-    chmod 0644 /dev/knox_kap
-
     # basic network init
     ifup lo
     hostname localhost
@@ -1718,6 +1718,17 @@ on boot
     chown system radio /sys/class/sensors/gyro_sensor/selftest
     chown system media /sys/class/sensors/gyro_sensor/temperature
 
+# Magnetic Sensor
+    chown system radio /sys/class/sensors/magnetic_sensor/name
+    chown system radio /sys/class/sensors/magnetic_sensor/vendor
+    chown system radio /sys/class/sensors/magnetic_sensor/raw_data
+    chown system radio /sys/class/sensors/magnetic_sensor/adc
+    chown system radio /sys/class/sensors/magnetic_sensor/asa
+    chown system radio /sys/class/sensors/magnetic_sensor/dac
+    chown system radio /sys/class/sensors/magnetic_sensor/chk_registers
+    chown system radio /sys/class/sensors/magnetic_sensor/selftest
+    chown system system /sys/class/sensors/magnetic_sensor/dhr_sensor_info
+
 # Proximity Sensor
     chown system radio /sys/class/sensors/proximity_sensor/name
     chown system radio /sys/class/sensors/proximity_sensor/vendor
@@ -1809,17 +1820,23 @@ on property:vold.emergency_reset=1
 
 on property:vold.decrypt=trigger_reset_main
     stop surfaceflinger
+    stop vendor.hwcomposer-2-1
+    stop vendor.hwcomposer-2-2
+    stop ExynosHWCServiceTW
+    start ExynosHWCServiceTW
+    start vendor.hwcomposer-2-1
+    start vendor.hwcomposer-2-2
     start surfaceflinger
     class_reset main
 
 on property:vold.decrypt=trigger_load_persist_props
     load_persist_props
+    start scs
     start logd
     start logd-reinit
 
 on property:vold.decrypt=trigger_post_fs_data
     trigger post-fs-data
-    start scs
     trigger zygote-start
 
 on property:vold.decrypt=trigger_restart_min_framework
@@ -1967,17 +1984,6 @@ service flash_recovery /system/bin/install-recovery.sh
     class main
     oneshot
 
-# [ SEC_SELINUX_PORTING_COMMON
-service auditd /system/bin/auditd -k
-    class main
-    seclabel u:r:auditd:s0
-    disabled
-    oneshot
-
-on property:sys.seandroid.restoreapp=start
-    restore_appdata    
-# ] SEC_SELINUX_PORTING_COMMON
-
 # sem_daemon
 service sem_daemon /system/bin/sem_daemon
     class core
@@ -1995,7 +2001,7 @@ on property:security.semdaemonfinish=1
 service scs /system/bin/scs
     class main
     user root
-    group root system
+    group root
     oneshot
     disabled
 
@@ -2015,18 +2021,19 @@ service bsd /system/bin/bsd
 on property:sys.boot_completed=1
     start bsd
 
-# Samsung SIM Unlock (SSU) daemon
-on property:ssu.support=1 && property:vendor.tzdaemon=Ready
-    start ssud
-    setprop ssu.status default
-
-on property:ssu.support=0
-    stop ssud
-
-service ssud /system/bin/ssud
+# icd
+service icd /vendor/bin/icd
+    class main
     user system
-    group system inet
+    group system log
+    onrestart check_icd
     disabled
+    oneshot
+
+# icd
+on property:init.svc.media=restarting
+    check_icd
+    start icd
 
 # strongSwan VPN
 service charon /system/bin/charon
@@ -2039,19 +2046,11 @@ service charon /system/bin/charon
     disabled
     oneshot
 
-
-# VaultKeeper
-service vaultkeeper /system/bin/vaultkeeperd
-    class core
-    user system
-    group system
-    disabled
-
 # CASS
 service cass /system/bin/cass
     class core
     user system
-    group radio wakelock system
+    group radio wakelock
     capabilities BLOCK_SUSPEND
     disabled
 
@@ -2123,60 +2122,8 @@ on property:security.edmaudit=true
 
 on property:security.edmaudit=false
     stop edmaudit
-## } SecProductFeature_KNOX.SEC_PRODUCT_FEATURE_KNOX_SUPPORT_MDM
-
-# knox_changer service
-service kap_enable /sbin/knox_changer -e
-    seclabel u:r:kapd:s0
-    class main
-    disabled
-    oneshot
-
-service kap_disable /sbin/knox_changer -d
-    seclabel u:r:kapd:s0
-    class main
-    disabled
-    oneshot
-
-on property:security.knox_kap_mode=true
-    start kap_enable
-
-on property:security.knox_kap_mode=false
-    start kap_disable
-
-# UCM ODE mode
-service ucs_enable /sbin/knox_changer -u
-    class main
-    seclabel u:r:kapd:s0
-    disabled
-    oneshot
-
-service ucs_disable /sbin/knox_changer -v
-    class main
-    seclabel u:r:kapd:s0
-    disabled
-    oneshot
-
-service ucs_reset /sbin/knox_changer -w
-    class main
-    seclabel u:r:kapd:s0
-    disabled
-    oneshot
-
-on property:security.knox_ucs_mode=true
-    chmod 0655 /efs/sec_efs/odeConfig
-    start ucs_enable
-
-on property:security.knox_ucs_mode=false
-    chmod 0655 /efs/sec_efs/odeConfig
-    start ucs_disable
-
-on property:security.knox_ucs_mode=reset
-    chmod 0655 /efs/sec_efs/odeConfig
-    start ucs_reset
-
-# DeXonPC
-service DEXONPC_service /system/bin/ss_conn_daemon
+    
+service SIDESYNC_service /system/bin/ss_conn_daemon
     class main
     socket ss_conn_daemon stream 0666 system system
     user system
@@ -2201,7 +2148,7 @@ on property:sys.do_restorecon_user=*
     restorecon --recursive --force /data/media/${sys.do_restorecon_user}
 
 # s.fan - hide carrier apps
-on post-fs-data && property:ro.csc.sales_code=*
+on property:ro.csc.sales_code=*
     mount none /system/carrier/${ro.csc.sales_code} /system/carrier bind
 
 # Booting performance
