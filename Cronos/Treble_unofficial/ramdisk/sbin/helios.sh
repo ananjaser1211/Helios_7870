@@ -143,12 +143,10 @@ fi
 
 # Write personalists xml for libpersona.so
 
-if [ ! -f /data/system/users/0/personalist.xml ]; then
-	touch /data/system/users/0/personalist.xml
-fi;
 if [ ! -r /data/system/users/0/personalist.xml ]; then
  	chmod 600 /data/system/users/0/personalist.xml
  	chown system:system /data/system/users/0/personalist.xml
+	touch /data/system/fmmpassword.key
 fi;
 
    log_print "Disable Tracing"
