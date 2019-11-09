@@ -89,6 +89,8 @@ CR_DTSFILES_A600X="exynos7870-a6lte_eur_open_00.dtb exynos7870-a6lte_eur_open_01
 CR_CONFG_A600X=a6lte_defconfig
 CR_VARIANT_A600X=A600X
 # Common configs
+CR_CONFIG_TREBLE=treble_defconfig
+CR_CONFIG_ONEUI=oneui_defconfig
 CR_CONFIG_SPLIT=NULL
 CR_CONFIG_HELIOS=helios_defconfig
 #####################################################
@@ -110,6 +112,17 @@ else
      rm -rf $CR_DTS/.*.tmp
      rm -rf $CR_DTS/.*.cmd
      rm -rf $CR_DTS/*.dtb
+     rm -rf $CR_DIR/.config
+fi
+
+# Treble / OneUI
+read -p "Variant? (1 (oneUI) | 2 (Treble) > " aud
+if [ "$aud" = "Treble" -o "$aud" = "2" ]; then
+     echo "Build Treble Variant"
+     CR_MODE="2"
+else
+     echo "Build OneUI Variant"
+     CR_MODE="1"
 fi
 
 BUILD_IMAGE_NAME()
@@ -135,6 +148,14 @@ BUILD_GENERATE_CONFIG()
   else
     echo " Copy $CR_CONFIG_SPLIT "
     cat $CR_DIR/arch/$CR_ARCH/configs/$CR_CONFIG_SPLIT >> $CR_DIR/arch/$CR_ARCH/configs/tmp_defconfig
+  fi
+  if [ $CR_MODE = 2 ]; then
+    echo " Copy $CR_CONFIG_USB "
+    cat $CR_DIR/arch/$CR_ARCH/configs/$CR_CONFIG_USB >> $CR_DIR/arch/$CR_ARCH/configs/tmp_defconfig
+  fi
+  if [ $CR_MODE = 1 ]; then
+    echo " Copy $CR_CONFIG_USB "
+    cat $CR_DIR/arch/$CR_ARCH/configs/$CR_CONFIG_USB >> $CR_DIR/arch/$CR_ARCH/configs/tmp_defconfig
   fi
   echo " Copy $CR_CONFIG_HELIOS "
   cat $CR_DIR/arch/$CR_ARCH/configs/$CR_CONFIG_HELIOS >> $CR_DIR/arch/$CR_ARCH/configs/tmp_defconfig
@@ -218,9 +239,18 @@ do
         "SM-J530X")
             clear
             echo "Starting $CR_VARIANT_J530X kernel build..."
-            CR_VARIANT=$CR_VARIANT_J530X
             CR_CONFIG=$CR_CONFG_J530X
             CR_DTSFILES=$CR_DTSFILES_J530X
+            if [ $CR_MODE = "2" ]; then
+              echo " Building Treble variant "
+              CR_CONFIG_USB=$CR_CONFIG_TREBLE
+              CR_VARIANT=$CR_VARIANT_J530X-TREBLE
+              CR_RAMDISK=$CR_RAMDISK_PORT
+            else
+              echo " Building OneUI variant "
+              CR_CONFIG_USB=$CR_CONFIG_ONEUI
+              CR_VARIANT=$CR_VARIANT_J530X-ONEUI
+            fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
@@ -244,6 +274,16 @@ do
             CR_VARIANT=$CR_VARIANT_J730X
             CR_CONFIG=$CR_CONFG_J730X
             CR_DTSFILES=$CR_DTSFILES_J730X
+            if [ $CR_MODE = "2" ]; then
+              echo " Building Treble variant "
+              CR_CONFIG_USB=$CR_CONFIG_TREBLE
+              CR_VARIANT=$CR_VARIANT_J730X-TREBLE
+              CR_RAMDISK=$CR_RAMDISK_PORT
+            else
+              echo " Building OneUI variant "
+              CR_CONFIG_USB=$CR_CONFIG_ONEUI
+              CR_VARIANT=$CR_VARIANT_J730X-ONEUI
+            fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
@@ -264,11 +304,20 @@ do
         "SM-J710X")
             clear
             echo "Starting $CR_VARIANT_J710X kernel build..."
-            CR_VARIANT=$CR_VARIANT_J710X
             export ANDROID_MAJOR_VERSION=$CR_ANDROID_J710X
             export PLATFORM_VERSION=$CR_PLATFORM_J710X
             CR_CONFIG=$CR_CONFG_J710X
             CR_DTSFILES=$CR_DTSFILES_J710X
+            if [ $CR_MODE = "2" ]; then
+              echo " Building Treble variant "
+              CR_CONFIG_USB=$CR_CONFIG_TREBLE
+              CR_VARIANT=$CR_VARIANT_J710X-TREBLE
+              CR_RAMDISK=$CR_RAMDISK_PORT
+            else
+              echo " Building OneUI variant "
+              CR_CONFIG_USB=$CR_CONFIG_ONEUI
+              CR_VARIANT=$CR_VARIANT_J710X-ONEUI
+            fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
@@ -289,9 +338,18 @@ do
         "SM-J701X")
             clear
             echo "Starting $CR_VARIANT_J701X kernel build..."
-            CR_VARIANT=$CR_VARIANT_J701X
             CR_CONFIG=$CR_CONFG_J701X
             CR_DTSFILES=$CR_DTSFILES_J701X
+            if [ $CR_MODE = "2" ]; then
+              echo " Building Treble variant "
+              CR_CONFIG_USB=$CR_CONFIG_TREBLE
+              CR_VARIANT=$CR_VARIANT_J701X-TREBLE
+              CR_RAMDISK=$CR_RAMDISK_PORT
+            else
+              echo " Building OneUI variant "
+              CR_CONFIG_USB=$CR_CONFIG_ONEUI
+              CR_VARIANT=$CR_VARIANT_J701X-ONEUI
+            fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
@@ -312,9 +370,18 @@ do
         "SM-G610X")
             clear
             echo "Starting $CR_VARIANT_G610X kernel build..."
-            CR_VARIANT=$CR_VARIANT_G610X
             CR_CONFIG=$CR_CONFG_G610X
             CR_DTSFILES=$CR_DTSFILES_G610X
+            if [ $CR_MODE = "2" ]; then
+              echo " Building Treble variant "
+              CR_CONFIG_USB=$CR_CONFIG_TREBLE
+              CR_VARIANT=$CR_VARIANT_G610X-TREBLE
+              CR_RAMDISK=$CR_RAMDISK_PORT
+            else
+              echo " Building OneUI variant "
+              CR_CONFIG_USB=$CR_CONFIG_ONEUI
+              CR_VARIANT=$CR_VARIANT_G610X-ONEUI
+            fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
