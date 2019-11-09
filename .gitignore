@@ -94,10 +94,10 @@ signing_key.x509
 x509.genkey
 
 #
-# Helios
+# Cronos
 #
-Helios/A.I.K/*
-Helios/Out/*.img
+Cronos/A.I.K/*
+Cronos/Out/*.img
 *.lds
 *.fw*
 *.bin*
