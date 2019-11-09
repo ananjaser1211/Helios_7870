@@ -6,7 +6,7 @@
 /dev/video1               0660   system     camera
 /dev/video2               0660   system     camera
 /dev/video3               0660   system     camera
-/dev/video20              0666   system     system
+/dev/video20              0660   system     system
 # media0 is used for GSC, DECON, etc
 /dev/media0               0660   system     camera
 # media1 is used for DECON Ext WB
@@ -94,7 +94,7 @@
 /dev/video11              0660   media      media
 
 # jpeg
-/dev/video12              0666   cameraserver   media
+/dev/video12              0660   cameraserver   media
 
 # audio
 /dev/seiren               0660   system     audio
@@ -104,7 +104,7 @@
 #/dev/mobicore-user        0660   drm        drmrpc
 
 # Secure MEM driver
-/dev/s5p-smem             0660   system        system
+#/dev/s5p-smem             0660   drm        drmrpc
 
 # cbd modem block
 /dev/block/mmcblk0p5     0400  radio   system

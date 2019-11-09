@@ -11,11 +11,8 @@ import /vendor/etc/init/hw/init.${ro.hardware}.rc
 import /init.usb.configfs.rc
 import /init.${ro.zygote}.rc
 import /init.container.rc
-import /init.wifi.rc
 
 on early-init
-    mount debugfs /sys/kernel/debug /sys/kernel/debug
-
     # Set init and its forked children's oom_adj.
     write /proc/1/oom_score_adj -1000
 
@@ -490,21 +487,12 @@ on late-fs
     chmod 0440 /data/log/remaining_olog
 
 on post-fs-data
-    chmod 0755 /sys/kernel/debug/tracing
-    restorecon /sys/kernel/debug/tracing/trace_marker
 
     # We chown/chmod /data again so because mount is run as root + defaults
     chown system system /data
     chmod 0771 /data
     # We restorecon /data in case the userdata partition has been reset.
     restorecon /data
-    # KNOX_NAP
-    chmod 0660 /dev/ncm_dev
-    chown system system /dev/ncm_dev
-	
-    chown system radio /efs
-    chmod 0771 /efs
-    restorecon /efs
 
     chown system system /carrier
     chmod 0771 /carrier
@@ -727,33 +715,7 @@ on post-fs-data
     write /data/misc/conn/.wificable.info E
     chown system root /data/misc/conn/.wificable.info
     chmod 0666 /data/misc/conn/.wificable.info
-
-    # Permissions for Filesystem
-    # change owner f2fs bigdata node for hqm write
-    chown system system /sys/fs/f2fs/userdata/sec_gc_stat
-    chown system system /sys/fs/f2fs/userdata/sec_io_stat
-   
-# [ SEC_PRODUCT_FEATURE_SECURITY_SUPPORT_FIVE
-    mkdir /data/misc/integrity 0775 vendor_audit system
-# ] SEC_PRODUCT_FEATURE_SECURITY_SUPPORT_FIVE
-	
-# [ SEC_SELINUX_PORTING_COMMON
-    mkdir /data/misc/audit 0775 system system
-    chown vendor_audit vendor_audit /data/misc/audit/audit.log
-    chown vendor_audit vendor_audit /data/misc/audit/audit.old
-
-    # arcounter
-    mkdir /data/misc/arcounter 0700 system system
-
-    # start auditd
-    # start auditd
-# ] SEC_SELINUX_PORTING_COMMON
-
-# [ SEC_AASA_ASKS_PORTING
-    # Seperate location for storing security policy files on data
-    mkdir /data/security 0701 system system
-# ] SEC_AASA_ASKS_PORTING
-
+    
     mkdir /data/vendor 0771 root root
     mkdir /data/vendor_ce 0771 root root
     mkdir /data/vendor_de 0771 root root
@@ -943,16 +905,14 @@ on post-fs-data
     #setprop vold.post_fs_data_done 1
 
     # snap gpu kernel
-    mkdir /data/snap 0755 cameraserver cameraserver
-    copy /vendor/etc/snap_gpu_kernel_32.bin /data/snap/snap_gpu_kernel_32.bin
-    copy /vendor/etc/snap_gpu_kernel_64.bin /data/snap/snap_gpu_kernel_64.bin
-    chown cameraserver cameraserver /data/snap/snap_gpu_kernel_32.bin
-    chown cameraserver cameraserver /data/snap/snap_gpu_kernel_64.bin
-    chmod 0755 /data/snap/snap_gpu_kernel_32.bin
-    chmod 0755 /data/snap/snap_gpu_kernel_64.bin
-    rm /efs/snap/snap_gpu_kernel_64.bin
-    rm /efs/snap/snap_gpu_kernel_32.bin
-
+    mkdir /data/vendor/snap 0755 cameraserver cameraserver
+    copy /vendor/etc/snap_gpu_kernel_32.bin /data/vendor/snap/snap_gpu_kernel_32.bin
+    copy /vendor/etc/snap_gpu_kernel_64.bin /data/vendor/snap/snap_gpu_kernel_64.bin
+    chown cameraserver cameraserver /data/vendor/snap/snap_gpu_kernel_32.bin
+    chown cameraserver cameraserver /data/vendor/snap/snap_gpu_kernel_64.bin
+    chmod 0755 /data/vendor/snap/snap_gpu_kernel_32.bin
+    chmod 0755 /data/vendor/snap/snap_gpu_kernel_64.bin
+    
 # It is recommended to put unnecessary data/ initialization from post-fs-data
 # to start-zygote in device's init.rc to unblock zygote start.
 on zygote-start && property:ro.crypto.state=unencrypted
@@ -1020,19 +980,6 @@ on boot
 
     # Permissions for recovery_cause
     chown system system /sys/class/sec/sec_debug/recovery_cause
-
-    # Permissions for fmm_lock
-    chown system system /sys/class/sec/sec_debug/FMM_lock
-
-    # Permissions for pwdt
-    chown system system /sys/module/sec_debug/parameters/pwdt_start_ms
-    chmod 0660 /sys/module/sec_debug/parameters/pwdt_start_ms
-    chown system system /sys/module/sec_debug/parameters/pwdt_end_ms
-    chmod 0660 /sys/module/sec_debug/parameters/pwdt_end_ms
-    chown system system /sys/module/sec_debug/parameters/pwdt_pid
-    chmod 0660 /sys/module/sec_debug/parameters/pwdt_pid
-    chown system system /sys/module/sec_debug/parameters/pwdt_sync_cnt
-    chmod 0660 /sys/module/sec_debug/parameters/pwdt_sync_cnt
 
     # svcled
     chown system system /sys/class/sec/led/led_lowpower
@@ -1132,6 +1079,20 @@ on boot
     chmod 0660 /sys/devices/system/cpu/cpufreq/interactive/boostpulse_duration
     chown system system /sys/devices/system/cpu/cpufreq/interactive/io_is_busy
     chmod 0660 /sys/devices/system/cpu/cpufreq/interactive/io_is_busy
+
+    # Change permission for input booster
+    chown system radio /sys/class/input_booster/level
+    chown system radio /sys/class/input_booster/head
+    chown system radio /sys/class/input_booster/tail
+    chown system radio /sys/class/input_booster/touchkey/level
+    chown system radio /sys/class/input_booster/touchkey/freq
+    chown system radio /sys/class/input_booster/touchkey/time
+    chmod 0664 /sys/class/input_booster/level
+    chmod 0664 /sys/class/input_booster/head
+    chmod 0664 /sys/class/input_booster/tail
+    chmod 0664 /sys/class/input_booster/touchkey/level
+    chmod 0664 /sys/class/input_booster/touchkey/freq
+    chmod 0664 /sys/class/input_booster/touchkey/time
 
     # Assume SMP uses shared cpufreq policy for all CPUs
     chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
@@ -1238,12 +1199,6 @@ on boot
 	chown system radio /sys/class/power_supply/battery/batt_tune_coil_limit_cur
 	chown system radio /sys/class/power_supply/battery/batt_tune_coil_temp_high
 	chown system radio /sys/class/power_supply/battery/batt_tune_coil_temp_rec
-	chown system radio /sys/class/power_supply/battery/batt_tune_dchg_temp_high
-	chown system radio /sys/class/power_supply/battery/batt_tune_dchg_temp_high_rec
-	chown system radio /sys/class/power_supply/battery/batt_tune_dchg_limit_input_cur
-	chown system radio /sys/class/power_supply/battery/batt_tune_dchg_limit_chg_cur
-	chown system radio /sys/class/power_supply/battery/batt_tune_wpc_temp_high
-	chown system radio /sys/class/power_supply/battery/batt_tune_wpc_temp_high_rec
 	chown system radio /sys/class/power_supply/battery/batt_tune_fast_charge_current
 	chown system radio /sys/class/power_supply/battery/batt_tune_float_voltage
 	chown system radio /sys/class/power_supply/battery/batt_tune_intput_charge_current
@@ -1265,12 +1220,6 @@ on boot
 	chmod 0664 /sys/class/power_supply/battery/batt_tune_coil_limit_cur
 	chmod 0664 /sys/class/power_supply/battery/batt_tune_coil_temp_high
 	chmod 0664 /sys/class/power_supply/battery/batt_tune_coil_temp_rec
-	chmod 0664 /sys/class/power_supply/battery/batt_tune_dchg_temp_high
-	chmod 0664 /sys/class/power_supply/battery/batt_tune_dchg_temp_high_rec
-	chmod 0664 /sys/class/power_supply/battery/batt_tune_dchg_limit_input_cur
-	chmod 0664 /sys/class/power_supply/battery/batt_tune_dchg_limit_chg_cur
-	chmod 0664 /sys/class/power_supply/battery/batt_tune_wpc_temp_high
-	chmod 0664 /sys/class/power_supply/battery/batt_tune_wpc_temp_high_rec
 	chmod 0664 /sys/class/power_supply/battery/batt_tune_fast_charge_current
 	chmod 0664 /sys/class/power_supply/battery/batt_tune_float_voltage
 	chmod 0664 /sys/class/power_supply/battery/batt_tune_intput_charge_current
@@ -1781,6 +1730,13 @@ on nonencrypted
 on property:sys.init_log_level=*
     loglevel ${sys.init_log_level}
 
+on property:ro.build.version.release=9
+    start zygoteP
+    start zygote_secondaryP
+on property:ro.build.version.release=10
+    start zygoteQ
+    start zygote_secondaryQ    
+
 on charger
     chmod 0664 /sys/class/power_supply/battery/batt_temp_table
     chown system radio /sys/class/power_supply/battery/batt_temp_table
@@ -1880,15 +1836,11 @@ on property:ro.crypto.type=block && property:vold.decrypt=trigger_load_persist_p
 #     pdp chk_apk
 #     pdp backup
 
-on property:ro.crypto.type=file && property:vold.post_fs_data_done=1
-    start scs
-
 on property:vold.post_fs_data_done=1
     chown root system /dev/kmsg
     chmod 0660 /dev/kmsg
     pdp prp_fbe
     pdp restore
-    pdp papps_cp
     pdp chk_apk
     pdp backup
 
@@ -1917,15 +1869,6 @@ on property:sys.boot_completed=1
 # So proxy writes through init.
 on property:sys.sysctl.extra_free_kbytes=*
     write /proc/sys/vm/extra_free_kbytes ${sys.sysctl.extra_free_kbytes}
-
-on property:sys.sysctl.swappiness=*
-    write /proc/sys/vm/swappiness ${sys.sysctl.swappiness}
-
-on property:sys.sysctl.mmap_readaround_limit=*
-    write /proc/sys/vm/mmap_readaround_limit ${sys.sysctl.mmap_readaround_limit}
-
-on property:sys.sysctl.fault_around_bytes=*
-    write /sys/kernel/debug/fault_around_bytes ${sys.sysctl.fault_around_bytes}
 
 # "tcp_default_init_rwnd" Is too long!
 on property:sys.sysctl.tcp_def_init_rwnd=*
@@ -1974,7 +1917,7 @@ service lpm /system/bin/lpm
     critical
 
 # MobiCore startup
-service mobicore /vendor/bin/mcDriverDaemon -r /vendor/app/mcRegistry/FFFFFFFF000000000000000000000001.drbin -r /vendor/app/mcRegistry/ffffffffd0000000000000000000000a.tlbin -r /vendor/app/mcRegistry/ffffffffd00000000000000000000016.tlbin -r /vendor/app/mcRegistry/ffffffffd0000000000000000000001c.tlbin -r /vendor/app/mcRegistry/ffffffffd00000000000000000000045.drbin
+service mobicore /vendor/bin/mcDriverDaemon -r /vendor/app/mcRegistry/FFFFFFFF000000000000000000000001.drbin -r /vendor/app/mcRegistry/ffffffffd0000000000000000000000a.tlbin -r /vendor/app/mcRegistry/ffffffffd00000000000000000000016.tlbin -r /vendor/app/mcRegistry/ffffffffd0000000000000000000001c.tlbin
     class core
     user system
     group system
@@ -2021,6 +1964,19 @@ service bsd /system/bin/bsd
 on property:sys.boot_completed=1
     start bsd
 
+# Samsung SIM Unlock (SSU) daemon
+on property:ssu.support=1 && property:vendor.tzdaemon=Ready
+    start ssud
+    setprop ssu.status default
+
+on property:ssu.support=0
+    stop ssud
+
+service ssud /system/bin/ssud
+    user system
+    group system inet
+    disabled
+
 # icd
 service icd /vendor/bin/icd
     class main
@@ -2034,6 +1990,38 @@ service icd /vendor/bin/icd
 on property:init.svc.media=restarting
     check_icd
     start icd
+
+# icd_tz_drm
+service icd_tz_drm /system/bin/icd_tz_drm
+    class main
+    user system
+    group system log
+    disabled
+    oneshot
+
+# icd_fido
+service icd_fido /system/bin/icd_fido
+    class main
+    user system
+    group system log
+    disabled
+    oneshot
+
+# icd_cc
+service icd_cc /system/bin/icd_cc
+    class main
+    user system
+    group system log
+    disabled
+    oneshot
+
+# icd_etc
+service icd_etc /system/bin/icd_etc
+    class main
+    user system
+    group system log
+    disabled
+    oneshot
 
 # strongSwan VPN
 service charon /system/bin/charon
@@ -2050,7 +2038,7 @@ service charon /system/bin/charon
 service cass /system/bin/cass
     class core
     user system
-    group radio wakelock
+    group radio wakelock system
     capabilities BLOCK_SUSPEND
     disabled
 
@@ -2067,18 +2055,28 @@ service esecomm /system/bin/tlc_server ESECOMM
     group system
     disabled
 
+# [ Professional audio
+service apaservice /system/bin/apaservice
+    class main
+    user jack
+    group inet sdcard_rw sdcard_r media_rw shell
+
+# ApexServer
+service apexserver /system/bin/apexserver
+    class main
+    user system
+    group system graphics drmrpc media media_rw m2mscaler
+    disabled
+
+service jackservice /system/bin/jackservice
+    class main
+    user jack
+    group audio inet shell
+# Professional audio ]
+
 on property:security.ucm_ese_applet_installed=1
     start esecomm
     setprop security.ucm_ese_applet_installed 0
-
-# [ Wi-Fi init
-service wlandutservice /system/bin/wlandutservice
-    class main
-    user system
-    group system wifi net_raw net_admin inet
-    disabled
-    oneshot
-# ] Wi-Fi init
 
 # IO stats Deamon
 service iod /system/bin/iod
@@ -2107,21 +2105,6 @@ service defrag_service /system/bin/idledefrag
 
 on property:vold.should_defrag=1
     start defrag_service
-
-## SecProductFeature_KNOX.SEC_PRODUCT_FEATURE_KNOX_SUPPORT_MDM{
-## EDM AuditLog
-service edmaudit /system/bin/edmaudit
-    class main
-    user system
-    group system
-    capabilities SYSLOG
-    disabled
-
-on property:security.edmaudit=true
-    start edmaudit
-
-on property:security.edmaudit=false
-    stop edmaudit
     
 service SIDESYNC_service /system/bin/ss_conn_daemon
     class main
@@ -2150,8 +2133,3 @@ on property:sys.do_restorecon_user=*
 # s.fan - hide carrier apps
 on property:ro.csc.sales_code=*
     mount none /system/carrier/${ro.csc.sales_code} /system/carrier bind
-
-# Booting performance
-on property:persist.sys.zygote.early=true
-    start zygote
-    start zygote_secondary

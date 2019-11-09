@@ -22,6 +22,13 @@ on fs
     chown radio radio /efs/factory.prop
     chmod 0600 /efs/factory.prop
 
+    # For cpefs partition
+    mkdir /cpefs 0771 radio system
+    wait /dev/block/platform/13540000.dwmmc0/by-name/CPEFS
+    mount ext4 /dev/block/platform/13540000.dwmmc0/by-name/CPEFS /cpefs nosuid nodev noatime noauto_da_alloc,discard,journal_async_commit,errors=panic
+    chown radio system /cpefs
+    chmod 0771 /cpefs
+
     #For cpdebug partition
     wait /dev/block/platform/13540000.dwmmc0/by-name/EFS
     mkdir /efs/cpdebug
@@ -63,7 +70,7 @@ on property:ril.clatd.v4-rmnet7=up
     write /sys/class/net/rmnet7/queues/rx-0/rps_cpus 4
     write /sys/class/net/v4-rmnet7/queues/rx-0/rps_cpus 2
 
-service cpboot-daemon /vendor/bin/cbd -d -tss310 -bm -mm -P platform/13540000.dwmmc0/by-name/RADIO -n /efs
+service cpboot-daemon /sbin/cbd -d -tss310 -bm -mm -P platform/13540000.dwmmc0/by-name/RADIO -n /efs
     class main
     user root
     group radio cache inet misc audio sdcard_rw log sdcard_r shell system
