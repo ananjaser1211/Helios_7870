@@ -23,20 +23,20 @@ CR_TC=~/Android/Toolchains/linaro-7.4.1-aarch64-linux/bin/aarch64-linux-gnu-
 # Define proper arch and dir for dts files
 CR_DTS=arch/arm64/boot/dts
 # Define boot.img out dir
-CR_OUT=$CR_DIR/Helios/Out
+CR_OUT=$CR_DIR/Cronos/Out
 # Presistant A.I.K Location
-CR_AIK=$CR_DIR/Helios/A.I.K
+CR_AIK=$CR_DIR/Cronos/A.I.K
 # Main Ramdisk Location
-CR_RAMDISK=$CR_DIR/Helios/Helios_Ramdisk
-CR_RAMDISK_PORT=$CR_DIR/Helios/Treble_unofficial
-CR_RAMDISK_TREBLE=$CR_DIR/Helios/Treble_official
+CR_RAMDISK=$CR_DIR/Cronos/Helios_Ramdisk
+CR_RAMDISK_PORT=$CR_DIR/Cronos/Treble_unofficial
+CR_RAMDISK_TREBLE=$CR_DIR/Cronos/Treble_official
 # Compiled image name and location (Image/zImage)
 CR_KERNEL=$CR_DIR/arch/arm64/boot/Image
 # Compiled dtb by dtbtool
 CR_DTB=$CR_DIR/boot.img-dtb
 # Kernel Name and Version
 CR_VERSION=V5.0
-CR_NAME=HeliosKernel
+CR_NAME=CronosKernel
 # Thread count
 CR_JOBS=$(nproc --all)
 # Target android version and platform (7/n/8/o/9/p)
