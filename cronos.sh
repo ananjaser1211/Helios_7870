@@ -103,21 +103,10 @@ CR_CONFIG_HELIOS=helios_defconfig
 read -p "Clean source (y/n) > " yn
 if [ "$yn" = "Y" -o "$yn" = "y" ]; then
      echo "Clean Build"
-     make clean && make mrproper
-     rm -r -f $CR_DTB
-     rm -rf $CR_DTS/.*.tmp
-     rm -rf $CR_DTS/.*.cmd
-     rm -rf $CR_DTS/*.dtb
-     rm -rf $CR_DIR/.config
-     rm -rf $CR_DTS/exynos7870.dtsi
+     CR_CLEAN="1"
 else
      echo "Dirty Build"
-     rm -r -f $CR_DTB
-     rm -rf $CR_DTS/.*.tmp
-     rm -rf $CR_DTS/.*.cmd
-     rm -rf $CR_DTS/*.dtb
-     rm -rf $CR_DIR/.config
-     rm -rf $CR_DTS/exynos7870.dtsi
+     CR_CLEAN="0"
 fi
 
 # Treble / OneUI
@@ -129,6 +118,31 @@ else
      echo "Build OneUI Variant"
      CR_MODE="1"
 fi
+
+BUILD_CLEAN()
+{
+if [ $CR_CLEAN = 1 ]; then
+     echo " "
+     echo " Cleaning build dir"
+     make clean && make mrproper
+     rm -r -f $CR_DTB
+     rm -rf $CR_DTS/.*.tmp
+     rm -rf $CR_DTS/.*.cmd
+     rm -rf $CR_DTS/*.dtb
+     rm -rf $CR_DIR/.config
+     rm -rf $CR_DTS/exynos7870.dtsi
+fi
+if [ $CR_CLEAN = 0 ]; then
+     echo " "
+     echo " Skip Full cleaning"
+     rm -r -f $CR_DTB
+     rm -rf $CR_DTS/.*.tmp
+     rm -rf $CR_DTS/.*.cmd
+     rm -rf $CR_DTS/*.dtb
+     rm -rf $CR_DIR/.config
+     rm -rf $CR_DTS/exynos7870.dtsi
+fi
+}
 
 BUILD_IMAGE_NAME()
 {
@@ -142,6 +156,8 @@ BUILD_GENERATE_CONFIG()
 	echo " "
 	echo "Building defconfig for $CR_VARIANT"
   echo " "
+  # Respect CLEAN build rules
+  BUILD_CLEAN
   if [ -e $CR_DIR/arch/$CR_ARCH/configs/tmp_defconfig ]; then
     echo " cleanup old configs "
     rm -rf $CR_DIR/arch/$CR_ARCH/configs/tmp_defconfig
@@ -232,6 +248,8 @@ PACK_BOOT_IMG()
 	rm -rf sizkT
 	echo " "
 	$CR_AIK/cleanup.sh
+  # Respect CLEAN build rules
+  BUILD_CLEAN
 }
 # Main Menu
 clear
