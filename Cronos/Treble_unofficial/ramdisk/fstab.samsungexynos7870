@@ -7,8 +7,8 @@
 #/dev/block/platform/13540000.dwmmc0/by-name/SYSTEM	/system	ext4      ro,errors=panic,noload                                                            wait
 /dev/block/platform/13540000.dwmmc0/by-name/CACHE	/cache	ext4      nosuid,nodev,noatime,noauto_da_alloc,discard,journal_async_commit,errors=panic    wait,check
 /dev/block/platform/13540000.dwmmc0/by-name/CACHE	/cache	f2fs      nosuid,nodev,noatime,noauto_da_alloc,discard,journal_async_commit,errors=panic    wait,check
-/dev/block/platform/13540000.dwmmc0/by-name/USERDATA	/data	ext4      nosuid,nodev,noatime,noauto_da_alloc,discard,journal_async_commit,errors=panic    wait,check,encryptable=footer,quota
-/dev/block/platform/13540000.dwmmc0/by-name/USERDATA	/data	f2fs      nosuid,nodev,noatime,noauto_da_alloc,discard,journal_async_commit,errors=panic    wait,check,encryptable=footer,quota
+/dev/block/platform/13540000.dwmmc0/by-name/USERDATA	/data	ext4      nosuid,nodev,noatime,noauto_da_alloc,discard,journal_async_commit,errors=panic    wait,check
+/dev/block/platform/13540000.dwmmc0/by-name/USERDATA	/data	f2fs      nosuid,nodev,noatime,noauto_da_alloc,discard,journal_async_commit,errors=panic    wait,check
 /dev/block/platform/13540000.dwmmc0/by-name/EFS		/efs	ext4      nosuid,nodev,noatime,noauto_da_alloc,discard,journal_async_commit,errors=panic    wait,check
 /dev/block/platform/13540000.dwmmc0/by-name/CPEFS	/cpefs	ext4      nosuid,nodev,noatime,noauto_da_alloc,discard,journal_async_commit,errors=panic    wait,check,nofail
 
