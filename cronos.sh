@@ -1,4 +1,4 @@
-#!/bin/bash
+  #!/bin/bash
 #
 # Cronos Build Script V3.3
 # For Exynos7870
@@ -238,8 +238,8 @@ clear
 echo "----------------------------------------------"
 echo "$CR_NAME $CR_VERSION Build Script"
 echo "----------------------------------------------"
-PS3='Please select your option (1-7): '
-menuvar=("SM-J530X" "SM-J730X" "SM-J710X" "SM-J701X" "SM-G610X" "SM-J600X" "SM-A600X" "Exit")
+PS3='Please select your option (1-9): '
+menuvar=("SM-J530X" "SM-J730X" "SM-J710X" "SM-J701X" "SM-G610X" "SM-J600X" "SM-A600X" "Treble-Unofficial" "Exit")
 select menuvar in "${menuvar[@]}"
 do
     case $menuvar in
@@ -461,6 +461,140 @@ do
             echo "Kernel Image Size = $sizT Kb"
             echo "Boot Image   Size = $sizkT Kb"
             echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
+            echo "Press Any key to end the script"
+            echo "----------------------------------------------"
+            read -n1 -r key
+            break
+            ;;
+        "Treble-Unofficial")
+            clear
+            echo "----------------------------------------------"
+            echo "Starting Treble_unofficial kernels"
+            # set treble mode
+            CR_MODE="2"
+            # set device identifiers
+            # J530X
+            CR_CONFIG_USB=$CR_CONFIG_TREBLE
+            CR_VARIANT=$CR_VARIANT_J530X-TREBLE
+            CR_RAMDISK=$CR_RAMDISK_PORT
+            CR_DTB_MOUNT=$CR_DTS_TREBLE
+            echo "Starting $CR_VARIANT_J530X kernel build..."
+            CR_CONFIG=$CR_CONFG_J530X
+            CR_DTSFILES=$CR_DTSFILES_J530X
+            # Compile
+            BUILD_IMAGE_NAME
+            BUILD_GENERATE_CONFIG
+            BUILD_ZIMAGE
+            BUILD_DTB
+            PACK_BOOT_IMG
+            echo " "
+            echo "----------------------------------------------"
+            echo "$CR_VARIANT kernel build finished."
+            echo "Compiled DTB Size = $sizdT Kb"
+            echo "Kernel Image Size = $sizT Kb"
+            echo "Boot Image   Size = $sizkT Kb"
+            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
+            echo "----------------------------------------------"
+            # J730X
+            CR_CONFIG_USB=$CR_CONFIG_TREBLE
+            CR_VARIANT=$CR_VARIANT_J730X-TREBLE
+            CR_RAMDISK=$CR_RAMDISK_PORT
+            CR_DTB_MOUNT=$CR_DTS_TREBLE
+            echo "Starting $CR_VARIANT_J730X kernel build..."
+            CR_CONFIG=$CR_CONFG_J730X
+            CR_DTSFILES=$CR_DTSFILES_J730X
+            # Compile
+            BUILD_IMAGE_NAME
+            BUILD_GENERATE_CONFIG
+            BUILD_ZIMAGE
+            BUILD_DTB
+            PACK_BOOT_IMG
+            echo " "
+            echo "----------------------------------------------"
+            echo "$CR_VARIANT kernel build finished."
+            echo "Compiled DTB Size = $sizdT Kb"
+            echo "Kernel Image Size = $sizT Kb"
+            echo "Boot Image   Size = $sizkT Kb"
+            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
+            echo "----------------------------------------------"
+            # J710X
+            echo "J710X: Export NOUGAT version for WiFi Driver"
+            export ANDROID_MAJOR_VERSION=$CR_ANDROID_J710X
+            export PLATFORM_VERSION=$CR_PLATFORM_J710X
+            CR_CONFIG_USB=$CR_CONFIG_TREBLE
+            CR_VARIANT=$CR_VARIANT_J710X-TREBLE
+            CR_RAMDISK=$CR_RAMDISK_PORT
+            CR_DTB_MOUNT=$CR_DTS_TREBLE
+            echo "Starting $CR_VARIANT_J710X kernel build..."
+            CR_CONFIG=$CR_CONFG_J710X
+            CR_DTSFILES=$CR_DTSFILES_J710X
+            # Compile
+            BUILD_IMAGE_NAME
+            BUILD_GENERATE_CONFIG
+            BUILD_ZIMAGE
+            BUILD_DTB
+            PACK_BOOT_IMG
+            echo " "
+            echo "----------------------------------------------"
+            echo "$CR_VARIANT kernel build finished."
+            echo "Compiled DTB Size = $sizdT Kb"
+            echo "Kernel Image Size = $sizT Kb"
+            echo "Boot Image   Size = $sizkT Kb"
+            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
+            echo "----------------------------------------------"
+            # J701X
+            export ANDROID_MAJOR_VERSION=$CR_ANDROID
+            export PLATFORM_VERSION=$CR_PLATFORM
+            CR_CONFIG_USB=$CR_CONFIG_TREBLE
+            CR_VARIANT=$CR_VARIANT_J701X-TREBLE
+            CR_RAMDISK=$CR_RAMDISK_PORT
+            CR_DTB_MOUNT=$CR_DTS_TREBLE
+            echo "Starting $CR_VARIANT_J701X kernel build..."
+            CR_CONFIG=$CR_CONFG_J701X
+            CR_DTSFILES=$CR_DTSFILES_J701X
+            # Compile
+            BUILD_IMAGE_NAME
+            BUILD_GENERATE_CONFIG
+            BUILD_ZIMAGE
+            BUILD_DTB
+            PACK_BOOT_IMG
+            echo " "
+            echo "----------------------------------------------"
+            echo "$CR_VARIANT kernel build finished."
+            echo "Compiled DTB Size = $sizdT Kb"
+            echo "Kernel Image Size = $sizT Kb"
+            echo "Boot Image   Size = $sizkT Kb"
+            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
+            echo "----------------------------------------------"
+            # G610X
+            export ANDROID_MAJOR_VERSION=$CR_ANDROID
+            export PLATFORM_VERSION=$CR_PLATFORM
+            CR_CONFIG_USB=$CR_CONFIG_TREBLE
+            CR_VARIANT=$CR_VARIANT_G610X-TREBLE
+            CR_RAMDISK=$CR_RAMDISK_PORT
+            CR_DTB_MOUNT=$CR_DTS_TREBLE
+            echo "Starting $CR_VARIANT_G610X kernel build..."
+            CR_CONFIG=$CR_CONFG_G610X
+            CR_DTSFILES=$CR_DTSFILES_G610X
+            # Compile
+            BUILD_IMAGE_NAME
+            BUILD_GENERATE_CONFIG
+            BUILD_ZIMAGE
+            BUILD_DTB
+            PACK_BOOT_IMG
+            echo " "
+            echo "----------------------------------------------"
+            echo "$CR_VARIANT kernel build finished."
+            echo "Compiled DTB Size = $sizdT Kb"
+            echo "Kernel Image Size = $sizT Kb"
+            echo "Boot Image   Size = $sizkT Kb"
+            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
+            echo "----------------------------------------------"
+            echo " "
+            echo " "
+            echo " Treble_unofficial compilation finished "
+            echo " Target at $CR_OUT"
+            echo " "
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
             read -n1 -r key
