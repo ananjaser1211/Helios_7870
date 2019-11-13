@@ -1,14 +1,15 @@
 ui_print("***********************");
-ui_print("* ");
-ui_print("* For Galaxy ");
-ui_print("* Android ");
-ui_print("* By AnanJaser1211 ");
+FL_NAME
+FL_VERSION
+FL_VARIANT
+FL_DATE
+ui_print("* By AnanJaser1211 @Xda");
 ui_print("***********************");
-ui_print("");
 
+ui_print(" Mounted partitions");
 run_program("/sbin/busybox", "mount", "/system");
-run_program("/sbin/busybox", "mount", "/vendor");
 run_program("/sbin/busybox", "mount", "/data");
+run_program("/sbin/busybox", "mount", "/vendor");
 
 ui_print("-- Removing Knox");
 delete_recursive("/system/container");

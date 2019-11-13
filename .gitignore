@@ -162,4 +162,4 @@ security/samsung/defex_lsm/pack_rules
 p
 p-
 arch/arm64/configs/tmp_defconfig
-Cronos/Flashable/*.img
+Cronos/Out/*.zip
