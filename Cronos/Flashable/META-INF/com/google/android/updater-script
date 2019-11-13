@@ -1,0 +1,77 @@
+ui_print("***********************");
+ui_print("* ");
+ui_print("* For Galaxy ");
+ui_print("* Android ");
+ui_print("* By AnanJaser1211 ");
+ui_print("***********************");
+ui_print("");
+
+run_program("/sbin/busybox", "mount", "/system");
+run_program("/sbin/busybox", "mount", "/vendor");
+run_program("/sbin/busybox", "mount", "/data");
+
+ui_print("-- Removing Knox");
+delete_recursive("/system/container");
+delete_recursive("/system/preloadedsso");
+delete_recursive("/system/etc/secure_storage/com.sec.knox.store");
+delete_recursive("/system/app/KnoxAppsUpdateAgent");
+delete_recursive("/system/app/KnoxAttestationAgent");
+delete_recursive("/system/app/KnoxFolderContainer2");
+delete_recursive("/system/app/KnoxRemoteContentsProvider");
+delete_recursive("/system/app/KnoxSetupWizardClient");
+delete_recursive("/system/app/KnoxSwitcher");
+delete_recursive("/system/app/SecureFolderSetupPage");
+delete_recursive("/system/app/Bridge");
+delete_recursive("/system/app/ELMAgent");
+delete_recursive("/system/app/RCPComponents");
+delete_recursive("/system/app/SecurityLogAgent");
+delete_recursive("/system/app/UniversalMDMClient");
+delete_recursive("/system/app/SwitchKnoxI");
+delete_recursive("/system/app/SwitchKnoxII");
+delete_recursive("/system/app/KnoxFolderContainer");
+delete_recursive("/system/app/Rlc");
+delete_recursive("/system/priv-app/Rlc");
+delete_recursive("/system/priv-app/KnoxCore");
+delete_recursive("/system/priv-app/KnoxGuard");
+delete_recursive("/system/priv-app/KLMSAgent");
+delete_recursive("/system/priv-app/SPDClient");
+delete("/system/lib/libvkservice.so");
+delete("/system/lib/libvkjni.so");
+#####################################################################
+#                       Phone Variant Detection
+#####################################################################
+ui_print("@ Detecting phone variant...");
+if is_substring("J530", getprop("ro.boot.bootloader")) then
+    ui_print("@ J530X 2017 detected, extracting files...");
+    package_extract_file("Helios/device/j5y17lte/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
+endif;
+if is_substring("J730", getprop("ro.boot.bootloader")) then
+    ui_print("@ J7 2017 detected, extracting files...");
+    package_extract_file("Helios/device/j7y17lte/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
+endif;
+if is_substring("G610", getprop("ro.boot.bootloader")) then
+    ui_print("@ J7 Prime detected, extracting files...");
+    package_extract_file("Helios/device/on7xelte/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
+endif;
+if is_substring("J710", getprop("ro.boot.bootloader")) then
+    ui_print("@ J7 2016 detected, extracting files...");
+    package_extract_file("Helios/device/j7xelte/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
+endif;
+if is_substring("J701", getprop("ro.boot.bootloader")) then
+    ui_print("@ J7 NXT detected, extracting files...");
+    package_extract_file("Helios/device/j7velte/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
+endif;
+
+ui_print("-- Extracting System Files...");
+package_extract_dir("Helios/system", "/system");
+package_extract_dir("Helios/vendor", "/vendor");
+
+ui_print("-- Installing Magisk");
+package_extract_dir("Helios/magisk", "/tmp/magisk");
+run_program("/sbin/busybox", "unzip", "/tmp/magisk/magisk.zip", "META-INF/com/google/android/*", "-d", "/tmp/magisk");
+run_program("/sbin/busybox", "sh", "/tmp/magisk/META-INF/com/google/android/update-binary", "dummy", "1", "/tmp/magisk/magisk.zip");
+
+unmount("/system");
+unmount("/vendor");
+ui_print(" Enjoy Helios ");
+ui_print("***********************");
