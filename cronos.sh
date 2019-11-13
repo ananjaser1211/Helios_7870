@@ -27,6 +27,7 @@ CR_DTS_TREBLE=arch/arm64/boot/exynos7870_Treble.dtsi
 CR_DTS_ONEUI=arch/arm64/boot/exynos7870_Oneui.dtsi
 # Define boot.img out dir
 CR_OUT=$CR_DIR/Cronos/Out
+CR_PRODUCT=$CR_DIR/Cronos/Product
 # Presistant A.I.K Location
 CR_AIK=$CR_DIR/Cronos/A.I.K
 # Main Ramdisk Location
@@ -138,6 +139,8 @@ if [ $CR_CLEAN = 1 ]; then
      rm -rf $CR_DTS/*.dtb
      rm -rf $CR_DIR/.config
      rm -rf $CR_DTS/exynos7870.dtsi
+     rm -rf $CR_OUT/*.img
+     rm -rf $CR_OUT/*.zip
 fi
 if [ $CR_CLEAN = 0 ]; then
      echo " "
@@ -290,6 +293,8 @@ PACK_BOOT_IMG()
 	$CR_AIK/repackimg.sh
 	# Remove red warning at boot
 	echo -n "SEANDROIDENFORCE" » $CR_AIK/image-new.img
+  # Copy boot.img to Production folder
+	cp $CR_AIK/image-new.img $CR_PRODUCT/$CR_IMAGE_NAME.img
 	# Move boot.img to out dir
 	mv $CR_AIK/image-new.img $CR_OUT/$CR_IMAGE_NAME.img
 	du -k "$CR_OUT/$CR_IMAGE_NAME.img" | cut -f1 >sizkT
@@ -297,8 +302,6 @@ PACK_BOOT_IMG()
 	rm -rf sizkT
 	echo " "
 	$CR_AIK/cleanup.sh
-  # Respect CLEAN build rules
-  BUILD_CLEAN
 }
 
 PACK_FLASHABLE()
@@ -322,7 +325,7 @@ PACK_FLASHABLE()
   sed -i 's/FL_VARIANT/ui_print("* For '$FL_VARIANT' ");/g' $FL_SCRIPT
   sed -i 's/FL_DATE/ui_print("* Compiled at '$CR_DATE'");/g' $FL_SCRIPT
   echo " Copy Image to $FL_DEVICE"
-  mv $CR_OUT/$CR_IMAGE_NAME.img $FL_DEVICE
+  cp $CR_OUT/$CR_IMAGE_NAME.img $FL_DEVICE
   echo " Packing zip"
   # TODO: FInd a better way to zip
   # TODO: support multi-compile
@@ -332,6 +335,10 @@ PACK_FLASHABLE()
   cd $CR_DIR
   rm -rf $FL_EXPORT
   echo " Zip Generated at $CR_OUT/$CR_NAME-$CR_VERSION-$FL_VARIANT-$CR_DATE.zip"
+  # Copy zip to production
+  cp $CR_OUT/$CR_NAME-$CR_VERSION-$FL_VARIANT-$CR_DATE.zip $CR_PRODUCT
+  # Respect CLEAN build rules
+  BUILD_CLEAN
 }
 
 # Main Menu

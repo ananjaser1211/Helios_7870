@@ -65,8 +65,7 @@ arch/*/include/generated
 # stgit generated dirs
 patches-*
 
-<<<<<<< HEAD
-# quilt's files
+# built's files
 patches
 series
 
@@ -163,3 +162,6 @@ p
 p-
 arch/arm64/configs/tmp_defconfig
 Cronos/Out/*.zip
+Cronos/Out/*.img
+Cronos/Product/*.img
+Cronos/Product/*.zip
