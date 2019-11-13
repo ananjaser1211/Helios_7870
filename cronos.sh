@@ -1,6 +1,6 @@
   #!/bin/bash
 #
-# Cronos Build Script V3.3
+# Cronos Build Script V4.0
 # For Exynos7870
 # Coded by BlackMesa/AnanJaser1211 @2019
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -96,6 +96,13 @@ CR_CONFIG_TREBLE=treble_defconfig
 CR_CONFIG_ONEUI=oneui_defconfig
 CR_CONFIG_SPLIT=NULL
 CR_CONFIG_HELIOS=helios_defconfig
+# Flashable Variables
+FL_MODEL=NULL
+FL_VARIANT=NULL
+FL_DIR=$CR_DIR/Cronos/Flashable
+FL_EXPORT=$CR_DIR/Cronos/Flashable_OUT
+FL_MAGISK=$FL_EXPORT/Helios/magisk/magisk.zip
+FL_SCRIPT=$FL_EXPORT/META-INF/com/google/android/updater-script
 #####################################################
 
 # Script functions
@@ -147,6 +154,48 @@ fi
 BUILD_IMAGE_NAME()
 {
 	CR_IMAGE_NAME=$CR_NAME-$CR_VERSION-$CR_VARIANT-$CR_DATE
+
+  # Flashable_script
+  if [ $CR_VARIANT = $CR_VARIANT_J530X-TREBLE ]; then
+    FL_VARIANT="J530X-Treble"
+    FL_MODEL=j5y17lte
+  fi
+  if [ $CR_VARIANT = $CR_VARIANT_J530X ]; then
+    FL_VARIANT="J530X-OneUI"
+    FL_MODEL=j5y17lte
+  fi
+  if [ $CR_VARIANT = $CR_VARIANT_J730X-TREBLE ]; then
+    FL_VARIANT="J730X-Treble"
+    FL_MODEL=j7y17lte
+  fi
+  if [ $CR_VARIANT = $CR_VARIANT_J730X ]; then
+    FL_VARIANT="J730X-OneUI"
+    FL_MODEL=j7y17lte
+  fi
+  if [ $CR_VARIANT = $CR_VARIANT_J710X-TREBLE ]; then
+    FL_VARIANT="J710X-Treble"
+    FL_MODEL=j7xelte
+  fi
+  if [ $CR_VARIANT = $CR_VARIANT_J710X ]; then
+    FL_VARIANT="J710X-OneUI"
+    FL_MODEL=j7xelte
+  fi
+  if [ $CR_VARIANT = $CR_VARIANT_J701X-TREBLE ]; then
+    FL_VARIANT="J701X-Treble"
+    FL_MODEL=j7velte
+  fi
+  if [ $CR_VARIANT = $CR_VARIANT_J701X ]; then
+    FL_VARIANT="J701X-OneUI"
+    FL_MODEL=j7velte
+  fi
+  if [ $CR_VARIANT = $CR_VARIANT_G610X-TREBLE ]; then
+    FL_VARIANT="G610X-Treble"
+    FL_MODEL=on7xelte
+  fi
+  if [ $CR_VARIANT = $CR_VARIANT_G610X ]; then
+    FL_VARIANT="G610X-OneUI"
+    FL_MODEL=on7xelte
+  fi
 }
 
 BUILD_GENERATE_CONFIG()
@@ -251,6 +300,40 @@ PACK_BOOT_IMG()
   # Respect CLEAN build rules
   BUILD_CLEAN
 }
+
+PACK_FLASHABLE()
+{
+
+  echo "----------------------------------------------"
+  echo "$CR_NAME $CR_VERSION Flashable Generator"
+  echo "----------------------------------------------"
+	echo " "
+	echo " Target device : $CR_VARIANT "
+  echo " Target image $CR_OUT/$CR_IMAGE_NAME.img "
+  echo " Prepare Temporary Dirs"
+  FL_DEVICE=$FL_EXPORT/Helios/device/$FL_MODEL/boot.img
+  echo " Copy $FL_DIR to $FL_EXPORT"
+  rm -rf $FL_EXPORT
+  mkdir $FL_EXPORT
+  cp -rf $FL_DIR/* $FL_EXPORT
+  echo " Generate up || [ $CR_VARIANT = $CR_VARIANT_J730X-TREBLE ]dater for $FL_VARIANT"
+  sed -i 's/FL_NAME/ui_print("* '$CR_NAME'");/g' $FL_SCRIPT
+  sed -i 's/FL_VERSION/ui_print("* '$CR_VERSION'");/g' $FL_SCRIPT
+  sed -i 's/FL_VARIANT/ui_print("* For '$FL_VARIANT' ");/g' $FL_SCRIPT
+  sed -i 's/FL_DATE/ui_print("* Compiled at '$CR_DATE'");/g' $FL_SCRIPT
+  echo " Copy Image to $FL_DEVICE"
+  mv $CR_OUT/$CR_IMAGE_NAME.img $FL_DEVICE
+  echo " Packing zip"
+  # TODO: FInd a better way to zip
+  # TODO: support multi-compile
+  # TODO: Conditional
+  cd $FL_EXPORT
+  zip -r $CR_OUT/$CR_NAME-$CR_VERSION-$FL_VARIANT-$CR_DATE.zip .
+  cd $CR_DIR
+  rm -rf $FL_EXPORT
+  echo " Zip Generated at $CR_OUT/$CR_NAME-$CR_VERSION-$FL_VARIANT-$CR_DATE.zip"
+}
+
 # Main Menu
 clear
 echo "----------------------------------------------"
@@ -283,6 +366,7 @@ do
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
+            PACK_FLASHABLE
             echo " "
             echo "----------------------------------------------"
             echo "$CR_VARIANT kernel build finished."
@@ -318,6 +402,7 @@ do
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
+            PACK_FLASHABLE
             echo " "
             echo "----------------------------------------------"
             echo "$CR_VARIANT kernel build finished."
@@ -354,6 +439,7 @@ do
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
+            PACK_FLASHABLE
             echo " "
             echo "----------------------------------------------"
             echo "$CR_VARIANT kernel build finished."
@@ -388,6 +474,7 @@ do
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
+            PACK_FLASHABLE
             echo " "
             echo "----------------------------------------------"
             echo "$CR_VARIANT kernel build finished."
@@ -422,6 +509,7 @@ do
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
+            PACK_FLASHABLE
             echo " "
             echo "----------------------------------------------"
             echo "$CR_VARIANT kernel build finished."
