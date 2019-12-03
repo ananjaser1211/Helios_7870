@@ -25,6 +25,7 @@ CR_DTS=arch/arm64/boot/dts
 # TODO: add ODM mount variant
 CR_DTS_TREBLE=arch/arm64/boot/exynos7870_Treble.dtsi
 CR_DTS_ONEUI=arch/arm64/boot/exynos7870_Oneui.dtsi
+CR_DTS_X6LTE=arch/arm64/boot/exynos7870_x6lte.dtsi
 # Define boot.img out dir
 CR_OUT=$CR_DIR/Cronos/Out
 CR_PRODUCT=$CR_DIR/Cronos/Product
@@ -198,6 +199,22 @@ BUILD_IMAGE_NAME()
   if [ $CR_VARIANT = $CR_VARIANT_G610X-ONEUI ]; then
     FL_VARIANT="G610X-OneUI"
     FL_MODEL=on7xelte
+  fi
+  if [ $CR_VARIANT = $CR_VARIANT_J600X-TREBLE ]; then
+    FL_VARIANT="J600X-Treble"
+    FL_MODEL=j6lte
+  fi
+  if [ $CR_VARIANT = $CR_VARIANT_J600X-ONEUI ]; then
+    FL_VARIANT="J600X-OneUI"
+    FL_MODEL=j6lte
+  fi
+  if [ $CR_VARIANT = $CR_VARIANT_A600X-TREBLE ]; then
+    FL_VARIANT="A600X-Treble"
+    FL_MODEL=a6lte
+  fi
+  if [ $CR_VARIANT = $CR_VARIANT_A600X-ONEUI ]; then
+    FL_VARIANT="A600X-OneUI"
+    FL_MODEL=a6lte
   fi
 }
 
@@ -537,16 +554,27 @@ do
         "SM-J600X")
             clear
             echo "Starting $CR_VARIANT_J600X kernel build..."
-            CR_VARIANT=$CR_VARIANT_J600X
-            CR_CONFIG=$CR_CONFG_J600X
             CR_DTSFILES=$CR_DTSFILES_J600X
+            CR_RAMDISK=$CR_RAMDISK_TREBLE
+            CR_CONFIG=$CR_CONFG_J600X
+            CR_DTB_MOUNT=$CR_DTS_X6LTE
             export ANDROID_MAJOR_VERSION=$CR_ANDROID
             export PLATFORM_VERSION=$CR_PLATFORM
+            if [ $CR_MODE = "2" ]; then
+              echo " Building Treble variant "
+              CR_CONFIG_USB=$CR_CONFIG_TREBLE
+              CR_VARIANT=$CR_VARIANT_J600X-TREBLE
+            else
+              echo " Building OneUI variant "
+              CR_CONFIG_USB=$CR_CONFIG_ONEUI
+              CR_VARIANT=$CR_VARIANT_J600X-ONEUI
+            fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
+            PACK_FLASHABLE
             echo " "
             echo "----------------------------------------------"
             echo "$CR_VARIANT kernel build finished."
@@ -562,16 +590,27 @@ do
         "SM-A600X")
             clear
             echo "Starting $CR_VARIANT_A600X kernel build..."
-            CR_VARIANT=$CR_VARIANT_A600X
-            CR_CONFIG=$CR_CONFG_A600X
             CR_DTSFILES=$CR_DTSFILES_A600X
+            CR_RAMDISK=$CR_RAMDISK_TREBLE
+            CR_CONFIG=$CR_CONFG_A600X
+            CR_DTB_MOUNT=$CR_DTS_X6LTE
             export ANDROID_MAJOR_VERSION=$CR_ANDROID
             export PLATFORM_VERSION=$CR_PLATFORM
+            if [ $CR_MODE = "2" ]; then
+              echo " Building Treble variant "
+              CR_CONFIG_USB=$CR_CONFIG_TREBLE
+              CR_VARIANT=$CR_VARIANT_A600X-TREBLE
+            else
+              echo " Building OneUI variant "
+              CR_CONFIG_USB=$CR_CONFIG_ONEUI
+              CR_VARIANT=$CR_VARIANT_A600X-ONEUI
+            fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
+            PACK_FLASHABLE
             echo " "
             echo "----------------------------------------------"
             echo "$CR_VARIANT kernel build finished."
