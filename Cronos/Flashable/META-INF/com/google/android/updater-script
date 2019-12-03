@@ -62,6 +62,14 @@ if is_substring("J701", getprop("ro.boot.bootloader")) then
     ui_print("@ J7 NXT detected, extracting files...");
     package_extract_file("Helios/device/j7velte/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
 endif;
+if is_substring("J600", getprop("ro.boot.bootloader")) then
+    ui_print("@ J6 2018 detected, extracting files...");
+    package_extract_file("Helios/device/j6lte/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
+endif;
+if is_substring("A600", getprop("ro.boot.bootloader")) then
+    ui_print("@ A6 2018 detected, extracting files...");
+    package_extract_file("Helios/device/a6lte/boot.img", "/dev/block/platform/13540000.dwmmc0/by-name/BOOT");
+endif;
 
 ui_print("-- Extracting System Files...");
 package_extract_dir("Helios/system", "/system");
