@@ -31,7 +31,7 @@ CR_PRODUCT=$CR_DIR/Cronos/Product
 # Presistant A.I.K Location
 CR_AIK=$CR_DIR/Cronos/A.I.K
 # Main Ramdisk Location
-CR_RAMDISK=$CR_DIR/Cronos/Helios_Ramdisk
+CR_RAMDISK_ONEUI=$CR_DIR/Cronos/Oneui
 CR_RAMDISK_PORT=$CR_DIR/Cronos/Treble_unofficial
 CR_RAMDISK_TREBLE=$CR_DIR/Cronos/Treble_official
 # Compiled image name and location (Image/zImage)
@@ -163,7 +163,7 @@ BUILD_IMAGE_NAME()
     FL_VARIANT="J530X-Treble"
     FL_MODEL=j5y17lte
   fi
-  if [ $CR_VARIANT = $CR_VARIANT_J530X ]; then
+  if [ $CR_VARIANT = $CR_VARIANT_J530X-ONEUI ]; then
     FL_VARIANT="J530X-OneUI"
     FL_MODEL=j5y17lte
   fi
@@ -171,7 +171,7 @@ BUILD_IMAGE_NAME()
     FL_VARIANT="J730X-Treble"
     FL_MODEL=j7y17lte
   fi
-  if [ $CR_VARIANT = $CR_VARIANT_J730X ]; then
+  if [ $CR_VARIANT = $CR_VARIANT_J730X-ONEUI ]; then
     FL_VARIANT="J730X-OneUI"
     FL_MODEL=j7y17lte
   fi
@@ -179,7 +179,7 @@ BUILD_IMAGE_NAME()
     FL_VARIANT="J710X-Treble"
     FL_MODEL=j7xelte
   fi
-  if [ $CR_VARIANT = $CR_VARIANT_J710X ]; then
+  if [ $CR_VARIANT = $CR_VARIANT_J710X-ONEUI ]; then
     FL_VARIANT="J710X-OneUI"
     FL_MODEL=j7xelte
   fi
@@ -187,7 +187,7 @@ BUILD_IMAGE_NAME()
     FL_VARIANT="J701X-Treble"
     FL_MODEL=j7velte
   fi
-  if [ $CR_VARIANT = $CR_VARIANT_J701X ]; then
+  if [ $CR_VARIANT = $CR_VARIANT_J701X-ONEUI ]; then
     FL_VARIANT="J701X-OneUI"
     FL_MODEL=j7velte
   fi
@@ -195,7 +195,7 @@ BUILD_IMAGE_NAME()
     FL_VARIANT="G610X-Treble"
     FL_MODEL=on7xelte
   fi
-  if [ $CR_VARIANT = $CR_VARIANT_G610X ]; then
+  if [ $CR_VARIANT = $CR_VARIANT_G610X-ONEUI ]; then
     FL_VARIANT="G610X-OneUI"
     FL_MODEL=on7xelte
   fi
@@ -319,7 +319,7 @@ PACK_FLASHABLE()
   rm -rf $FL_EXPORT
   mkdir $FL_EXPORT
   cp -rf $FL_DIR/* $FL_EXPORT
-  echo " Generate up || [ $CR_VARIANT = $CR_VARIANT_J730X-TREBLE ]dater for $FL_VARIANT"
+  echo " Generate updater for $FL_VARIANT"
   sed -i 's/FL_NAME/ui_print("* '$CR_NAME'");/g' $FL_SCRIPT
   sed -i 's/FL_VERSION/ui_print("* '$CR_VERSION'");/g' $FL_SCRIPT
   sed -i 's/FL_VARIANT/ui_print("* For '$FL_VARIANT' ");/g' $FL_SCRIPT
@@ -367,6 +367,7 @@ do
               CR_CONFIG_USB=$CR_CONFIG_ONEUI
               CR_VARIANT=$CR_VARIANT_J530X-ONEUI
               CR_DTB_MOUNT=$CR_DTS_ONEUI
+              CR_RAMDISK=$CR_RAMDISK_ONEUI
             fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
@@ -403,6 +404,7 @@ do
               CR_CONFIG_USB=$CR_CONFIG_ONEUI
               CR_VARIANT=$CR_VARIANT_J730X-ONEUI
               CR_DTB_MOUNT=$CR_DTS_ONEUI
+              CR_RAMDISK=$CR_RAMDISK_ONEUI
             fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
@@ -440,6 +442,7 @@ do
               CR_CONFIG_USB=$CR_CONFIG_ONEUI
               CR_VARIANT=$CR_VARIANT_J710X-ONEUI
               CR_DTB_MOUNT=$CR_DTS_ONEUI
+              CR_RAMDISK=$CR_RAMDISK_ONEUI
             fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
@@ -475,6 +478,7 @@ do
               CR_CONFIG_USB=$CR_CONFIG_ONEUI
               CR_VARIANT=$CR_VARIANT_J701X-ONEUI
               CR_DTB_MOUNT=$CR_DTS_ONEUI
+              CR_RAMDISK=$CR_RAMDISK_ONEUI
             fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
@@ -510,6 +514,7 @@ do
               CR_CONFIG_USB=$CR_CONFIG_ONEUI
               CR_VARIANT=$CR_VARIANT_G610X-ONEUI
               CR_DTB_MOUNT=$CR_DTS_ONEUI
+              CR_RAMDISK=$CR_RAMDISK_ONEUI
             fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
