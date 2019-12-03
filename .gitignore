@@ -97,6 +97,7 @@ x509.genkey
 #
 Cronos/A.I.K/*
 Cronos/Out/*.img
+Cronos/TWRP/
 *.lds
 *.fw*
 *.bin*
