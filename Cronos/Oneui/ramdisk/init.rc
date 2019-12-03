@@ -46,12 +46,6 @@ on init
 
     ffu
 
-# [ SEC_SELINUX_PORTING_COMMON
-    # for audit message
-    chown system system /proc/avc_msg
-    chmod 0660 /proc/avc_msg
-# ] SEC_SELINUX_PORTING_COMMON
-
     # Mix device-specific information into the entropy pool
     copy /proc/cmdline /dev/urandom
     copy /default.prop /dev/urandom
@@ -64,6 +58,13 @@ on init
 
     # Link /vendor to /system/vendor for devices without a vendor partition.
     symlink /system/vendor /vendor
+
+    # Link /efs and /cpefs to /mnt/vendor to be able to use pie cbd.
+    symlink /efs /mnt/vendor/efs
+    symlink /cpefs /mnt/vendor/cpefs
+
+    # Link /odm to /system/odm for devices without a ODM partition (csc/omc v5).
+    symlink /system/odm /odm
 
     # MirrorLink permission
     mkdir /dev/socket/mlaudio 0770 audioserver system
@@ -497,13 +498,6 @@ on post-fs-data
     chmod 0771 /data
     # We restorecon /data in case the userdata partition has been reset.
     restorecon /data
-    # KNOX_NAP
-    chmod 0660 /dev/ncm_dev
-    chown system system /dev/ncm_dev
-	
-    chown system radio /efs
-    chmod 0771 /efs
-    restorecon /efs
 
     chown system system /carrier
     chmod 0771 /carrier
@@ -525,11 +519,6 @@ on post-fs-data
     chown system system /keyrefuge
     chmod 0771 /keyrefuge
     restorecon /keyrefuge
-	
-# [ SEC_SELINUX_PORTING_COMMON
-    # sec_efs_file
-    mkdir /efs/sec_efs 0775 radio system
-# ] SEC_SELINUX_PORTING_COMMON
 
     # mobicore
     export MC_AUTH_TOKEN_PATH /efs
@@ -551,17 +540,6 @@ on post-fs-data
 
     # Start Stork Daemon
     start storkd
-
-    # VaultKeeper socket
-    mkdir /dev/socket/vaultkeeper 0770 system system
-    chown system system /dev/socket/vaultkeeper
-    chmod 0770 /dev/socket/vaultkeeper
-
-    #start VaultKeeper
-    start vaultkeeper
-
-    #start VaultKeeper_HAL
-    start vaultkeeper_hal
 
     #start CASS
     start cass
@@ -740,27 +718,6 @@ on post-fs-data
     # change owner background io bigdata node for hqm write
     chown system system /sys/fs/fsio/bgiostat/sec_stat
 
-# [ SEC_PRODUCT_FEATURE_SECURITY_SUPPORT_FIVE
-    mkdir /data/misc/integrity 0775 vendor_audit system
-# ] SEC_PRODUCT_FEATURE_SECURITY_SUPPORT_FIVE
-	
-# [ SEC_SELINUX_PORTING_COMMON
-    mkdir /data/misc/audit 0775 system system
-    chown vendor_audit vendor_audit /data/misc/audit/audit.log
-    chown vendor_audit vendor_audit /data/misc/audit/audit.old
-
-    # arcounter
-    mkdir /data/misc/arcounter 0700 system system
-
-    # start auditd
-    start auditd
-# ] SEC_SELINUX_PORTING_COMMON
-
-# [ SEC_AASA_ASKS_PORTING
-    # Seperate location for storing security policy files on data
-    mkdir /data/security 0701 system system
-# ] SEC_AASA_ASKS_PORTING
-
     mkdir /data/vendor 0771 root root
     mkdir /data/vendor_ce 0771 root root
     mkdir /data/vendor_de 0771 root root
@@ -901,16 +858,6 @@ on post-fs-data
 
     # Check any timezone data in /data is newer than the copy in /system, delete if not.
     exec - system system -- /system/bin/tzdatacheck /system/usr/share/zoneinfo /data/misc/zoneinfo
-
-# [ SEC_SELINUX_PORTING_COMMON
-    restorecon --recursive --force /efs
-    restorecon --recursive --force /cpefs
-    restorecon --recursive --force /mnt/vendor/efs
-    restorecon --recursive --force /mnt/vendor/cpefs
-    restorecon --recursive --force /sec_efs
-    restorecon_recursive /carrier
-    restorecon /sys/kernel/debug/tracing/trace_marker
-# ] SEC_SELINUX_PORTING_COMMON
 
     # smart switch mobile
     mkdir /efs/ssm 0770 system system
@@ -1133,15 +1080,55 @@ on boot
     chown system system /sys/devices/system/cpu/cpufreq/interactive/io_is_busy
     chmod 0660 /sys/devices/system/cpu/cpufreq/interactive/io_is_busy
 
+    # Change permission for input booster
+    chown system radio /sys/class/input_booster/level
+    chown system radio /sys/class/input_booster/head
+    chown system radio /sys/class/input_booster/tail
+    chown system radio /sys/class/input_booster/touchkey/level
+    chown system radio /sys/class/input_booster/touchkey/freq
+    chown system radio /sys/class/input_booster/touchkey/time
+    chmod 0664 /sys/class/input_booster/level
+    chmod 0664 /sys/class/input_booster/head
+    chmod 0664 /sys/class/input_booster/tail
+    chmod 0664 /sys/class/input_booster/touchkey/level
+    chmod 0664 /sys/class/input_booster/touchkey/freq
+    chmod 0664 /sys/class/input_booster/touchkey/time
+
     # Assume SMP uses shared cpufreq policy for all CPUs
     chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
     chmod 0660 /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
 
-    # Permission for DVFS helper
+    # Permissions for CPU DVFS helpers and disablers
     chown system radio /sys/power/cpufreq_min_limit
-    chmod 0664 /sys/power/cpufreq_min_limit
+    chmod 000 /sys/power/cpufreq_min_limit
     chown system radio /sys/power/cpufreq_max_limit
-    chmod 0664 /sys/power/cpufreq_max_limit
+    chmod 000 /sys/power/cpufreq_max_limit
+    chmod 000 /sys/power/cpufreq_table
+
+    # Permissions for GPU DVFS helpers and disablers
+    chmod 644 /sys/devices/11400000.mali/clock
+    chmod 000 /sys/devices/11400000.mali/dvfs
+    chmod 644 /sys/devices/11400000.mali/dvfs_governor
+    chmod 000 /sys/devices/11400000.mali/dvfs_max_lock
+    chmod 000 /sys/devices/11400000.mali/dvfs_max_lock_status
+    chmod 000 /sys/devices/11400000.mali/dvfs_min_lock
+    chmod 000 /sys/devices/11400000.mali/dvfs_min_lock_status
+    chmod 000 /sys/devices/11400000.mali/dvfs_period
+    chmod 000 /sys/devices/11400000.mali/dvfs_table
+    chmod 000 /sys/devices/11400000.mali/core_availability_policy
+
+    # Permissions for Hotplug helpers and disablers
+    write 0 /sys/power/cpuhotplug/enabled
+    write 0 /sys/power/cpuhotplug/governor/enabled
+    chmod 000 /sys/power/cpuhotplug/control_online_cpus
+    chmod 000 /sys/power/cpuhotplug/enabled
+    chmod 000 /sys/power/cpuhotplug/max_online_cpu
+    chmod 000 /sys/power/cpuhotplug/min_online_cpu
+    chmod 000 /sys/power/cpuhotplug/governor/down_freq
+    chmod 000 /sys/power/cpuhotplug/governor/enabled
+    chmod 000 /sys/power/cpuhotplug/governor/load
+    chmod 000 /sys/power/cpuhotplug/governor/rate
+    chmod 000 /sys/power/cpuhotplug/governor/up_freq
 
 	# permission for CHARGING
 	mkdir /efs/Battery 0775 radio system
@@ -2031,20 +2018,6 @@ service flash_recovery /system/bin/install-recovery.sh
     class main
     oneshot
 
-# [ SEC_SELINUX_PORTING_COMMON
-service auditd /system/bin/auditd -k
-    class main
-    user vendor_audit
-    group vendor_audit system package_info
-    capabilities AUDIT_CONTROL SYSLOG
-    seclabel u:r:auditd:s0
-    disabled
-    oneshot
-
-on property:sys.seandroid.restoreapp=start
-    restore_appdata    
-# ] SEC_SELINUX_PORTING_COMMON
-
 # sem_daemon
 service sem_daemon /system/bin/sem_daemon
     class core
@@ -2108,11 +2081,11 @@ service charon /system/bin/charon
 
 
 # VaultKeeper
-service vaultkeeper /system/bin/vaultkeeperd
-    class core
-    user system
-    group system
-    disabled
+#service vaultkeeper /system/bin/vaultkeeperd
+#    class core
+#    user system
+#    group system
+#    disabled
 
 # CASS
 service cass /system/bin/cass
@@ -2175,72 +2148,6 @@ service defrag_service /system/bin/idledefrag
 
 on property:vold.should_defrag=1
     start defrag_service
-
-## SecProductFeature_KNOX.SEC_PRODUCT_FEATURE_KNOX_SUPPORT_MDM{
-## EDM AuditLog
-service edmaudit /system/bin/edmaudit
-    class main
-    user system
-    group system
-    capabilities SYSLOG
-    disabled
-
-on property:security.edmaudit=true
-    start edmaudit
-
-on property:security.edmaudit=false
-    stop edmaudit
-## } SecProductFeature_KNOX.SEC_PRODUCT_FEATURE_KNOX_SUPPORT_MDM
-
-# knox_changer service
-service kap_enable /sbin/knox_changer -e
-    seclabel u:r:kapd:s0
-    class main
-    disabled
-    oneshot
-
-service kap_disable /sbin/knox_changer -d
-    seclabel u:r:kapd:s0
-    class main
-    disabled
-    oneshot
-
-on property:security.knox_kap_mode=true
-    start kap_enable
-
-on property:security.knox_kap_mode=false
-    start kap_disable
-
-# UCM ODE mode
-service ucs_enable /sbin/knox_changer -u
-    class main
-    seclabel u:r:kapd:s0
-    disabled
-    oneshot
-
-service ucs_disable /sbin/knox_changer -v
-    class main
-    seclabel u:r:kapd:s0
-    disabled
-    oneshot
-
-service ucs_reset /sbin/knox_changer -w
-    class main
-    seclabel u:r:kapd:s0
-    disabled
-    oneshot
-
-on property:security.knox_ucs_mode=true
-    chmod 0655 /efs/sec_efs/odeConfig
-    start ucs_enable
-
-on property:security.knox_ucs_mode=false
-    chmod 0655 /efs/sec_efs/odeConfig
-    start ucs_disable
-
-on property:security.knox_ucs_mode=reset
-    chmod 0655 /efs/sec_efs/odeConfig
-    start ucs_reset
 
 service SIDESYNC_service /system/bin/ss_conn_daemon
     class main
