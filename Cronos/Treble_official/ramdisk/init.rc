@@ -9,7 +9,7 @@ import /init.usb.rc
 import /init.${ro.hardware}.rc
 import /vendor/etc/init/hw/init.${ro.hardware}.rc
 import /init.usb.configfs.rc
-import /init.${ro.zygote}.rc
+import /init.zygote.rc
 import /init.container.rc
 
 on early-init
@@ -1733,6 +1733,12 @@ on nonencrypted
     mkdir /data/misc/mcRegistry 0775 system system
     class_start main
     class_start late_start
+
+on property:ro.product.cpu.abi=armeabi-v7a
+    start zygote32
+on property:ro.product.cpu.abi=arm64-v8a
+    start zygote64
+    start zygote_secondary
 
 on property:sys.init_log_level=*
     loglevel ${sys.init_log_level}
