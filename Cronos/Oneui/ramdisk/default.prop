@@ -2,11 +2,11 @@
 # ADDITIONAL_DEFAULT_PROPERTIES
 #
 ro.actionable_compatible_property.enabled=false
-persist.security.ams.enforcing=1
+persist.security.ams.enforcing=0
 ro.oem_unlock_supported=1
-ro.secure=0
-security.perf_harden=1
-ro.adb.secure=0
+ro.secure=1
+security.perf_harden=0
+ro.adb.secure=1
 ro.allow.mock.location=0
 ro.factory_mode=0
 ro.mg_factory_mode=0
@@ -41,7 +41,7 @@ ro.setupwizard.mode=OPTIONAL
 ro.com.google.gmsversion=9_201907
 ro.vndk.version=28
 ro.vndk.lite=true
-persist.sys.usb.config=mtp,adb
+persist.sys.usb.config=adb,mtp
 ro.radio.noril=no
 ro.vendor.epdg.support=true
 ro.zygote=zygote32
@@ -57,11 +57,16 @@ ro.bootimage.build.fingerprint=samsung/j5y17ltexx/j5y17lte:9/PPR1.180610.011/J53
 #
 # Helios tweaks
 #
+wlan.wfd.hdcp=disable
+ro.config.tima=0
 ro.security.vaultkeeper.feature=0
+ro.frp.pst=
+ro.securestorage.support=false
 ro.config.dmverity=false
+ro.config.rkp=false
+security.knox_kap_mode=false
+ro.config.kap_default_on=false
 ro.config.kap=false
-persist.sys.usb.config=mtp,adb
-persist.service.adb.enable=1
-persist.service.debuggable=1
+ro.config.tima=0
 ro.securestorage.support=false
 wlan.wfd.hdcp=disable
