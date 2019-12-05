@@ -848,10 +848,10 @@ static int __ol_transfer_bin_file(struct ol_softc *scn, ATH_BIN_FILE file,
 		    && (chip_id == AR6320_REV1_1_VERSION
 			|| chip_id == AR6320_REV1_3_VERSION
 			|| chip_id == AR6320_REV2_1_VERSION)) {
-
+			bin_off = sizeof(SIGN_HEADER_T);
 			status = BMISignStreamStart(scn->hif_hdl, address,
 						    (u_int8_t *)fw_entry->data,
-						    sizeof(SIGN_HEADER_T), scn);
+						    bin_off, scn);
 			if (status != EOK) {
 				AR_DEBUG_PRINTF(ATH_DEBUG_ERR,
 					("%s: unable to start sign stream\n",
@@ -860,9 +860,15 @@ static int __ol_transfer_bin_file(struct ol_softc *scn, ATH_BIN_FILE file,
 				goto end;
 			}
 
-			bin_off = sizeof(SIGN_HEADER_T);
-			bin_len = sign_header->rampatch_len
-				  - sizeof(SIGN_HEADER_T);
+			bin_len = sign_header->rampatch_len - bin_off;
+			if (bin_len <= 0 ||
+			    bin_len > fw_entry_size - bin_off) {
+				AR_DEBUG_PRINTF(ATH_DEBUG_ERR,
+						("%s: Invalid sign header\n",
+						 __func__));
+				status = A_ERROR;
+				goto end;
+			}
 		} else {
 			bin_sign = FALSE;
 			bin_off = 0;
@@ -895,7 +901,7 @@ static int __ol_transfer_bin_file(struct ol_softc *scn, ATH_BIN_FILE file,
 		bin_len = sign_header->total_len
 			  - sign_header->rampatch_len;
 
-		if (bin_len > 0) {
+		if (bin_len > 0 && bin_len <= fw_entry_size - bin_off) {
 			status = BMISignStreamStart(scn->hif_hdl, 0,
 					(u_int8_t *)fw_entry->data + bin_off,
 					bin_len, scn);

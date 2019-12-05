@@ -23,7 +23,6 @@
 #include <linux/quotaops.h>
 #include <crypto/hash.h>
 #include <linux/writeback.h>
-#include <linux/android_aid.h>
 #include <linux/ctype.h>
 #include <linux/overflow.h>
 #include "../mount.h"
@@ -309,6 +308,7 @@ enum {
 #define DEF_CP_INTERVAL			60	/* 60 secs */
 #define DEF_IDLE_INTERVAL		5	/* 5 secs */
 #define DEF_DISABLE_INTERVAL		5	/* 5 secs */
+#define DEF_UMOUNT_DISCARD_TIMEOUT	5	/* 5 secs */
 
 struct cp_control {
 	int reason;
@@ -428,6 +428,7 @@ struct discard_policy {
 	bool sync;			/* submit discard with REQ_SYNC flag */
 	bool ordered;			/* issue discard by lba order */
 	unsigned int granularity;	/* discard granularity */
+	int timeout;			/* discard timeout for put_super */
 };
 
 struct discard_cmd_control {
@@ -1188,6 +1189,7 @@ enum cp_reason_type {
 	CP_FASTBOOT_MODE,
 	CP_SPEC_LOG_NUM,
 	CP_RECOVER_DIR,
+	NR_CP_REASON,
 };
 
 enum iostat_type {
@@ -1292,6 +1294,7 @@ enum {
 	DISCARD_TIME,
 	GC_TIME,
 	DISABLE_TIME,
+	UMOUNT_DISCARD_TIMEOUT,
 	MAX_TIME,
 };
 
@@ -1326,6 +1329,13 @@ enum fsync_mode {
 #define DUMMY_ENCRYPTION_ENABLED(sbi) (0)
 #endif
 
+enum sec_stat_cp_type {
+	STAT_CP_ALL,
+	STAT_CP_BG,
+	STAT_CP_FSYNC,
+	NR_STAT_CP,
+};
+
 struct f2fs_sec_stat_info {
 	u64 gc_count[2];		/* FG_GC, BG_GC */
 	u64 gc_node_seg_count[2];
@@ -1334,7 +1344,8 @@ struct f2fs_sec_stat_info {
 	u64 gc_data_blk_count[2];
 	u64 gc_ttime[2];
 
-	u64 cp_cnt[3];			/* total, balance, fsync */
+	u64 cp_cnt[NR_STAT_CP];		/* total, balance, fsync */
+	u64 cpr_cnt[NR_CP_REASON];	/* cp reason by fsync */
 	u64 cp_max_interval;		/* max checkpoint interval */
 	u64 alloc_seg_type[2];		/* LFS, SSR */
 	u64 alloc_blk_count[2];
@@ -1343,6 +1354,7 @@ struct f2fs_sec_stat_info {
 	u64 fsync_dirty_pages;
 	u64 hot_file_written_blocks;	/* db, db-journal, db-wal, db-shm */
 	u64 cold_file_written_blocks;
+	u64 warm_file_written_blocks;
 
 	u64 max_inmem_pages;		/* get_pages(sbi, F2FS_INMEM_PAGES) */
 	u64 drop_inmem_all;
@@ -1932,6 +1944,18 @@ static inline bool __allow_reserved_blocks(struct f2fs_sb_info *sbi,
 	return false;
 }
 
+static inline bool f2fs_android_claim_sec_r_blocks(unsigned long flags) {
+	if (flags & F2FS_CORE_FILE_FL)
+		return true;
+
+#if ANDROID_VERSION < 90000
+	if (in_group_p(AID_USE_SEC_RESERVED))
+		return true;
+#endif
+
+	return false;
+}
+
 static inline void f2fs_i_blocks_write(struct inode *, block_t, bool, bool);
 static inline int inc_valid_block_count(struct f2fs_sb_info *sbi,
 				 struct inode *inode, blkcnt_t *count)
@@ -1963,8 +1987,7 @@ static inline int inc_valid_block_count(struct f2fs_sb_info *sbi,
 
 	if (!__allow_reserved_blocks(sbi, inode, true)) {
 		avail_user_block_count -= F2FS_OPTION(sbi).root_reserved_blocks;
-		if (!(F2FS_I(inode)->i_flags & F2FS_CORE_FILE_FL)
-				&& !in_group_p(AID_USE_SEC_RESERVED))
+		if (!f2fs_android_claim_sec_r_blocks(F2FS_I(inode)->i_flags))
 			avail_user_block_count -= F2FS_OPTION(sbi).core_reserved_blocks;
 	}
 	if (unlikely(is_sbi_flag_set(sbi, SBI_CP_DISABLED)))
@@ -2187,8 +2210,7 @@ static inline int inc_valid_node_count(struct f2fs_sb_info *sbi,
 
 	if (!__allow_reserved_blocks(sbi, inode, false)) {
 		valid_block_count += F2FS_OPTION(sbi).root_reserved_blocks;
-		if (!(F2FS_I(inode)->i_flags & F2FS_CORE_FILE_FL)
-				&& !in_group_p(AID_USE_SEC_RESERVED))
+		if (!f2fs_android_claim_sec_r_blocks(F2FS_I(inode)->i_flags))
 			valid_block_count += F2FS_OPTION(sbi).core_reserved_blocks;
 	}
 	if (unlikely(is_sbi_flag_set(sbi, SBI_CP_DISABLED)))
@@ -3248,7 +3270,7 @@ void f2fs_invalidate_blocks(struct f2fs_sb_info *sbi, block_t addr);
 bool f2fs_is_checkpointed_data(struct f2fs_sb_info *sbi, block_t blkaddr);
 void f2fs_drop_discard_cmd(struct f2fs_sb_info *sbi);
 void f2fs_stop_discard_thread(struct f2fs_sb_info *sbi);
-bool f2fs_wait_discard_bios(struct f2fs_sb_info *sbi);
+bool f2fs_issue_discard_timeout(struct f2fs_sb_info *sbi);
 void f2fs_clear_prefree_segments(struct f2fs_sb_info *sbi,
 					struct cp_control *cpc);
 void f2fs_dirty_to_prefree(struct f2fs_sb_info *sbi);

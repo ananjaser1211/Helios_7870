@@ -21,7 +21,8 @@
 #include "dsms_debug.h"
 #include "dsms_init.h"
 
-#define VALUE_STRLEN	(22)
+#define MAX_ALLOWED_DETAIL_LENGTH (1024)
+#define VALUE_STRLEN (22)
 
 // Command: <<DSMS_BINARY>> <<feature_code>> <<detail>> <<value>>
 #define DSMS_BINARY "/system/bin/dsms"
@@ -101,35 +102,33 @@ static int check_recovery_mode(void)
 	if (recovery < 0) {
 		fp = filp_open("/sbin/recovery", O_RDONLY, 0);
 		if (IS_ERR(fp)) {
-			printk(KERN_ALERT DSMS_TAG "Normal mode.\n");
 			recovery = 0;
 		} else {
 			filp_close(fp, NULL);
-			printk(KERN_ALERT DSMS_TAG "Recovery mode, DSMS is disabled.\n");
 			recovery = 1;
 		}
 	}
 	return (recovery > 0);
 }
 
-static int dsms_send_allowed_message(const char *feature_code,
+static inline int dsms_send_allowed_message(const char *feature_code,
 		const char *detail,
 		int64_t value)
 {
 	char **argv;
 	struct subprocess_info *info;
-	int ret;
+	int ret = DSMS_DENY;
 
 	// limit number of message to prevent message's bursts
 	if (atomic_add_unless(&message_counter, 1, MESSAGE_COUNT_LIMIT) == 0) {
-		printk(DSMS_TAG "Message counter has reached its limit.");
+		dsms_log_write(LOG_ERROR, "Message counter has reached its limit.");
 		ret = -EBUSY;
 		goto limit_error;
 	}
 	// allocate argv, envp, necessary data
 	argv = (char**) kmalloc(sizeof(dsms_command), GFP_USER);
 	if (!argv) {
-		printk(DSMS_TAG "Failed memory allocation for argv.");
+		dsms_log_write(LOG_ERROR, "Failed memory allocation for argv.");
 		ret = -ENOMEM;
 		goto no_mem_error;
 	}
@@ -141,7 +140,7 @@ static int dsms_send_allowed_message(const char *feature_code,
 	argv[VALUE_INDEX] = dsms_alloc_user_value(value);
 	if (!argv[FEATURE_INDEX] || !argv[EXTRA_INDEX] ||
 	    !argv[VALUE_INDEX]) {
-		printk(DSMS_TAG "Failed memory allocation for user string.");
+		dsms_log_write(LOG_ERROR, "Failed memory allocation for user string.");
 		ret = -ENOMEM;
 		goto no_mem_error;
 	}
@@ -152,7 +151,7 @@ static int dsms_send_allowed_message(const char *feature_code,
 					 GFP_ATOMIC, NULL,
 					 &dsms_message_cleanup, NULL);
 	if (!info) {
-		printk(DSMS_TAG "Failed memory allocation for"
+		dsms_log_write(LOG_ERROR, "Failed memory allocation for"
 		       "call_usermodehelper_setup.");
 		ret = -ENOMEM;
 		goto no_mem_error;
@@ -178,27 +177,21 @@ int noinline dsms_send_message(const char *feature_code,
 		int64_t value)
 {
 	void *address;
-	int ret;
+	int ret = DSMS_DENY;
+	size_t len;
 
-#ifdef DSMS_KERNEL_ENG /* skip dsms at eng binary */
-	printk(KERN_ALERT DSMS_TAG "It's ENG binary, skip...");
-	return DSMS_SUCCESS;
-#endif /* DSMS_KERNEL_ENG */
-
-	// check recovery mode on, dsms doesn't work in recovery mode
+	// DSMS doesn't work in recovery mode
 	if (check_recovery_mode()) {
-		printk(KERN_ALERT DSMS_TAG "Recovery mode, DSMS is disabled.");
-		return DSMS_SUCCESS;
+		dsms_log_write(LOG_ERROR, "Recovery mode, DSMS is disabled.");
+		goto exit_send;
 	}
 
-#ifdef DSMS_DEBUG_TRACE_DSMS_CALLS
-	dsms_debug_message(feature_code, detail, value);
-#endif //DSMS_DEBUG_TRACE_DSMS_CALLS
-	
+	len = strnlen(detail, MAX_ALLOWED_DETAIL_LENGTH);
+	dsms_log_debug(TRACE, "{'%s', '%s' (%zu bytes), %lld}",
+			   feature_code, detail, len, value);
+
 	if (!dsms_is_initialized()) {
-#ifdef DSMS_DEBUG_ENABLE
-		printk(DSMS_DEBUG_TAG "DSMS not initialized yet.");
-#endif //DSMS_DEBUG_ENABLE
+		dsms_log_write(LOG_ERROR, "DSMS not initialized yet.");
 		ret = -EACCES;
 		goto exit_send;
 	}
@@ -207,9 +200,9 @@ int noinline dsms_send_message(const char *feature_code,
 	ret = dsms_verify_access(address);
 	if (ret != DSMS_SUCCESS)
 		goto exit_send;
-	
+
 	ret = dsms_send_allowed_message(feature_code, detail, value);
-	
+
 exit_send:
 	return ret;
 }

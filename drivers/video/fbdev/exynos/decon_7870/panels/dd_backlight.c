@@ -465,7 +465,7 @@ static ssize_t ic_tuning_write(struct file *f, const char __user *user_buf,
 	struct ic_info *ic = ((struct seq_file *)f->private_data)->private;
 	int ret = 0, command = 0, value = 0;
 	char ibuf[INPUT_LIMIT] = {0, };
-	struct i2c_msg xfer[2] = {{0, }, {0, }};
+	struct i2c_msg xfer[2] = {{0, }, {0, } };
 	u8 i2c_wbuf[3] = {0, };
 	u8 i2c_rbuf[1] = {0, };
 

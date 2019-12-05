@@ -9,11 +9,6 @@
 #define DEFAULT_CANDELA		92
 #define DIM_BRIGHTNESS		15
 
-struct i2c_rom_data {
-	u8 addr;
-	u8 val;
-};
-
 static char UI_MDNIE_1[] = {
 	//start
 	0xE8,
@@ -292,36 +287,36 @@ static char OUTDOOR_MDNIE_6[] = {
 	//end
 };
 
-static const struct i2c_rom_data backlight_ic_tuning[] = {//LM3632_eprom_drv_arr[] = {
-	{ 0x09, 0x41},
-	{ 0x02, 0x50},
-	{ 0x03, 0x0D},
-	{ 0x04, 0x05},
-	{ 0x0A, 0x19},
-	{ 0x05, 0xCC},
-	{ 0x0D, 0x1E},
-	{ 0x0E, 0x1E},
-	{ 0x0F, 0x1E},
-	{ 0x0C, 0x1F},
+static u8 backlight_ic_tuning[] = {//LM3632_eprom_drv_arr[] = {
+	0x09, 0x41,
+	0x02, 0x50,
+	0x03, 0x0D,
+	0x04, 0x05,
+	0x0A, 0x19,
+	0x05, 0xCC,
+	0x0D, 0x1E,
+	0x0E, 0x1E,
+	0x0F, 0x1E,
+	0x0C, 0x1F,
 };
 
 #if 0
-static const struct i2c_rom_data backlight_i2c_bl_ctrl[] = {	//LM3632_eprom_drv_arr_off[] = {
-	{ 0x04, 0x00},
-	{ 0x05, 0x00},
+static u8 backlight_i2c_bl_ctrl[] = {	//LM3632_eprom_drv_arr_off[] = {
+	0x04, 0x00,
+	0x05, 0x00,
 
 };
 #endif
-static const struct i2c_rom_data backlight_ic_tuning_outdoor[] = {//LM3632_eprom_drv_arr_outdoor_on[] = {
-	{ 0x09, 0x01},
-	{ 0x04, 0x07},
-	{ 0x05, 0xCB},
+static u8 backlight_ic_tuning_outdoor[] = {//LM3632_eprom_drv_arr_outdoor_on[] = {
+	0x09, 0x01,
+	0x04, 0x07,
+	0x05, 0xCB,
 };
 
-static const struct i2c_rom_data backlight_ic_tuning_normal[] = {//LM3632_eprom_drv_arr_outdoor_off[] = {
-	{ 0x04, 0x05},
-	{ 0x05, 0xCC},
-	{ 0x09, 0x41},
+static u8 backlight_ic_tuning_normal[] = {//LM3632_eprom_drv_arr_outdoor_off[] = {
+	0x04, 0x05,
+	0x05, 0xCC,
+	0x09, 0x41,
 };
 /* init seq 1 */
 static const unsigned char SEQ_PASSWD1[] = {

@@ -53,7 +53,7 @@ There are 5 pre-defined types
 4. example:
 decon_board = <&node>;
 node: node {
-	compatible = "simple-bus"; <- add this when you need pinctrol to create platform_device with name 'node'
+	compatible = "simple-bus"; <- add this when you need pinctrl to create platform_device with name 'node'
 
 	pinctrl-names = "pin_off", "pin_on", "backlight_pin_only"; <- pinctrl position is here not in each subnode
 	pinctrl-0 = <&backlight_pin_off &lcd_pin_off>;
@@ -493,13 +493,21 @@ static int make_list(struct device *dev, struct list_head *lh, const char *name)
 	const char *type = NULL;
 	const char *subinfo = NULL;
 
-	np = of_parse_phandle(dev->of_node, DECON_BOARD_DTS_NAME, 0);
+	np = (dev && dev->of_node) ? dev->of_node : of_find_node_with_property(NULL, DECON_BOARD_DTS_NAME);
+	if (!np) {
+		bd_warn("%s property does not exist, so create dummy\n", DECON_BOARD_DTS_NAME);
+		action = kzalloc(sizeof(struct action_info), GFP_KERNEL);
+		list_add_tail(&action->node, lh);
+		return -EINVAL;
+	}
+
+	np = of_parse_phandle(np, DECON_BOARD_DTS_NAME, 0);
 	if (!np)
 		bd_warn("%s node does not exist, so create dummy\n", DECON_BOARD_DTS_NAME);
 
 	np = of_find_node_by_name(np, name);
 	if (!np) {
-		bd_warn("%s node does not exist, so create dummy\n", name);
+		bd_warn("%s node does not exist in %s, so create dummy\n", name, DECON_BOARD_DTS_NAME);
 		action = kzalloc(sizeof(struct action_info), GFP_KERNEL);
 		list_add_tail(&action->node, lh);
 		return -EINVAL;

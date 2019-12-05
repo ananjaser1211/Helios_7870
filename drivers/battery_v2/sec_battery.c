@@ -7538,7 +7538,10 @@ static int make_pd_list(struct sec_battery_info *battery)
 	bool voltage_flag;
 	int pd_list_index = 0;
 
-	pdo_power_limit = battery->base_charge_power * 1000;
+	pdo_power_limit = (battery->current_event & SEC_BAT_CURRENT_EVENT_HV_DISABLE) ?
+			SEC_INPUT_VOLTAGE_5V * battery->pdata->default_input_current * 1000:
+			battery->base_charge_power * 1000;
+
 	selected_pdo_num = 0;
 	for (i=1; i<= battery->pdic_info.sink_status.available_pdo_num; i++)
 	{

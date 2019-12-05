@@ -25,7 +25,7 @@ typedef int (*cmp_fn_t)(const void *key, const void *element);
  * Returns lexicographic order of the two compared function names
  */
 static int compare_policy_entries(const char *function_name,
-		const struct dsms_policy_entry *entry)
+				  const struct dsms_policy_entry *entry)
 {
 	return strncmp(function_name, entry->function_name, KSYM_NAME_LEN);
 }
@@ -43,10 +43,10 @@ static struct dsms_policy_entry *find_policy_entry(const char *function_name)
 
 	// see: https://github.com/torvalds/linux/blob/master/lib/bsearch.c
 	entry = bsearch(function_name,
-					dsms_policy,
-					dsms_policy_size(),
-					(sizeof *dsms_policy),
-					(cmp_fn_t) compare_policy_entries);
+			dsms_policy,
+			dsms_policy_size(),
+			(sizeof *dsms_policy),
+			(cmp_fn_t) compare_policy_entries);
 
 	return (struct dsms_policy_entry *)entry;
 }
@@ -60,53 +60,41 @@ int dsms_verify_access(const void *address)
 	char function_name[KSYM_NAME_LEN+1];
 	int index;
 
-#ifdef DSMS_DEBUG_WHITELIST
-	printk(DSMS_DEBUG_TAG "dsms_verify_access: "
-		"Caller function is %pS (%pF)", address, address);
-#endif
+	dsms_log_debug(WHITELIST, "dsms_verify_access: "
+		       "Caller function is %pS (%pF)", address, address);
 
 	if (!address) {
-#ifdef DSMS_DEBUG_ENABLE
-		printk(DSMS_DEBUG_TAG "DENY: invalid caller address.");
-#endif
+		dsms_log_write(LOG_ERROR, "DENY: invalid caller address.");
 		return DSMS_DENY;
 	}
-	
+
 	symname = kallsyms_lookup((unsigned long)address,
-					&symsize, &offset, &modname, function_name);
+				  &symsize, &offset, &modname, function_name);
 	if (!symname) {
-#ifdef DSMS_DEBUG_ENABLE
-		printk(DSMS_DEBUG_TAG "DENY: caller address not in kallsyms.");
-#endif
+		dsms_log_write(LOG_ERROR, "DENY: caller address not in kallsyms.");
 		return DSMS_DENY;
 	}
 
 	function_name[KSYM_NAME_LEN] = 0;
-#ifdef DSMS_DEBUG_WHITELIST
-	printk(DSMS_DEBUG_TAG "kallsyms caller modname = %s, function_name = '%s',"
-			" offset = 0x%lx", modname, function_name, offset);
-#endif
+	dsms_log_debug(WHITELIST, "kallsyms caller modname = %s, function_name = '%s',"
+		       " offset = 0x%lx", modname, function_name, offset);
 
 	if (modname != NULL) {
-#ifdef DSMS_DEBUG_ENABLE
-		printk(DSMS_DEBUG_TAG "DENY: function '%s' is "
-			"not a kernel symbol", function_name);
-#endif
+		dsms_log_write(LOG_ERROR, "DENY: function '%s' is "
+				   "not a kernel symbol", function_name);
 		return DSMS_DENY; // not a kernel symbol
 	}
-	
-#ifdef DSMS_WHITELIST_IGNORE_NAME_SUFFIXES_ENABLE
-	for (index = 0; index < KSYM_NAME_LEN; index++)
-		if ((function_name[index] == '.') || (function_name[index] == 0))
-			break;
-	function_name[index] = 0;
-#endif //DSMS_WHITELIST_IGNORE_NAME_SUFFIXES_ENABLE
+
+	if (should_ignore_whitelist_suffix()) {
+		for (index = 0; index < KSYM_NAME_LEN; index++)
+			if ((function_name[index] == '.') || (function_name[index] == 0))
+				break;
+		function_name[index] = 0;
+	}
 
 	if (find_policy_entry(function_name) == NULL) {
-#ifdef DSMS_DEBUG_ENABLE
-		printk(DSMS_DEBUG_TAG "DENY: function '%s': is "
-			"not allowed by policy", function_name);
-#endif
+		dsms_log_write(LOG_ERROR, "DENY: function '%s': is "
+			       "not allowed by policy", function_name);
 		return DSMS_DENY;
 	}
 

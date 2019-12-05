@@ -260,6 +260,12 @@ int mms_flash_fw(struct mms_ts_info *info, const u8 *fw_data,
 
 	//Read firmware file
 	fw_hdr = (struct mms_bin_hdr *)fw_data;
+	if (fw_hdr->section_num > MMS_FW_MAX_SECT_NUM) {
+		tsp_debug_err(true, &client->dev, "Failed over max section num \n");
+		nRet = -EINVAL;
+		goto err_alloc_img;
+	}
+
 	img = vzalloc(sizeof(*img) * fw_hdr->section_num);
 	if (!img) {
 		tsp_debug_err(true, &client->dev, "Failed to img allocate memory\n");

@@ -97,10 +97,11 @@ static ssize_t sec_fs_stat_show(struct f2fs_attr *a,
 	if (ret)
 		goto errout;
 
-	return snprintf(buf, PAGE_SIZE, "\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%llu\","
-			"\"%s\":\"%llu\",\"%s\":\"%u\",\"%s\":\"%u\"\n",
+	return snprintf(buf, PAGE_SIZE, "\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%u\","
+		"\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%u\",\"%s\":\"%u\"\n",
 		"F_BLOCKS", statbuf.f_blocks,
 		"F_BFREE", statbuf.f_bfree,
+		"F_SFREE", free_sections(sbi),
 		"F_FILES", statbuf.f_files,
 		"F_FFREE", statbuf.f_ffree,
 		"F_FUSED", ckpt->valid_inode_count,
@@ -108,8 +109,8 @@ static ssize_t sec_fs_stat_show(struct f2fs_attr *a,
 
 errout:
 	return snprintf(buf, PAGE_SIZE, "\"%s\":\"%d\",\"%s\":\"%d\",\"%s\":\"%d\","
-			"\"%s\":\"%d\",\"%s\":\"%d\",\"%s\":\"%d\"\n",
-		"F_BLOCKS", 0, "F_BFREE", 0, "F_FILES", 0,
+		"\"%s\":\"%d\",\"%s\":\"%d\",\"%s\":\"%d\",\"%s\":\"%d\"\n",
+		"F_BLOCKS", 0, "F_BFREE", 0, "F_SFREE", 0, "F_FILES", 0,
 		"F_FFREE", 0, "F_FUSED", 0, "F_NUSED", 0);
 }
 
@@ -219,11 +220,15 @@ static ssize_t f2fs_sbi_show(struct f2fs_attr *a,
 		"\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%llu\","
 		"\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%llu\","
 		"\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%llu\","
+		"\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%llu\","
 		"\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%llu\",\"%s\":\"%u\","
 		"\"%s\":\"%u\",\"%s\":\"%u\"\n",
-			"CP",		sbi->sec_stat.cp_cnt[0],
-			"CPBG",		sbi->sec_stat.cp_cnt[1],
-			"CPSYNC",	sbi->sec_stat.cp_cnt[2],
+			"CP",		sbi->sec_stat.cp_cnt[STAT_CP_ALL],
+			"CPBG",		sbi->sec_stat.cp_cnt[STAT_CP_BG],
+			"CPSYNC",	sbi->sec_stat.cp_cnt[STAT_CP_FSYNC],
+			"CPNONRE",	sbi->sec_stat.cpr_cnt[CP_NON_REGULAR],
+			"CPSBNEED",	sbi->sec_stat.cpr_cnt[CP_SB_NEED_CP],
+			"CPWPINO",	sbi->sec_stat.cpr_cnt[CP_WRONG_PINO],
 			"CP_MAX_INT",	sbi->sec_stat.cp_max_interval,
 			"LFSSEG",	sbi->sec_stat.alloc_seg_type[LFS],
 			"SSRSEG",	sbi->sec_stat.alloc_seg_type[SSR],
@@ -234,6 +239,7 @@ static ssize_t f2fs_sbi_show(struct f2fs_attr *a,
 			"FSYNC_MB",	sbi->sec_stat.fsync_dirty_pages >> 8,
 			"HOT_DATA",	sbi->sec_stat.hot_file_written_blocks >> 8,
 			"COLD_DATA",	sbi->sec_stat.cold_file_written_blocks >> 8,
+			"WARM_DATA",	sbi->sec_stat.warm_file_written_blocks >> 8,
 			"MAX_INMEM",	sbi->sec_stat.max_inmem_pages,
 			"DROP_INMEM",	sbi->sec_stat.drop_inmem_all,
 			"DROP_INMEMF",	sbi->sec_stat.drop_inmem_files,
@@ -256,6 +262,7 @@ static ssize_t __sbi_store(struct f2fs_attr *a,
 	unsigned long t;
 	unsigned int *ui;
 	ssize_t ret;
+	unsigned int i = 0;
 
 	ptr = __struct_ptr(sbi, a->struct_type);
 	if (!ptr)
@@ -309,9 +316,11 @@ out:
 			sbi->sec_stat.gc_ttime[FG_GC] = 0;
 		return count;
 	} else if (!strcmp(a->attr.name, "sec_io_stat")) {
-		sbi->sec_stat.cp_cnt[0] = 0;
-		sbi->sec_stat.cp_cnt[1] = 0;
-		sbi->sec_stat.cp_cnt[2] = 0;
+		sbi->sec_stat.cp_cnt[STAT_CP_ALL] = 0;
+		sbi->sec_stat.cp_cnt[STAT_CP_BG] = 0;
+		sbi->sec_stat.cp_cnt[STAT_CP_FSYNC] = 0;
+		for (i = 0; i < NR_CP_REASON; i++)
+			sbi->sec_stat.cpr_cnt[i] = 0;
 		sbi->sec_stat.cp_max_interval= 0;
 		sbi->sec_stat.alloc_seg_type[LFS] = 0;
 		sbi->sec_stat.alloc_seg_type[SSR] = 0;
@@ -322,6 +331,7 @@ out:
 		sbi->sec_stat.fsync_dirty_pages = 0;
 		sbi->sec_stat.hot_file_written_blocks = 0;
 		sbi->sec_stat.cold_file_written_blocks = 0;
+		sbi->sec_stat.warm_file_written_blocks = 0;
 		sbi->sec_stat.max_inmem_pages = 0;
 		sbi->sec_stat.drop_inmem_all = 0;
 		sbi->sec_stat.drop_inmem_files = 0;
@@ -532,6 +542,8 @@ F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info, idle_interval, interval_time[REQ_TIME]);
 F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info, discard_idle_interval,
 					interval_time[DISCARD_TIME]);
 F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info, gc_idle_interval, interval_time[GC_TIME]);
+F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info,
+		umount_discard_timeout, interval_time[UMOUNT_DISCARD_TIMEOUT]);
 F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info, iostat_enable, iostat_enable);
 F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info, readdir_ra, readdir_ra);
 F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info, gc_pin_file_thresh, gc_pin_file_threshold);
@@ -591,6 +603,7 @@ static struct attribute *f2fs_attrs[] = {
 	ATTR_LIST(idle_interval),
 	ATTR_LIST(discard_idle_interval),
 	ATTR_LIST(gc_idle_interval),
+	ATTR_LIST(umount_discard_timeout),
 	ATTR_LIST(iostat_enable),
 	ATTR_LIST(readdir_ra),
 	ATTR_LIST(gc_pin_file_thresh),

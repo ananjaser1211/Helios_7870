@@ -14339,6 +14339,8 @@ static inline void hdd_remove_pm_qos(void)
 }
 #endif
 
+extern int g_force_hang;
+extern int g_avoid_command;
 /**---------------------------------------------------------------------------
 
   \brief hdd_driver_init() - Core Driver Init Function
@@ -14357,6 +14359,10 @@ static int hdd_driver_init( void)
    v_CONTEXT_t pVosContext = NULL;
    int ret_status = 0;
    unsigned long rc;
+
+// reset HANG related flags
+   g_force_hang = 0;
+   g_avoid_command = 0;
 
 #ifdef WLAN_LOGGING_SOCK_SVC_ENABLE
    wlan_logging_sock_init_svc();

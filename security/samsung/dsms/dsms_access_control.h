@@ -11,7 +11,18 @@
 
 #include <linux/types.h>
 
-#define CALLER_FRAME	(0)
+#define CALLER_FRAME (0)
+
+#ifdef DSMS_WHITELIST_IGNORE_NAME_SUFFIXES_ENABLE
+#  define WHITELIST_IGNORE_SUFFIX (1)
+#else
+#  define WHITELIST_IGNORE_SUFFIX (0)
+#endif
+
+static inline char should_ignore_whitelist_suffix(void)
+{
+	return WHITELIST_IGNORE_SUFFIX;
+}
 
 struct dsms_policy_entry {
 	const char *file_path;

@@ -36,8 +36,6 @@
 #define LDI_LEN_CHIP_ID				5
 #define LDI_LEN_MTP					35
 #define LDI_LEN_HBM					31
-#define LDI_LEN_RDDPM				1
-#define LDI_LEN_RDDSM				1
 #define LDI_LEN_ESDERR				1
 #define LDI_LEN_MANUFACTURE_INFO	20
 
@@ -59,6 +57,51 @@
 #define LDI_GPARA_DATE		4	/* 0xA1 5th para */
 #define LDI_GPARA_HBM_ELVSS	23	/* 0xB5 24th para */
 #define LDI_GPARA_MANUFACTURE_INFO	1	/* C9h 2nd Para */
+
+struct bit_info {
+	unsigned int reg;
+	unsigned int len;
+	char **print;
+	unsigned int expect;
+	unsigned int invert;
+	unsigned int mask;
+	unsigned int result;
+};
+
+enum {
+	LDI_BIT_ENUM_05,	LDI_BIT_ENUM_RDNUMED = LDI_BIT_ENUM_05,
+	LDI_BIT_ENUM_0A,	LDI_BIT_ENUM_RDDPM = LDI_BIT_ENUM_0A,
+	LDI_BIT_ENUM_0E,	LDI_BIT_ENUM_RDDSM = LDI_BIT_ENUM_0E,
+	LDI_BIT_ENUM_EE,	LDI_BIT_ENUM_ESDERR = LDI_BIT_ENUM_EE,
+	LDI_BIT_ENUM_MAX
+};
+
+char *LDI_BIT_DESC_05[BITS_PER_BYTE] = {
+	[0 ... 6] = "number of corrupted packets",
+	[7] = "overflow on number of corrupted packets",
+};
+
+char *LDI_BIT_DESC_0A[BITS_PER_BYTE] = {
+	[2] = "Display is Off",
+	[7] = "Booster has a fault",
+};
+
+char *LDI_BIT_DESC_0E[BITS_PER_BYTE] = {
+	[0] = "Error on DSI",
+};
+
+char *LDI_BIT_DESC_EE[BITS_PER_BYTE] = {
+	[2] = "VLIN3 error",
+	[3] = "ELVDD error",
+	[6] = "VLIN1 error",
+};
+
+struct bit_info ldi_bit_info_list[LDI_BIT_ENUM_MAX] = {
+	[LDI_BIT_ENUM_05] = {0x05, 1, LDI_BIT_DESC_05, 0x00, },
+	[LDI_BIT_ENUM_0A] = {0x0A, 1, LDI_BIT_DESC_0A, 0x9E, .invert = (BIT(2) | BIT(7)), },
+	[LDI_BIT_ENUM_0E] = {0x0E, 1, LDI_BIT_DESC_0E, 0x80, },
+	[LDI_BIT_ENUM_EE] = {0xEE, 1, LDI_BIT_DESC_EE, 0x00, },
+};
 
 struct lcd_seq_info {
 	unsigned char	*cmd;

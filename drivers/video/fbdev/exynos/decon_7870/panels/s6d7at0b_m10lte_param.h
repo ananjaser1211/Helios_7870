@@ -13,11 +13,6 @@ struct lcd_seq_info {
 	unsigned int	sleep;
 };
 
-struct i2c_rom_data {
-	u8 addr;
-	u8 val;
-};
-
 static u8 LM3632_INIT[] = {
 	0x09, 0x41,
 	0x02, 0x50,

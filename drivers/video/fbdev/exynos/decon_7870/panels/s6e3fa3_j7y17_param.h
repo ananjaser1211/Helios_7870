@@ -39,8 +39,6 @@
 #define LDI_LEN_CHIP_ID		5
 #define LDI_LEN_MTP		35
 #define LDI_LEN_HBM		28
-#define LDI_LEN_RDDPM		1
-#define LDI_LEN_RDDSM		1
 #define LDI_LEN_ESDERR		1
 #define LDI_LEN_MANUFACTURE_INFO	20
 
@@ -220,11 +218,52 @@ static unsigned char SEQ_TSET_SETTING[] = {
 	0xB8,
 	0x19	/* (ex) 25 degree : 0x19 */
 };
-#ifdef CONFIG_DISPLAY_USE_INFO
 
-#define ERR_READ_REG 0xee
-#define ERR_RDNUMED_REG 0x05
-#define ERR_RDDSDR_REG 0x0f
+#if defined(CONFIG_DISPLAY_USE_INFO)
+struct bit_info {
+	unsigned int reg;
+	unsigned int len;
+	char **print;
+	unsigned int expect;
+	unsigned int invert;
+	unsigned int mask;
+	unsigned int result;
+};
+
+enum {
+	LDI_BIT_ENUM_05,	LDI_BIT_ENUM_RDNUMED = LDI_BIT_ENUM_05,
+	LDI_BIT_ENUM_0A,	LDI_BIT_ENUM_RDDPM = LDI_BIT_ENUM_0A,
+	LDI_BIT_ENUM_0F,	LDI_BIT_ENUM_RDDSDR = LDI_BIT_ENUM_0F,
+	LDI_BIT_ENUM_EE,	LDI_BIT_ENUM_ESDERR = LDI_BIT_ENUM_EE,
+	LDI_BIT_ENUM_MAX
+};
+
+char *LDI_BIT_DESC_05[BITS_PER_BYTE] = {
+	[0 ... 6] = "number of corrupted packets",
+	[7] = "overflow on number of corrupted packets",
+};
+
+char *LDI_BIT_DESC_0A[BITS_PER_BYTE] = {
+	[2] = "Display is Off",
+	[7] = "Booster has a fault",
+};
+
+char *LDI_BIT_DESC_0F[BITS_PER_BYTE] = {
+	[7] = "Register Loading Detection",
+};
+
+char *LDI_BIT_DESC_EE[BITS_PER_BYTE] = {
+	[2] = "VLIN3 error",
+	[3] = "ELVDD error",
+	[6] = "VLIN1 error",
+};
+
+struct bit_info ldi_bit_info_list[LDI_BIT_ENUM_MAX] = {
+	[LDI_BIT_ENUM_05] = {0x05, 1, LDI_BIT_DESC_05, 0x00, },
+	[LDI_BIT_ENUM_0A] = {0x0A, 1, LDI_BIT_DESC_0A, 0x9C, .invert = (BIT(2) | BIT(7)), },
+	[LDI_BIT_ENUM_0F] = {0x0F, 1, LDI_BIT_DESC_0F, 0xC0, .invert = (BIT(7)), },
+	[LDI_BIT_ENUM_EE] = {0xEE, 1, LDI_BIT_DESC_EE, 0xC0, },
+};
 
 /* Write COMMAND before read */
 static const unsigned char SEQ_ESD_MONITOR_ON[] = {

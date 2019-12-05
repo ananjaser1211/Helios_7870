@@ -37,8 +37,6 @@
 #define LDI_LEN_CHIP_ID		5
 #define LDI_LEN_MTP		35
 #define LDI_LEN_HBM		28
-#define LDI_LEN_RDDPM		1
-#define LDI_LEN_RDDSM		1
 #define LDI_LEN_ESDERR		1
 
 /* offset is position including addr, not only para */

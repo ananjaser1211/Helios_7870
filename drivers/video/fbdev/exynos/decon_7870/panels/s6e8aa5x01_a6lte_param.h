@@ -57,16 +57,60 @@
 #define LDI_GPARA_HBM_GAMMA	1	/* B4h 2nd Para: V255 RED Gamma */
 #define LDI_GPARA_MANUFACTURE_INFO	1	/* C9h 2nd Para */
 
-#define	LDI_REG_RDDPM		0x0A	/* Read Display Power Mode */
-#define	LDI_LEN_RDDPM		1
+struct bit_info {
+	unsigned int reg;
+	unsigned int len;
+	char **print;
+	unsigned int expect;
+	unsigned int invert;
+	unsigned int mask;
+	unsigned int result;
+};
 
-#define	LDI_REG_RDDSM		0x0E	/* Read Display Signal Mode */
-#define	LDI_LEN_RDDSM		1
+enum {
+	LDI_BIT_ENUM_05,	LDI_BIT_ENUM_RDNUMED = LDI_BIT_ENUM_05,
+	LDI_BIT_ENUM_0A,	LDI_BIT_ENUM_RDDPM = LDI_BIT_ENUM_0A,
+	LDI_BIT_ENUM_0E,	LDI_BIT_ENUM_RDDSM = LDI_BIT_ENUM_0E,
+	LDI_BIT_ENUM_0F,	LDI_BIT_ENUM_RDDSDR = LDI_BIT_ENUM_0F,
+	LDI_BIT_ENUM_EE,	LDI_BIT_ENUM_ESDERR = LDI_BIT_ENUM_EE,
+	LDI_BIT_ENUM_MAX
+};
 
-#ifdef CONFIG_DISPLAY_USE_INFO
-#define LDI_REG_RDNUMED		0x05		/* DPUI_KEY_PNDSIE: Read Number of the Errors on DSI */
-#define LDI_LEN_RDNUMED		1
-#define LDI_PNDSIE_MASK		(GENMASK(6, 0))
+char *LDI_BIT_DESC_05[BITS_PER_BYTE] = {
+	[0 ... 6] = "number of corrupted packets",
+	[7] = "overflow on number of corrupted packets",
+};
+
+char *LDI_BIT_DESC_0A[BITS_PER_BYTE] = {
+	[2] = "Display is Off",
+	[7] = "Booster has a fault",
+};
+
+char *LDI_BIT_DESC_0E[BITS_PER_BYTE] = {
+	[0] = "Error on DSI",
+};
+
+char *LDI_BIT_DESC_0F[BITS_PER_BYTE] = {
+	[7] = "Register Loading Detection",
+};
+
+char *LDI_BIT_DESC_EE[BITS_PER_BYTE] = {
+	[2] = "VLIN3 error",
+	[3] = "ELVDD error",
+	[6] = "VLIN1 error",
+};
+
+struct bit_info ldi_bit_info_list[LDI_BIT_ENUM_MAX] = {
+	[LDI_BIT_ENUM_05] = {0x05, 1, LDI_BIT_DESC_05, 0x00, },
+	[LDI_BIT_ENUM_0A] = {0x0A, 1, LDI_BIT_DESC_0A, 0x9C, .invert = (BIT(2) | BIT(7)), },
+	[LDI_BIT_ENUM_0E] = {0x0E, 1, LDI_BIT_DESC_0E, 0x00, },
+	[LDI_BIT_ENUM_0F] = {0x0F, 1, LDI_BIT_DESC_0F, 0x80, .invert = (BIT(7)), },
+	[LDI_BIT_ENUM_EE] = {0xEE, 1, LDI_BIT_DESC_EE, 0x00, },
+};
+
+#if defined(CONFIG_DISPLAY_USE_INFO)
+#define LDI_LEN_RDNUMED		1		/* DPUI_KEY_PNDSIE: Read Number of the Errors on DSI */
+#define LDI_PNDSIE_MASK		(GENMASK(7, 0))
 
 /*
  * ESD_ERROR[6] = VLIN1 error is occurred by ESD = 0x40
@@ -77,15 +121,13 @@
  * ESD_ERROR[1] = HS CLK lane error is occurred by ESD
  * ESD_ERROR[0] = MIPI DSI error is occurred by ESD
  */
-#define LDI_REG_ESDERR		0xEE		/* DPUI_KEY_PNELVDE, DPUI_KEY_PNVLI1E, DPUI_KEY_PNVLO3E, DPUI_KEY_PNESDE */
-#define LDI_LEN_ESDERR		1
+#define LDI_LEN_ESDERR		1		/* DPUI_KEY_PNELVDE, DPUI_KEY_PNVLI1E, DPUI_KEY_PNVLO3E, DPUI_KEY_PNESDE */
 #define LDI_PNELVDE_MASK	(BIT(3))	/* ELVDD error */
 #define LDI_PNVLI1E_MASK	(BIT(6))	/* VLIN1 error */
 #define LDI_PNVLO3E_MASK	(BIT(2))	/* VLIN3 error */
 #define LDI_PNESDE_MASK		(BIT(2) | BIT(3) | BIT(6))
 
-#define LDI_REG_RDDSDR		0x0F		/* DPUI_KEY_PNSDRE: Read Display Self-Diagnostic Result */
-#define LDI_LEN_RDDSDR		1
+#define LDI_LEN_RDDSDR		1		/* DPUI_KEY_PNSDRE: Read Display Self-Diagnostic Result */
 #define LDI_PNSDRE_MASK		(BIT(7))	/* D7: REG_DET: Register Loading Detection */
 
 static unsigned char SEQ_ESD_MONITOR_ON[] = {

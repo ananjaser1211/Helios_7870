@@ -32,22 +32,30 @@ __XX(EARLY_EVENT_BLANK)	\
 __XX(R_EARLY_EVENT_BLANK)	\
 __XX(EVENT_FB_MAX)	\
 __XX(EVENT_DOZE)	\
+__XX(EARLY_EVENT_DOZE)	\
+__XX(EVENT_FRAME)	\
 
 #define STATE_LIST	\
-__XX(BLANK_UNBLANK)	\
-__XX(BLANK_NORMAL)	\
-__XX(BLANK_VSYNC_SUSPEND)	\
-__XX(BLANK_HSYNC_SUSPEND)	\
-__XX(BLANK_POWERDOWN)	\
+__XX(UNBLANK)	\
+__XX(NORMAL)	\
+__XX(VSYNC_SUSPEND)	\
+__XX(HSYNC_SUSPEND)	\
+__XX(POWERDOWN)	\
 
 #define __XX(a)	DECON_##a,
 enum {	EVENT_LIST	EVENT_MAX	};
 enum {	STATE_LIST	STATE_MAX	};
 #undef __XX
 
-int decon_register_notifier(struct notifier_block *nb);
-int decon_unregister_notifier(struct notifier_block *nb);
-int decon_notifier_call_chain(unsigned long val, void *v);
+#define IS_EARLY(event)		(event == FB_EARLY_EVENT_BLANK || event == DECON_EARLY_EVENT_DOZE)
+#define IS_AFTER(event)		(event == FB_EVENT_BLANK || event == DECON_EVENT_DOZE)
+
+extern struct notifier_block decon_nb_priority_max;
+extern struct notifier_block decon_nb_priority_min;
+
+extern int decon_register_notifier(struct notifier_block *nb);
+extern int decon_unregister_notifier(struct notifier_block *nb);
+extern int decon_notifier_call_chain(unsigned long val, void *v);
 
 #endif
 

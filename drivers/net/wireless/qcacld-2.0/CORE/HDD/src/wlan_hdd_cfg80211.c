@@ -8104,6 +8104,14 @@ static int __wlan_hdd_cfg80211_do_acs(struct wiphy *wiphy,
 		hddLog(LOGE, FL("HDD context is not valid"));
 		return status;
 	}
+
+	if (!((adapter->device_mode == WLAN_HDD_SOFTAP) ||
+	    (adapter->device_mode == WLAN_HDD_P2P_GO))) {
+		hddLog(LOGE, FL("Invalid device mode %d"),
+		       adapter->device_mode);
+		return -EINVAL;
+	}
+
 	sap_config = &adapter->sessionCtx.ap.sapConfig;
 	vos_mem_zero(&sap_config->acs_cfg, sizeof(struct sap_acs_cfg));
 
@@ -19554,30 +19562,25 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy,
 
     sinfo->tx_bytes = pAdapter->stats.tx_bytes;
     sinfo->filled |= STATION_INFO_TX_BYTES;
-#ifdef CONFIG_SEC
-    sinfo->tx_packets = pAdapter->stats.tx_packets;
-#else
+
     sinfo->tx_packets =
        pAdapter->hdd_stats.summary_stat.tx_frm_cnt[0] +
        pAdapter->hdd_stats.summary_stat.tx_frm_cnt[1] +
        pAdapter->hdd_stats.summary_stat.tx_frm_cnt[2] +
        pAdapter->hdd_stats.summary_stat.tx_frm_cnt[3];
-#endif /* CONFIG_SEC */
-	
+
     sinfo->tx_retries =
        pAdapter->hdd_stats.summary_stat.retry_cnt[0] +
        pAdapter->hdd_stats.summary_stat.retry_cnt[1] +
        pAdapter->hdd_stats.summary_stat.retry_cnt[2] +
        pAdapter->hdd_stats.summary_stat.retry_cnt[3];
-#ifdef CONFIG_SEC
-    sinfo->tx_failed = pAdapter->stats.tx_errors;
-#else
+
     sinfo->tx_failed =
        pAdapter->hdd_stats.summary_stat.fail_cnt[0] +
        pAdapter->hdd_stats.summary_stat.fail_cnt[1] +
        pAdapter->hdd_stats.summary_stat.fail_cnt[2] +
        pAdapter->hdd_stats.summary_stat.fail_cnt[3];
-#endif /* CONFIG_SEC */
+
     sinfo->filled |=
        STATION_INFO_TX_PACKETS |
        STATION_INFO_TX_RETRIES |
@@ -19597,6 +19600,8 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy,
                  &pHddStaCtx->conn_info.txrate,
                  sizeof(pHddStaCtx->conn_info.txrate));
 
+    hddLog(VOS_TRACE_LEVEL_INFO, "%s: tx_packets %d, tx_retries %d, tx_failed %d",
+                                   __func__, sinfo->tx_packets, sinfo->tx_retries, sinfo->tx_failed);
     MTRACE(vos_trace(VOS_MODULE_ID_HDD,
                      TRACE_CODE_HDD_CFG80211_GET_STA,
                      pAdapter->sessionId, maxRate));
@@ -23421,7 +23426,9 @@ wlan_hdd_cfg80211_extscan_signif_wifi_change_results_ind(
         for (j = 0; j < ap_info->numOfRssi; j++)
             hddLog(LOG1, "Rssi %d", *rssi++);
 
-        ap_info += ap_info->numOfRssi * sizeof(*rssi);
+        ap_info = (tSirWifiSignificantChange *)((char *)ap_info +
+                    ap_info->numOfRssi * sizeof(*rssi) +
+                    sizeof(*ap_info));
     }
 
     if (nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_REQUEST_ID,
@@ -23464,7 +23471,9 @@ wlan_hdd_cfg80211_extscan_signif_wifi_change_results_ind(
 
               nla_nest_end(skb, ap);
 
-            ap_info += ap_info->numOfRssi * sizeof(*rssi);
+            ap_info = (tSirWifiSignificantChange *)((char *)ap_info +
+                      ap_info->numOfRssi * sizeof(*rssi) +
+                      sizeof(*ap_info));
         }
         nla_nest_end(skb, aps);
 

@@ -1070,8 +1070,6 @@ int decon_enable(struct decon_device *decon)
 	}
 #endif
 
-	if (state != DECON_STATE_LPD_EXIT_REQ)
-		decon_abd_enable(decon, 1);
 err:
 	exynos_ss_printk("%s:state %d: active %d:-\n", __func__,
 				decon->state, pm_runtime_active(decon->dev));
@@ -1101,10 +1099,6 @@ int decon_disable(struct decon_device *decon)
 	/* Clear TUI state: Case of LCD off without TUI exit */
 	if (decon->out_type == DECON_OUT_TUI)
 		decon_tui_protection(decon, false);
-
-	if (decon->state != DECON_STATE_LPD_ENT_REQ)
-		decon_abd_enable(decon, 0);
-
 
 	if (decon->state != DECON_STATE_LPD_ENT_REQ)
 		mutex_lock(&decon->output_lock);
@@ -2498,7 +2492,7 @@ static void decon_update_regs(struct decon_device *decon, struct decon_reg_data 
 
 		if (regs->dma_buf_data[i][0].fence) {
 			if (decon_fence_wait(regs->dma_buf_data[i][0].fence) < 0)
-				decon_abd_save_log_fto(&decon->abd, regs->dma_buf_data[i][0].fence);
+				decon_abd_save_fto(&decon->abd, regs->dma_buf_data[i][0].fence);
 		}
 	}
 
@@ -2829,7 +2823,6 @@ int decon_doze_enable(struct decon_device *decon)
 {
 	struct decon_psr_info psr;
 	struct decon_init_param p;
-	int state = decon->state;
 	int ret = 0;
 	struct dsim_device *dsim = container_of(decon->output_sd, struct dsim_device, sd);
 
@@ -2950,9 +2943,6 @@ int decon_doze_enable(struct decon_device *decon)
 	decon->doze_state = DOZE_STATE_DOZE;
 	call_panel_ops(dsim, displayon, dsim);
 
-	if (state != DECON_STATE_LPD_ENT_REQ)
-		decon_abd_enable(decon, 1);
-
 err:
 	exynos_ss_printk("%s:state %d: active %d:-\n", __func__,
 				decon->state, pm_runtime_active(decon->dev));
@@ -2970,8 +2960,6 @@ int decon_doze_suspend(struct decon_device *decon)
 	decon_info("%s: -- %d, %d\n", __func__, decon->state, decon->doze_state);
 	exynos_ss_printk("disable decon-%s, state(%d) cnt %d\n", "int",
 				decon->state, pm_runtime_active(decon->dev));
-
-	decon_abd_enable(decon, 0);
 
 	if (decon->state != DECON_STATE_LPD_ENT_REQ)
 		mutex_lock(&decon->output_lock);
@@ -3066,11 +3054,6 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 	struct decon_win_config_data win_data = { 0 };
 	int ret = 0;
 	u32 crtc;
-	struct fb_event v;
-	int blank = 0;
-
-	v.info = info;
-	v.data = &blank;
 
 	/* enable lpd only when system is ready to interact with driver */
 	decon_lpd_enable();
@@ -3163,6 +3146,13 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 		break;
 
 #ifdef CONFIG_LCD_DOZE_MODE
+{
+	struct fb_event v = {0, };
+	int blank = 0;
+
+	v.info = info;
+	v.data = &blank;
+
 	case S3CFB_POWER_MODE:
 		if (get_user(decon->pwr_mode, (int __user *)arg)) {
 			ret = -EFAULT;
@@ -3170,23 +3160,23 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 		}
 		switch (decon->pwr_mode) {
 		case DECON_POWER_MODE_DOZE:
-			decon_info("%s: DECON_POWER_MODE_DOZE\n", __func__);
+			blank = FB_BLANK_UNBLANK;
+			decon_notifier_call_chain(DECON_EARLY_EVENT_DOZE, &v);
 			ret = decon_doze_enable(decon);
 			if (ret) {
 				decon_err("%s: failed to decon_doze_enable: %d\n", __func__, ret);
 				ret = 0;
 			}
-			blank = FB_BLANK_UNBLANK;
 			decon_notifier_call_chain(DECON_EVENT_DOZE, &v);
 			break;
 		case DECON_POWER_MODE_DOZE_SUSPEND:
-			decon_info("%s: DECON_POWER_MODE_DOZE_SUSPEND\n", __func__);
+			blank = FB_BLANK_POWERDOWN;
+			decon_notifier_call_chain(DECON_EARLY_EVENT_DOZE, &v);
 			ret = decon_doze_suspend(decon);
 			if (ret) {
 				decon_err("%s: failed to decon_doze_suspend: %d\n", __func__, ret);
 				ret = 0;
 			}
-			blank = FB_BLANK_POWERDOWN;
 			decon_notifier_call_chain(DECON_EVENT_DOZE, &v);
 			break;
 		default:
@@ -3195,6 +3185,7 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 			break;
 		}
 		break;
+}
 #endif
 
 	default:
@@ -4478,18 +4469,6 @@ static int decon_probe(struct platform_device *pdev)
 	call_panel_ops(dsim, displayon, dsim);
 
 decon_init_done:
-	decon->ignore_vsync = false;
-
-	if (!lcdtype) {
-		decon_err("%s: decon does not found panel\n", __func__);
-		decon->ignore_vsync = true;
-	} else {
-		decon_abd_register(decon);
-		decon_abd_enable(decon, 1);
-	}
-
-	decon_info("%s: panel id: %x\n", __func__, lcdtype);
-
 #ifdef CONFIG_DECON_MIPI_DSI_PKTGO
 	ret = v4l2_subdev_call(decon->output_sd, core, ioctl,
 				DSIM_IOC_PKT_GO_ENABLE, NULL);

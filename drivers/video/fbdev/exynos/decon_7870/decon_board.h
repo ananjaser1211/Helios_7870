@@ -6,8 +6,8 @@
  * published by the Free Software Foundation.
  */
 
-#ifndef __DECON_DISPLAY_BOARD_HEADER__
-#define __DECON_DISPLAY_BOARD_HEADER__
+#ifndef __DECON_BOARD_H__
+#define __DECON_BOARD_H__
 
 #include <linux/device.h>
 
@@ -20,3 +20,4 @@ int of_gpio_set_value(const char *gpioname, int value);
 int of_get_gpio_with_name(const char *gpioname);
 
 #endif
+

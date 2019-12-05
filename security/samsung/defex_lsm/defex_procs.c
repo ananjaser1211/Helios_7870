@@ -407,12 +407,33 @@ out:
 }
 #endif /* DEFEX_SAFEPLACE_ENABLE */
 
+#ifdef DEFEX_DEPENDING_ON_OEMUNLOCK
+static bool boot_state_unlocked __ro_after_init;
+static int __init verifiedboot_state_setup(char *str)
+{
+	static const char unlocked[] = "orange";
+
+	boot_state_unlocked = !strncmp(str, unlocked, sizeof(unlocked));
+
+	if(boot_state_unlocked)
+		pr_crit("Device is unlocked and DEFEX will be disabled.");
+
+	return 1;
+}
+__setup("androidboot.verifiedbootstate=", verifiedboot_state_setup);
+#endif /* DEFEX_DEPENDING_ON_OEMUNLOCK */
+
 /* Main decision function */
 int task_defex_enforce(struct task_struct *p, struct file *f, int syscall)
 {
 	int ret = DEFEX_ALLOW;
 	int feature_flag;
 	const struct local_syscall_struct *item;
+
+#ifdef DEFEX_DEPENDING_ON_OEMUNLOCK
+	if(boot_state_unlocked)
+		return ret;
+#endif /* DEFEX_DEPENDING_ON_OEMUNLOCK */
 
 	if (!p || p->pid == 1 || !p->mm)
 		return ret;

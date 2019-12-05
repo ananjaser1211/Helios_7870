@@ -61,6 +61,11 @@ extern struct mipi_dsim_lcd_driver td4101_mipi_lcd_driver;
 #endif
 
 extern int dsim_panel_ops_init(struct dsim_device *dsim);
-extern int register_lcd_driver(struct mipi_dsim_lcd_driver *drv);
+extern int replace_lcd_driver(struct mipi_dsim_lcd_driver *drv);
+
+#if defined(CONFIG_EXYNOS_DECON_MDNIE_LITE)
+#define CONFIG_EXYNOS_DECON_MDNIE	CONFIG_EXYNOS_DECON_MDNIE_LITE
+#endif
 
 #endif
+

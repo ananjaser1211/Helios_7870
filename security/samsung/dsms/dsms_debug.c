@@ -14,16 +14,45 @@
 
 #include "dsms_debug.h"
 
-#ifdef DSMS_DEBUG_ENABLE
+#define LOG_LINE_MAX 1024
 
-#define MAX_ALLOWED_DETAIL_LENGTH 1024
-
-void dsms_debug_message(const char *feature_code, const char *detail,
-	int64_t value)
+void dsms_log_write(int loglevel, const char* format, ...)
 {
-	size_t len = strnlen(detail, MAX_ALLOWED_DETAIL_LENGTH);
-	printk(DSMS_DEBUG_TAG "{'%s', '%s' (%zu bytes), %lld}", feature_code,
-		detail, len, value);
+	va_list ap;
+	char log[LOG_LINE_MAX];
+
+	va_start(ap, format);
+	vsnprintf(log, sizeof(log), format, ap);
+
+	switch (loglevel) {
+	case LOG_ERROR:
+		pr_err(DSMS_TAG "%s", log);
+		break;
+	default: /* LOG_INFO or others */
+		pr_info(DSMS_TAG "%s", log);
+		break;
+	}
+	va_end(ap);
 }
 
-#endif //DSMS_DEBUG_ENABLE
+#ifdef DSMS_DEBUG_ENABLE
+void dsms_log_debug(int logtype, const char* format, ...)
+{
+	va_list ap;
+	char log[LOG_LINE_MAX];
+
+	if (logtype == WHITELIST) {
+		if (!debug_whitelist())
+			return;
+	}
+	else if (logtype == TRACE) {
+		if (!debug_trace_dsms_calls())
+			return;
+	}
+
+	va_start(ap, format);
+	vsnprintf(log, sizeof(log), format, ap);
+	pr_debug(DSMS_DEBUG_TAG "%s", log);
+	va_end(ap);
+}
+#endif /* DSMS_DEBUG_ENABLE */

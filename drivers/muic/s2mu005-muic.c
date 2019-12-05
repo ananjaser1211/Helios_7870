@@ -1133,7 +1133,6 @@ static void s2mu005_muic_handle_attach(struct s2mu005_muic_data *muic_data,
 	case ATTACHED_DEV_JIG_UART_ON_MUIC:
 	case ATTACHED_DEV_FACTORY_UART_MUIC:
 #if defined(CONFIG_TYPEB_WATERPROOF_MODEL) && !defined(CONFIG_SEC_FACTORY)
-	case ATTACHED_DEV_JIG_UART_ON_VB_MUIC:
 	case ATTACHED_DEV_UNDEFINED_RANGE_MUIC:
 #endif
 	case ATTACHED_DEV_TIMEOUT_OPEN_MUIC:
@@ -1206,7 +1205,6 @@ static void s2mu005_muic_handle_attach(struct s2mu005_muic_data *muic_data,
 			muic_data->jigonb_enable = true;
 		ret = attach_jig_uart_boot_on_off(muic_data);
 		break;
-	case ATTACHED_DEV_JIG_UART_ON_VB_MUIC:
 	case ATTACHED_DEV_JIG_UART_ON_MUIC:
 		if (pdata->is_new_factory)
 			muic_data->jigonb_enable = false;
@@ -1452,21 +1450,10 @@ static void s2mu005_muic_detect_dev(struct s2mu005_muic_data *muic_data)
 		}
 		break;
 	case DEV_TYPE2_JIG_UART_ON:
-#if defined(CONFIG_TYPEB_WATERPROOF_MODEL) && !defined(CONFIG_SEC_FACTORY)
-		if (vbvolt) {
-			new_dev = ATTACHED_DEV_JIG_UART_ON_VB_MUIC;
-			pr_info("%s:%s: JIG_UART_ON_VB DETECTED\n", MUIC_DEV_NAME, __func__);
-		}
-		else {
-			new_dev = ATTACHED_DEV_JIG_UART_ON_MUIC;
-			pr_info("%s:%s: JIG_UART_ON DETECTED\n", MUIC_DEV_NAME, __func__);
-		}
-#else
 		if (new_dev != ATTACHED_DEV_JIG_UART_ON_MUIC) {
 			new_dev = ATTACHED_DEV_JIG_UART_ON_MUIC;
 			pr_info("%s:%s: JIG_UART_ON DETECTED\n", MUIC_DEV_NAME, __func__);
 		}
-#endif
 		break;
 	case DEV_TYPE2_JIG_USB_OFF:
 		if (!vbvolt)
@@ -1491,18 +1478,18 @@ static void s2mu005_muic_detect_dev(struct s2mu005_muic_data *muic_data)
 
 	switch (val3) {
 	case DEV_TYPE3_MHL:
-#if defined(CONFIG_TYPEB_WATERPROOF_MODEL) && !defined(CONFIG_SEC_FACTORY)
-		if (vbvolt) {
-			new_dev = ATTACHED_DEV_UNDEFINED_RANGE_MUIC;
-			pr_info("%s:%s: UNDEFINED RANGE DETECTED\n", MUIC_DEV_NAME, __func__);
-		}
-#else
-		pr_info("%s:%s: MHL DETECTED\n", MUIC_DEV_NAME, __func__);
-		if (muic_data->pdata->is_factory_uart)
+		if (muic_data->pdata->is_factory_uart) {
 			new_dev = ATTACHED_DEV_FACTORY_UART_MUIC;
 			pr_info("%s:%s: FACTORY_UART DETECTED\n", MUIC_DEV_NAME, __func__);
+			break;
+			}
+#if defined(CONFIG_TYPEB_WATERPROOF_MODEL) && !defined(CONFIG_SEC_FACTORY)
+		else if (vbvolt) {
+			new_dev = ATTACHED_DEV_UNDEFINED_RANGE_MUIC;
+			pr_info("%s:%s: UNDEFINED RANGE DETECTED\n", MUIC_DEV_NAME, __func__);
+			break;
+		}
 #endif			
-		break;
 	default:
 		break;
 	}
@@ -1629,21 +1616,10 @@ static void s2mu005_muic_detect_dev(struct s2mu005_muic_data *muic_data)
 			}
 			break;
 		case ADC_JIG_UART_ON:
-#if defined(CONFIG_TYPEB_WATERPROOF_MODEL) && !defined(CONFIG_SEC_FACTORY)
-			if (vbvolt) {
-				new_dev = ATTACHED_DEV_JIG_UART_ON_VB_MUIC;
-				pr_info("%s:%s: ADC JIG_UART_ON_VB DETECTED\n", MUIC_DEV_NAME, __func__);
-			}
-			else {
-				new_dev = ATTACHED_DEV_JIG_UART_ON_MUIC;
-				pr_info("%s:%s: ADC JIG_UART_ON DETECTED\n", MUIC_DEV_NAME, __func__);
-			}
-#else
 			if (new_dev != ATTACHED_DEV_JIG_UART_ON_MUIC) {
 				new_dev = ATTACHED_DEV_JIG_UART_ON_MUIC;
 				pr_info("%s:%s: ADC JIG_UART_ON DETECTED\n", MUIC_DEV_NAME, __func__);
 			}
-#endif
 			break;
 		case ADC_DESKDOCK:
 			if (vbvolt) {

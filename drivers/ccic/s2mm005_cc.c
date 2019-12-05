@@ -788,6 +788,8 @@ void process_cc_attach(void * data,u8 *plug_attach_done)
 			break;
 		}
 	} else {
+		usbpd_data->dp_is_connect = 0;
+		usbpd_data->dp_hs_connect = 0;
 		*plug_attach_done = 0;
 		usbpd_data->plug_rprd_sel = 0;
 		usbpd_data->is_dr_swap = 0;

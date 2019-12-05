@@ -11,32 +11,37 @@
 #include <linux/of_device.h>
 #include <linux/ctype.h>
 #include <video/mipi_display.h>
+
+#include "../decon.h"
+#include "../decon_board.h"
+#include "../decon_notify.h"
 #include "../dsim.h"
 #include "dsim_panel.h"
-#include "../decon.h"
-#include "../decon_notify.h"
-#include "../decon_board.h"
 
 #include "s6e3aa2_ams474kf09_param.h"
 
-#if defined(CONFIG_EXYNOS_DECON_MDNIE_LITE)
+#if defined(CONFIG_EXYNOS_DECON_MDNIE)
 #include "mdnie.h"
 #include "mdnie_lite_table_a3y17.h"
 #endif
 
-#define IS_ALPM_SUPPORTED(lcd_id) (lcd_id >= 0x02 ? 1 : 0)
-
-#ifdef CONFIG_DISPLAY_USE_INFO
+#if defined(CONFIG_DISPLAY_USE_INFO)
 #include "dpui.h"
 
 #define	DPUI_VENDOR_NAME	"SDC"
 #define DPUI_MODEL_NAME		"AMS474MM01"
 #endif
 
+#define PANEL_STATE_SUSPENED	0
+#define PANEL_STATE_RESUMED	1
+#define PANEL_STATE_SUSPENDING	2
+
+#define IS_ALPM_SUPPORTED(lcd_id) (lcd_id >= 0x02 ? 1 : 0)
+
 #define DSI_WRITE(cmd, size)		do {				\
 	ret = dsim_write_hl_data(lcd, cmd, size);			\
 	if (ret < 0)							\
-		dev_err(&lcd->ld->dev, "%s: failed to write %s\n", __func__, #cmd);	\
+		dev_info(&lcd->ld->dev, "%s: failed to write %s\n", __func__, #cmd);	\
 } while (0)
 
 #ifdef SMART_DIMMING_DEBUG
@@ -136,11 +141,11 @@ struct lcd_info {
 
 	struct notifier_block		fb_notifier;
 
-#ifdef CONFIG_DISPLAY_USE_INFO
+#if defined(CONFIG_DISPLAY_USE_INFO)
 	struct notifier_block		dpui_notif;
 #endif
 
-#ifdef CONFIG_LCD_DOZE_MODE
+#if defined(CONFIG_LCD_DOZE_MODE)
 	unsigned int			alpm;
 	unsigned int			current_alpm;
 
@@ -181,7 +186,7 @@ try_write:
 		if (--retry)
 			goto try_write;
 		else
-			dev_err(&lcd->ld->dev, "%s: fail. %02x, ret: %d\n", __func__, cmd[0], ret);
+			dev_info(&lcd->ld->dev, "%s: fail. %02x, ret: %d\n", __func__, cmd[0], ret);
 	}
 
 	return ret;
@@ -197,12 +202,13 @@ static int dsim_read_hl_data(struct lcd_info *lcd, u8 addr, u32 size, u8 *buf)
 
 try_read:
 	rx_size = dsim_read_data(lcd->dsim, MIPI_DSI_DCS_READ, (u32)addr, size, buf);
-	dev_info(&lcd->ld->dev, "%s: %02x, %d, %d\n", __func__, addr, size, rx_size);
+	dev_info(&lcd->ld->dev, "%s: %2d(%2d), %02x, %*ph%s\n", __func__, size, rx_size, addr,
+		min_t(u32, min_t(u32, size, rx_size), 5), buf, (rx_size > 5) ? "..." : "");
 	if (rx_size != size) {
 		if (--retry)
 			goto try_read;
 		else {
-			dev_err(&lcd->ld->dev, "%s: fail. %02x, %d\n", __func__, addr, rx_size);
+			dev_info(&lcd->ld->dev, "%s: fail. %02x, %d(%d)\n", __func__, addr, size, rx_size);
 			ret = -EPERM;
 		}
 	}
@@ -210,7 +216,25 @@ try_read:
 	return ret;
 }
 
-#if defined(CONFIG_EXYNOS_DECON_MDNIE_LITE) || defined(CONFIG_LCD_DOZE_MODE)
+static int dsim_read_info(struct lcd_info *lcd, u8 reg, u32 len, u8 *buf)
+{
+	int ret = 0, i;
+
+	ret = dsim_read_hl_data(lcd, reg, len, buf);
+	if (ret < 0) {
+		dev_info(&lcd->ld->dev, "%s: fail. %02x, ret: %d\n", __func__, reg, ret);
+		goto exit;
+	}
+
+	smtd_dbg("%s: %02xh\n", __func__, reg);
+	for (i = 0; i < len; i++)
+		smtd_dbg("%02dth value is %02x, %3d\n", i + 1, buf[i], buf[i]);
+
+exit:
+	return ret;
+}
+
+#if defined(CONFIG_EXYNOS_DECON_MDNIE) || defined(CONFIG_LCD_DOZE_MODE)
 static int dsim_write_set(struct lcd_info *lcd, struct lcd_seq_info *seq, u32 num)
 {
 	int ret = 0, i;
@@ -353,7 +377,7 @@ static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 
 	mutex_lock(&lcd->lock);
 
-#ifdef CONFIG_LCD_DOZE_MODE
+#if defined(CONFIG_LCD_DOZE_MODE)
 	if (IS_DOZE(lcd->dsim->doze_state)) {
 		dev_info(&lcd->ld->dev, "%s: brightness: %d, doze_state: %d, %d, %d\n", __func__, lcd->bd->props.brightness, lcd->dsim->doze_state, lcd->current_alpm, lcd->alpm);
 		goto exit;
@@ -371,7 +395,7 @@ static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 
 	ret = low_level_set_brightness(lcd, force);
 	if (ret < 0)
-		dev_err(&lcd->ld->dev, "%s: failed to set brightness : %d\n", __func__, index_brightness_table[lcd->bl]);
+		dev_info(&lcd->ld->dev, "%s: failed to set brightness : %d\n", __func__, index_brightness_table[lcd->bl]);
 
 	lcd->current_bl = lcd->bl;
 
@@ -397,7 +421,7 @@ static int panel_set_brightness(struct backlight_device *bd)
 	if (lcd->state == PANEL_STATE_RESUMED) {
 		ret = dsim_panel_set_brightness(lcd, 0);
 		if (ret < 0)
-			dev_err(&lcd->ld->dev, "%s: failed to set brightness\n", __func__);
+			dev_info(&lcd->ld->dev, "%s: failed to set brightness\n", __func__);
 	}
 
 	return ret;
@@ -583,24 +607,6 @@ err_alloc_gamma_table:
 	return ret;
 }
 
-static int s6e3aa2_read_info(struct lcd_info *lcd, u8 reg, u32 len, u8 *buf)
-{
-	int ret = 0, i;
-
-	ret = dsim_read_hl_data(lcd, reg, len, buf);
-	if (ret < 0) {
-		dev_err(&lcd->ld->dev, "%s: fail. %02x, ret: %d\n", __func__, reg, ret);
-		goto exit;
-	}
-
-	smtd_dbg("%s: %02xh\n", __func__, reg);
-	for (i = 0; i < len; i++)
-		smtd_dbg("%02dth value is %02x, %3d\n", i + 1, buf[i], buf[i]);
-
-exit:
-	return ret;
-}
-
 static int s6e3aa2_read_id(struct lcd_info *lcd)
 {
 	struct panel_private *priv = &lcd->dsim->priv;
@@ -609,10 +615,10 @@ static int s6e3aa2_read_id(struct lcd_info *lcd)
 	lcd->id_info.value = 0;
 	priv->lcdconnected = lcd->connected = lcdtype ? 1 : 0;
 
-	ret = s6e3aa2_read_info(lcd, LDI_REG_ID, LDI_LEN_ID, lcd->id_info.id);
+	ret = dsim_read_info(lcd, LDI_REG_ID, LDI_LEN_ID, lcd->id_info.id);
 	if (ret < 0 || !lcd->id_info.value) {
 		priv->lcdconnected = lcd->connected = 0;
-		dev_err(&lcd->ld->dev, "%s: connected lcd is invalid\n", __func__);
+		dev_info(&lcd->ld->dev, "%s: connected lcd is invalid\n", __func__);
 	}
 
 	dev_info(&lcd->ld->dev, "%s: %x\n", __func__, cpu_to_be32(lcd->id_info.value));
@@ -625,9 +631,9 @@ static int s6e3aa2_read_mtp(struct lcd_info *lcd)
 	int ret = 0;
 	unsigned char buf[LDI_LEN_MTP] = {0, };
 
-	ret = s6e3aa2_read_info(lcd, LDI_REG_MTP, LDI_LEN_MTP, buf);
+	ret = dsim_read_info(lcd, LDI_REG_MTP, LDI_LEN_MTP, buf);
 	if (ret < 0)
-		dev_err(&lcd->ld->dev, "%s: fail\n", __func__);
+		dev_info(&lcd->ld->dev, "%s: fail\n", __func__);
 
 	memcpy(lcd->mtp, buf, LDI_LEN_MTP);
 
@@ -642,9 +648,9 @@ static int s6e3aa2_read_coordinate(struct lcd_info *lcd)
 	u8 month, day, hour, min, sec;
 	u16 ms;
 
-	ret = s6e3aa2_read_info(lcd, LDI_REG_COORDINATE, ARRAY_SIZE(buf), buf);
+	ret = dsim_read_info(lcd, LDI_REG_COORDINATE, ARRAY_SIZE(buf), buf);
 	if (ret < 0)
-		dev_err(&lcd->ld->dev, "%s: fail\n", __func__);
+		dev_info(&lcd->ld->dev, "%s: fail\n", __func__);
 
 	lcd->coordinate[0] = buf[0] << 8 | buf[1];	/* X */
 	lcd->coordinate[1] = buf[2] << 8 | buf[3];	/* Y */
@@ -671,9 +677,9 @@ static int s6e3aa2_read_manufacture_info(struct lcd_info *lcd)
 	int ret = 0;
 	unsigned char buf[LDI_GPARA_MANUFACTURE_INFO + LDI_LEN_MANUFACTURE_INFO] = {0, };
 
-	ret = s6e3aa2_read_info(lcd, LDI_REG_MANUFACTURE_INFO, ARRAY_SIZE(buf), buf);
+	ret = dsim_read_info(lcd, LDI_REG_MANUFACTURE_INFO, ARRAY_SIZE(buf), buf);
 	if (ret < 0)
-		dev_err(&lcd->ld->dev, "%s: fail\n", __func__);
+		dev_info(&lcd->ld->dev, "%s: fail\n", __func__);
 
 	memcpy(lcd->manufacture_info, &buf[LDI_GPARA_MANUFACTURE_INFO], LDI_LEN_MANUFACTURE_INFO);
 
@@ -685,9 +691,9 @@ static int s6e3aa2_read_chip_id(struct lcd_info *lcd)
 	int ret = 0;
 	unsigned char buf[LDI_LEN_CHIP_ID] = {0, };
 
-	ret = s6e3aa2_read_info(lcd, LDI_REG_CHIP_ID, LDI_LEN_CHIP_ID, buf);
+	ret = dsim_read_info(lcd, LDI_REG_CHIP_ID, LDI_LEN_CHIP_ID, buf);
 	if (ret < 0)
-		dev_err(&lcd->ld->dev, "%s: fail\n", __func__);
+		dev_info(&lcd->ld->dev, "%s: fail\n", __func__);
 
 	memcpy(lcd->code, buf, LDI_LEN_CHIP_ID);
 
@@ -698,9 +704,9 @@ static int s6e3aa2_read_elvss(struct lcd_info *lcd, unsigned char *buf)
 {
 	int ret = 0;
 
-	ret = s6e3aa2_read_info(lcd, LDI_REG_ELVSS, LDI_LEN_ELVSS, buf);
+	ret = dsim_read_info(lcd, LDI_REG_ELVSS, LDI_LEN_ELVSS, buf);
 	if (ret < 0)
-		dev_err(&lcd->ld->dev, "%s: fail\n", __func__);
+		dev_info(&lcd->ld->dev, "%s: fail\n", __func__);
 
 	return ret;
 }
@@ -710,50 +716,14 @@ static int s6e3aa2_read_hbm(struct lcd_info *lcd)
 	int ret = 0;
 	unsigned char buf[LDI_LEN_HBM] = {0, };
 
-	ret = s6e3aa2_read_info(lcd, LDI_REG_HBM, LDI_LEN_HBM, buf);
+	ret = dsim_read_info(lcd, LDI_REG_HBM, LDI_LEN_HBM, buf);
 	if (ret < 0)
-		dev_err(&lcd->ld->dev, "%s: fail\n", __func__);
+		dev_info(&lcd->ld->dev, "%s: fail\n", __func__);
 
 	memcpy(lcd->hbm, buf, LDI_LEN_HBM);
 
 	return ret;
 }
-
-#if 0
-static int s6e3aa2_read_status(struct lcd_info *lcd)
-{
-	int ret = 0;
-	unsigned char rddpm[LDI_LEN_RDDPM] = {0, };
-	unsigned char rddsm[LDI_LEN_RDDSM] = {0, };
-	unsigned char esderr[LDI_LEN_ESDERR] = {0, };
-
-	DSI_WRITE(SEQ_TEST_KEY_ON_F0, ARRAY_SIZE(SEQ_TEST_KEY_ON_F0));
-
-	ret = s6e3aa2_read_info(lcd, LDI_REG_RDDPM, LDI_LEN_RDDPM, rddpm);
-	if (ret < 0) {
-		dev_err(&lcd->ld->dev, "%s: fail\n", __func__);
-		goto exit;
-	}
-
-	ret = s6e3aa2_read_info(lcd, LDI_REG_RDDSM, LDI_LEN_RDDSM, rddsm);
-	if (ret < 0) {
-		dev_err(&lcd->ld->dev, "%s: fail\n", __func__);
-		goto exit;
-	}
-	ret = s6e3aa2_read_info(lcd, LDI_REG_ESDERR, LDI_LEN_ESDERR, esderr);
-	if (ret < 0) {
-		dev_err(&lcd->ld->dev, "%s: fail\n", __func__);
-		goto exit;
-	}
-
-	dev_info(&lcd->ld->dev, "%s: dpm: %2x dsm: %2x err: %2x\n", __func__, rddpm[0], rddsm[0], esderr[0]);
-
-	DSI_WRITE(SEQ_TEST_KEY_OFF_F0, ARRAY_SIZE(SEQ_TEST_KEY_OFF_F0));
-
-exit:
-	return ret;
-}
-#endif
 
 static int s6e3aa2_init_elvss(struct lcd_info *lcd, u8 *data)
 {
@@ -938,7 +908,7 @@ static int s6e3aa2_exit(struct lcd_info *lcd)
 	/* 5. Wait 150ms */
 	msleep(150);
 
-#ifdef CONFIG_LCD_DOZE_MODE
+#if defined(CONFIG_LCD_DOZE_MODE)
 	lcd->current_alpm = ALPM_OFF;
 #endif
 
@@ -1000,7 +970,7 @@ static int s6e3aa2_init(struct lcd_info *lcd)
 	return ret;
 }
 
-#ifdef CONFIG_DISPLAY_USE_INFO
+#if defined(CONFIG_DISPLAY_USE_INFO)
 static int panel_dpui_notifier_callback(struct notifier_block *self,
 				unsigned long event, void *data)
 {
@@ -1078,6 +1048,8 @@ static int fb_notifier_callback(struct notifier_block *self,
 	switch (event) {
 	case FB_EVENT_BLANK:
 	case FB_EARLY_EVENT_BLANK:
+	case DECON_EVENT_DOZE:
+	case DECON_EARLY_EVENT_DOZE:
 		break;
 	default:
 		return NOTIFY_DONE;
@@ -1092,9 +1064,9 @@ static int fb_notifier_callback(struct notifier_block *self,
 	if (evdata->info->node)
 		return NOTIFY_DONE;
 
-	if (event == FB_EARLY_EVENT_BLANK && fb_blank == FB_BLANK_POWERDOWN)
+	if (IS_EARLY(event) && fb_blank == FB_BLANK_POWERDOWN)
 		pinctrl_enable(lcd, 0);
-	else if (event == FB_EVENT_BLANK && fb_blank == FB_BLANK_UNBLANK)
+	else if (IS_AFTER(event) && fb_blank == FB_BLANK_UNBLANK)
 		pinctrl_enable(lcd, 1);
 
 	return NOTIFY_DONE;
@@ -1105,7 +1077,7 @@ static int s6e3aa2_register_notifier(struct lcd_info *lcd)
 	lcd->fb_notifier.notifier_call = fb_notifier_callback;
 	decon_register_notifier(&lcd->fb_notifier);
 
-#ifdef CONFIG_DISPLAY_USE_INFO
+#if defined(CONFIG_DISPLAY_USE_INFO)
 	lcd->dpui_notif.notifier_call = panel_dpui_notifier_callback;
 	if (lcd->connected)
 		dpui_logging_register(&lcd->dpui_notif, DPUI_TYPE_PANEL);
@@ -1137,7 +1109,7 @@ static int s6e3aa2_probe(struct lcd_info *lcd)
 
 	ret = s6e3aa2_read_init_info(lcd);
 	if (ret < 0)
-		dev_err(&lcd->ld->dev, "%s: failed to init information\n", __func__);
+		dev_info(&lcd->ld->dev, "%s: failed to init information\n", __func__);
 
 	dsim_panel_set_brightness(lcd, 1);
 
@@ -1146,7 +1118,7 @@ static int s6e3aa2_probe(struct lcd_info *lcd)
 	return 0;
 }
 
-#ifdef CONFIG_LCD_DOZE_MODE
+#if defined(CONFIG_LCD_DOZE_MODE)
 int s6e3aa2_setalpm(struct lcd_info *lcd, int mode)
 {
 	int ret = 0;
@@ -1220,7 +1192,7 @@ static int s6e3aa2_enteralpm(struct lcd_info *lcd)
 
 	ret = s6e3aa2_setalpm(lcd, lcd->alpm);
 	if (ret < 0)
-		dev_err(&lcd->ld->dev, "%s: failed to set alpm\n", __func__);
+		dev_info(&lcd->ld->dev, "%s: failed to set alpm\n", __func__);
 
 	DSI_WRITE(SEQ_TEST_KEY_OFF_F0, ARRAY_SIZE(SEQ_TEST_KEY_OFF_F0));
 	DSI_WRITE(SEQ_TEST_KEY_OFF_FC, ARRAY_SIZE(SEQ_TEST_KEY_OFF_FC));
@@ -1526,7 +1498,7 @@ static ssize_t lux_store(struct device *dev,
 		lcd->lux = value;
 		mutex_unlock(&lcd->lock);
 
-#if defined(CONFIG_EXYNOS_DECON_MDNIE_LITE)
+#if defined(CONFIG_EXYNOS_DECON_MDNIE)
 		attr_store_for_each(lcd->mdnie_class, attr->attr.name, buf, size);
 #endif
 	}
@@ -1566,7 +1538,7 @@ static ssize_t octa_id_show(struct device *dev,
 	return strlen(buf);
 }
 
-#ifdef CONFIG_DISPLAY_USE_INFO
+#if defined(CONFIG_DISPLAY_USE_INFO)
 /*
  * HW PARAM LOGGING SYSFS NODE
  */
@@ -1628,14 +1600,14 @@ static DEVICE_ATTR(dpui, 0660, dpui_show, dpui_store);
 static DEVICE_ATTR(dpui_dbg, 0660, dpui_dbg_show, dpui_dbg_store);
 #endif
 
-#ifdef CONFIG_LCD_DOZE_MODE
+#if defined(CONFIG_LCD_DOZE_MODE)
 #if defined(CONFIG_SEC_FACTORY)
 static ssize_t alpm_doze_store(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t size)
 {
 	struct lcd_info *lcd = dev_get_drvdata(dev);
 	struct dsim_device *dsim = lcd->dsim;
-	struct decon_device *decon = dsim->decon;
+	struct decon_device *decon = get_decon_drvdata(0);
 	unsigned int value;
 	int ret;
 
@@ -1651,7 +1623,7 @@ static ssize_t alpm_doze_store(struct device *dev,
 	}
 
 	if (value >= ALPM_MODE_MAX) {
-		dev_err(&lcd->ld->dev, "%s: undefined alpm mode: %d\n", __func__, value);
+		dev_info(&lcd->ld->dev, "%s: undefined alpm mode: %d\n", __func__, value);
 		return -EINVAL;
 	}
 
@@ -1701,7 +1673,7 @@ static ssize_t alpm_doze_store(struct device *dev,
 {
 	struct lcd_info *lcd = dev_get_drvdata(dev);
 	struct dsim_device *dsim = lcd->dsim;
-	struct decon_device *decon = dsim->decon;
+	struct decon_device *decon = get_decon_drvdata(0);
 	unsigned int value;
 	int ret;
 
@@ -1712,7 +1684,7 @@ static ssize_t alpm_doze_store(struct device *dev,
 	dev_info(&lcd->ld->dev, "%s: %d, %d, %d, %d\n", __func__, value, dsim->doze_state, lcd->current_alpm, lcd->alpm);
 
 	if (value >= ALPM_MODE_MAX) {
-		dev_err(&lcd->ld->dev, "%s: undefined alpm mode: %d\n", __func__, value);
+		dev_info(&lcd->ld->dev, "%s: undefined alpm mode: %d\n", __func__, value);
 		return -EINVAL;
 	}
 
@@ -1774,10 +1746,10 @@ static struct attribute *lcd_sysfs_attributes[] = {
 	&dev_attr_adaptive_control.attr,
 	&dev_attr_lux.attr,
 	&dev_attr_octa_id.attr,
-#ifdef CONFIG_LCD_DOZE_MODE
+#if defined(CONFIG_LCD_DOZE_MODE)
 	&dev_attr_alpm.attr,
 #endif
-#ifdef CONFIG_DISPLAY_USE_INFO
+#if defined(CONFIG_DISPLAY_USE_INFO)
 	&dev_attr_dpui.attr,
 	&dev_attr_dpui_dbg.attr,
 #endif
@@ -1830,14 +1802,14 @@ static void lcd_init_sysfs(struct lcd_info *lcd)
 
 	ret = sysfs_create_group(&lcd->ld->dev.kobj, &lcd_sysfs_attr_group);
 	if (ret < 0)
-		dev_err(&lcd->ld->dev, "failed to add lcd sysfs\n");
+		dev_info(&lcd->ld->dev, "failed to add lcd sysfs\n");
 
 	lcd_init_svc(lcd);
 }
 
 
-#if defined(CONFIG_EXYNOS_DECON_MDNIE_LITE)
-static int mdnie_lite_send_seq(struct lcd_info *lcd, struct lcd_seq_info *seq, u32 num)
+#if defined(CONFIG_EXYNOS_DECON_MDNIE)
+static int mdnie_send_seq(struct lcd_info *lcd, struct lcd_seq_info *seq, u32 num)
 {
 	int ret = 0;
 
@@ -1857,7 +1829,7 @@ exit:
 	return ret;
 }
 
-static int mdnie_lite_read(struct lcd_info *lcd, u8 addr, u8 *buf, u32 size)
+static int mdnie_read(struct lcd_info *lcd, u8 addr, u8 *buf, u32 size)
 {
 	int ret = 0;
 
@@ -1890,7 +1862,7 @@ static int dsim_panel_probe(struct dsim_device *dsim)
 		goto exit;
 	}
 
-	dsim->lcd = lcd->ld = lcd_device_register("panel", dsim->dev, lcd, NULL);
+	lcd->ld = lcd_device_register("panel", dsim->dev, lcd, NULL);
 	if (IS_ERR(lcd->ld)) {
 		pr_err("%s: failed to register lcd device\n", __func__);
 		ret = PTR_ERR(lcd->ld);
@@ -1909,12 +1881,12 @@ static int dsim_panel_probe(struct dsim_device *dsim)
 	lcd->dsim = dsim;
 	ret = s6e3aa2_probe(lcd);
 	if (ret < 0)
-		dev_err(&lcd->ld->dev, "%s: failed to probe panel\n", __func__);
+		dev_info(&lcd->ld->dev, "%s: failed to probe panel\n", __func__);
 
 	lcd_init_sysfs(lcd);
 
-#if defined(CONFIG_EXYNOS_DECON_MDNIE_LITE)
-	mdnie_register(&lcd->ld->dev, lcd, (mdnie_w)mdnie_lite_send_seq, (mdnie_r)mdnie_lite_read, lcd->coordinate, &tune_info);
+#if defined(CONFIG_EXYNOS_DECON_MDNIE)
+	mdnie_register(&lcd->ld->dev, lcd, (mdnie_w)mdnie_send_seq, (mdnie_r)mdnie_read, lcd->coordinate, &tune_info);
 	lcd->mdnie_class = get_mdnie_class();
 #endif
 
@@ -1971,7 +1943,7 @@ exit:
 	return 0;
 }
 
-#ifdef CONFIG_LCD_DOZE_MODE
+#if defined(CONFIG_LCD_DOZE_MODE)
 static int dsim_panel_enteralpm(struct dsim_device *dsim)
 {
 	struct lcd_info *lcd = dsim->priv.par;
@@ -2016,10 +1988,11 @@ static int dsim_panel_exitalpm(struct dsim_device *dsim)
 #endif
 
 struct mipi_dsim_lcd_driver s6e3aa2_mipi_lcd_driver = {
+	.name		= "s6e3aa2",
 	.probe		= dsim_panel_probe,
 	.displayon	= dsim_panel_displayon,
 	.suspend	= dsim_panel_suspend,
-#ifdef CONFIG_LCD_DOZE_MODE
+#if defined(CONFIG_LCD_DOZE_MODE)
 	.enteralpm	= dsim_panel_enteralpm,
 	.exitalpm	= dsim_panel_exitalpm,
 #endif

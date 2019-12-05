@@ -1810,6 +1810,8 @@ got_it:
 		F2FS_I_SB(inode)->sec_stat.hot_file_written_blocks++;
 	else if (file_is_cold(inode))
 		F2FS_I_SB(inode)->sec_stat.cold_file_written_blocks++;
+	else
+		F2FS_I_SB(inode)->sec_stat.warm_file_written_blocks++;
 
 	/*
 	 * If current allocation needs SSR,

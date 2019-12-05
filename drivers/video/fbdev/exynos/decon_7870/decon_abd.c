@@ -18,16 +18,15 @@
 #include <linux/reboot.h>
 #include <linux/debugfs.h>
 
-#include "decon.h"
-#include "dsim.h"
 #include "../../../../../kernel/irq/internals.h"
+#include "decon.h"
 #include "decon_notify.h"
-#include "decon_board.h"
+#include "dsim.h"
 
-#define abd_printf(m, x...)	\
-{	if (m) seq_printf(m, x); else decon_info(x);	}	\
+#define abd_printf(m, ...)	\
+{	if (m) seq_printf(m, __VA_ARGS__); else decon_info(__VA_ARGS__);	}	\
 
-void decon_abd_save_log_event(struct abd_protect *abd, const char *print)
+void decon_abd_save_str(struct abd_protect *abd, const char *print)
 {
 	unsigned int idx = atomic_inc_return(&abd->event.log_idx) % ABD_EVENT_LOG_MAX;
 
@@ -35,7 +34,58 @@ void decon_abd_save_log_event(struct abd_protect *abd, const char *print)
 	abd->event.log[idx].print = print;
 }
 
-void decon_abd_save_log_fto(struct abd_protect *abd, struct sync_fence *fence)
+static void _decon_abd_print_bit(struct seq_file *m, struct abd_log *log)
+{
+	struct timeval tv;
+	unsigned int bit = 0;
+	char print_buf[200] = {0, };
+	struct seq_file p = {
+		.buf = print_buf,
+		.size = sizeof(print_buf) - 1,
+	};
+
+	if (!m)
+		seq_puts(&p, "decon_abd: ");
+
+	tv = ns_to_timeval(log->stamp);
+	seq_printf(&p, "time: %lu.%06lu, 0x%0*X, ", (unsigned long)tv.tv_sec, tv.tv_usec, log->size >> 2, log->value);
+
+	for (bit = 0; bit < log->size; bit++) {
+		if (log->print[bit]) {
+			if (!bit || !log->print[bit - 1] || strcmp(log->print[bit - 1], log->print[bit]))
+				seq_printf(&p, "%s, ", log->print[bit]);
+		}
+	}
+
+	abd_printf(m, "%s\n", p.count ? p.buf : "");
+}
+
+void decon_abd_save_bit(struct abd_protect *abd, unsigned int size, unsigned int value, char **print)
+{
+	struct abd_trace *first = &abd->b_first;
+	struct abd_trace *event = &abd->b_event;
+
+	struct abd_log *first_log = &first->log[(first->count % ABD_LOG_MAX)];
+	struct abd_log *event_log = &event->log[(event->count % ABD_LOG_MAX)];
+
+	memset(event_log, 0, sizeof(struct abd_log));
+	event_log->stamp = local_clock();
+	event_log->value = value;
+	event_log->size = size;
+	memcpy(&event_log->print, print, sizeof(char *) * size);
+
+	if (!first->count) {
+		memset(first_log, 0, sizeof(struct abd_log));
+		memcpy(first_log, event_log, sizeof(struct abd_log));
+		first->count++;
+	}
+
+	_decon_abd_print_bit(NULL, event_log);
+
+	event->count++;
+}
+
+void decon_abd_save_fto(struct abd_protect *abd, struct sync_fence *fence)
 {
 	struct abd_trace *first = &abd->f_first;
 	struct abd_trace *lcdon = &abd->f_lcdon;
@@ -46,7 +96,7 @@ void decon_abd_save_log_fto(struct abd_protect *abd, struct sync_fence *fence)
 	struct abd_log *event_log = &event->log[(event->count % ABD_LOG_MAX)];
 
 	memset(event_log, 0, sizeof(struct abd_log));
-	event_log->stamp = ktime_to_ns(ktime_get());
+	event_log->stamp = local_clock();
 	memcpy(&event_log->fence, fence, sizeof(struct sync_fence));
 
 	if (!first->count) {
@@ -65,14 +115,14 @@ void decon_abd_save_log_fto(struct abd_protect *abd, struct sync_fence *fence)
 	event->count++;
 }
 
-static void decon_abd_save_log_pin(struct decon_device *decon, struct abd_pin *pin, struct abd_trace *trace, bool on)
+static void decon_abd_save_pin(struct decon_device *decon, struct abd_pin *pin, struct abd_trace *trace, bool on)
 {
 	struct abd_trace *first = &pin->p_first;
 
 	struct abd_log *first_log = &first->log[(first->count) % ABD_LOG_MAX];
 	struct abd_log *trace_log = &trace->log[(trace->count) % ABD_LOG_MAX];
 
-	trace_log->stamp = ktime_to_ns(ktime_get());
+	trace_log->stamp = local_clock();
 	trace_log->level = pin->level;
 	trace_log->state = decon->state;
 	trace_log->onoff = on;
@@ -86,7 +136,7 @@ static void decon_abd_save_log_pin(struct decon_device *decon, struct abd_pin *p
 	trace->count++;
 }
 
-static void decon_abd_clear_pending_bit(int irq)
+static void decon_abd_pin_clear_pending_bit(int irq)
 {
 	struct irq_desc *desc;
 
@@ -97,7 +147,7 @@ static void decon_abd_clear_pending_bit(int irq)
 	}
 }
 
-static void decon_abd_enable_interrupt(struct decon_device *decon, struct abd_pin *pin, bool on)
+static void decon_abd_pin_enable_interrupt(struct decon_device *decon, struct abd_pin *pin, bool on)
 {
 	struct abd_trace *trace = &pin->p_lcdon;
 
@@ -106,25 +156,25 @@ static void decon_abd_enable_interrupt(struct decon_device *decon, struct abd_pi
 
 	pin->level = gpio_get_value(pin->gpio);
 
-	decon_info("%s: on: %d, %s(%d,%d) level: %d, count: %d, state: %d%s\n", __func__,
-		on, pin->name, pin->irq, pin->desc->depth, pin->level, trace->count, decon->state, (pin->level == pin->active_level) ? ", active" : "");
-
 	if (pin->level == pin->active_level) {
-		decon_abd_save_log_pin(decon, pin, trace, on);
+		decon_abd_save_pin(decon, pin, trace, on);
 		if (pin->name && !strcmp(pin->name, "pcd")) {
 			decon->ignore_vsync = 1;
 			decon_info("%s: ignore_vsync: %d\n", __func__, decon->ignore_vsync);
 		}
 	}
 
+	decon_info("%s: on: %d, %s(%d,%d) level: %d, count: %d, state: %d, %s\n", __func__,
+		on, pin->name, pin->irq, pin->desc->depth, pin->level, trace->count, decon->state, (pin->level == pin->active_level) ? "abnormal" : "normal");
+
 	if (on) {
-		decon_abd_clear_pending_bit(pin->irq);
+		decon_abd_pin_clear_pending_bit(pin->irq);
 		enable_irq(pin->irq);
 	} else
 		disable_irq_nosync(pin->irq);
 }
 
-void decon_abd_enable(struct decon_device *decon, int enable)
+static void decon_abd_pin_enable(struct decon_device *decon, int enable)
 {
 	struct abd_protect *abd = &decon->abd;
 	struct dsim_device *dsim = container_of(decon->output_sd, struct dsim_device, sd);
@@ -156,20 +206,22 @@ void decon_abd_enable(struct decon_device *decon, int enable)
 		decon_info("%s: lcdconnected: %d\n", __func__, dsim->priv.lcdconnected);
 
 	for (i = 0; i < ABD_PIN_MAX; i++)
-		decon_abd_enable_interrupt(decon, &abd->pin[i], enable);
+		decon_abd_pin_enable_interrupt(decon, &abd->pin[i], enable);
 }
 
 irqreturn_t decon_abd_handler(int irq, void *dev_id)
 {
 	struct decon_device *decon = (struct decon_device *)dev_id;
+	struct abd_protect *abd = &decon->abd;
 	struct abd_pin *pin = NULL;
 	struct abd_trace *trace = NULL;
+	struct adb_pin_handler *pin_handler = NULL;
 	unsigned int i = 0;
 
 	spin_lock(&decon->abd.slock);
 
 	for (i = 0; i < ABD_PIN_MAX; i++) {
-		pin = &decon->abd.pin[i];
+		pin = &abd->pin[i];
 		trace = &pin->p_event;
 		if (pin && irq == pin->irq)
 			break;
@@ -182,10 +234,10 @@ irqreturn_t decon_abd_handler(int irq, void *dev_id)
 
 	pin->level = gpio_get_value(pin->gpio);
 
-	decon_info("%s: %s(%d) level: %d, count: %d, state: %d%s\n", __func__,
-		pin->name, pin->irq, pin->level, trace->count, decon->state, (pin->level == pin->active_level) ? ", active" : "");
+	decon_abd_save_pin(decon, pin, trace, 1);
 
-	decon_abd_save_log_pin(decon, pin, trace, 1);
+	decon_info("%s: %s(%d) level: %d, count: %d, state: %d, %s\n", __func__,
+		pin->name, pin->irq, pin->level, trace->count, decon->state, (pin->level == pin->active_level) ? "abnormal" : "normal");
 
 	if (pin->active_level != pin->level)
 		goto exit;
@@ -195,8 +247,10 @@ irqreturn_t decon_abd_handler(int irq, void *dev_id)
 		decon_info("%s: ignore_vsync: %d\n", __func__, decon->ignore_vsync);
 	}
 
-	if (pin->handler)
-		pin->handler(irq, pin->dev_id);
+	list_for_each_entry(pin_handler, &pin->handler_list, node) {
+		if (pin_handler && pin_handler->handler)
+			pin_handler->handler(irq, pin_handler->dev_id);
+	}
 
 exit:
 	spin_unlock(&decon->abd.slock);
@@ -204,10 +258,12 @@ exit:
 	return IRQ_HANDLED;
 }
 
-int decon_abd_register_pin_handler(int irq, irq_handler_t handler, void *dev_id)
+int decon_abd_pin_register_handler(int irq, irq_handler_t handler, void *dev_id)
 {
 	struct decon_device *decon = get_decon_drvdata(0);
+	struct abd_protect *abd = &decon->abd;
 	struct abd_pin *pin = NULL;
+	struct adb_pin_handler *pin_handler = NULL;
 	unsigned int i = 0;
 
 	if (!irq) {
@@ -215,12 +271,31 @@ int decon_abd_register_pin_handler(int irq, irq_handler_t handler, void *dev_id)
 		return -EINVAL;
 	}
 
+	if (!handler) {
+		decon_info("%s: handler invalid\n", __func__);
+		return -EINVAL;
+	}
+
 	for (i = 0; i < ABD_PIN_MAX; i++) {
-		pin = &decon->abd.pin[i];
+		pin = &abd->pin[i];
 		if (pin && irq == pin->irq) {
-			pin->handler = handler;
-			pin->dev_id = dev_id;
-			decon_info("%s: find %s of irq(%d)\n", __func__, pin->name, irq);
+			decon_info("%s: find irq(%d) for %s pin\n", __func__, irq, pin->name);
+
+			list_for_each_entry(pin_handler, &pin->handler_list, node) {
+				WARN(pin_handler->handler == handler && pin_handler->dev_id == dev_id,	\
+					"%s: already registered handler\n", __func__);
+			}
+
+			pin_handler = kzalloc(sizeof(struct adb_pin_handler), GFP_KERNEL);
+			if (!pin_handler) {
+				decon_info("%s: handler kzalloc faile\n", __func__);
+				break;
+			}
+			pin_handler->handler = handler;
+			pin_handler->dev_id = dev_id;
+			list_add_tail(&pin_handler->node, &pin->handler_list);
+
+			decon_info("%s: handler is registered\n", __func__);
 			break;
 		}
 	}
@@ -233,14 +308,14 @@ int decon_abd_register_pin_handler(int irq, irq_handler_t handler, void *dev_id)
 	return 0;
 }
 
-static int decon_debug_pin_log_print(struct seq_file *m, struct abd_trace *trace)
+static void _decon_abd_print_pin(struct seq_file *m, struct abd_trace *trace)
 {
 	struct timeval tv;
 	struct abd_log *log;
 	unsigned int i = 0;
 
 	if (!trace->count)
-		return 0;
+		return;
 
 	abd_printf(m, "%s total count: %d\n", trace->name, trace->count);
 	for (i = 0; i < ABD_LOG_MAX; i++) {
@@ -251,25 +326,21 @@ static int decon_debug_pin_log_print(struct seq_file *m, struct abd_trace *trace
 		abd_printf(m, "time: %lu.%06lu level: %d onoff: %d state: %d\n",
 			(unsigned long)tv.tv_sec, tv.tv_usec, log->level, log->onoff, log->state);
 	}
-
-	return 0;
 }
 
-static int decon_debug_pin_print(struct seq_file *m, struct abd_pin *pin)
+static void decon_abd_print_pin(struct seq_file *m, struct abd_pin *pin)
 {
 	if (!pin->irq)
-		return 0;
+		return;
 
 	if (!pin->p_first.count)
-		return 0;
+		return;
 
 	abd_printf(m, "[%s]\n", pin->name);
 
-	decon_debug_pin_log_print(m, &pin->p_first);
-	decon_debug_pin_log_print(m, &pin->p_lcdon);
-	decon_debug_pin_log_print(m, &pin->p_event);
-
-	return 0;
+	_decon_abd_print_pin(m, &pin->p_first);
+	_decon_abd_print_pin(m, &pin->p_lcdon);
+	_decon_abd_print_pin(m, &pin->p_event);
 }
 
 static const char *sync_status_str(int status)
@@ -283,14 +354,14 @@ static const char *sync_status_str(int status)
 	return "error";
 }
 
-static int decon_debug_fto_print(struct seq_file *m, struct abd_trace *trace)
+static void decon_abd_print_fto(struct seq_file *m, struct abd_trace *trace)
 {
 	struct timeval tv;
 	struct abd_log *log;
 	unsigned int i = 0;
 
 	if (!trace->count)
-		return 0;
+		return;
 
 	abd_printf(m, "%s total count: %d\n", trace->name, trace->count);
 	for (i = 0; i < ABD_LOG_MAX; i++) {
@@ -301,11 +372,9 @@ static int decon_debug_fto_print(struct seq_file *m, struct abd_trace *trace)
 		abd_printf(m, "time: %lu.%06lu, %d, %s: %s\n",
 			(unsigned long)tv.tv_sec, tv.tv_usec, log->winid, log->fence.name, sync_status_str(atomic_read(&log->fence.status)));
 	}
-
-	return 0;
 }
 
-static int decon_debug_ss_log_print(struct seq_file *m)
+static void decon_abd_print_ss_log(struct seq_file *m)
 {
 	unsigned int log_max = 200, i, idx;
 	struct timeval tv;
@@ -328,11 +397,9 @@ static int decon_debug_ss_log_print(struct seq_file *m)
 	}
 
 	abd_printf(m, "\n");
-
-	return 0;
 }
 
-static int decon_debug_event_log_print(struct seq_file *m)
+static void decon_abd_print_str(struct seq_file *m)
 {
 	unsigned int log_max = ABD_EVENT_LOG_MAX, i, idx;
 	struct timeval tv;
@@ -346,9 +413,9 @@ static int decon_debug_event_log_print(struct seq_file *m)
 	};
 
 	if (start < 0)
-		return 0;
+		return;
 
-	abd_printf(m, "==========_LOG_DEBUG_==========\n");
+	abd_printf(m, "==========_STR_DEBUG_==========\n");
 
 	start = (start > log_max) ? start - log_max + 1 : 0;
 
@@ -368,45 +435,75 @@ static int decon_debug_event_log_print(struct seq_file *m)
 	}
 
 	abd_printf(m, "%s\n", p.count ? p.buf : "");
-
-	return 0;
 }
 
-static int decon_debug_show(struct seq_file *m, void *unused)
+static void decon_abd_print_bit(struct seq_file *m, struct abd_trace *trace)
+{
+	struct abd_log *log;
+	unsigned int i = 0;
+
+	if (!trace->count)
+		return;
+
+	abd_printf(m, "%s total count: %d\n", trace->name, trace->count);
+	for (i = 0; i < ABD_LOG_MAX; i++) {
+		log = &trace->log[i];
+		if (!log->stamp)
+			continue;
+		_decon_abd_print_bit(m, log);
+	}
+}
+
+static int decon_abd_show(struct seq_file *m, void *unused)
 {
 	struct decon_device *decon = m ? m->private : get_decon_drvdata(0);
 	struct abd_protect *abd = &decon->abd;
 	struct dsim_device *dsim = container_of(decon->output_sd, struct dsim_device, sd);
 	unsigned int i = 0;
 
-	abd_printf(m, "==========_LCD_DEBUG_==========\n");
-	abd_printf(m, "isync: %d, lcdconnected: %d\n", decon->ignore_vsync, dsim->priv.lcdconnected);
-	for (i = 0; i < ABD_PIN_MAX; i++)
-		decon_debug_pin_print(m, &abd->pin[i]);
+	abd_printf(m, "==========_DECON_ABD_==========\n");
+	abd_printf(m, "isync: %d, lcdconnected: %d, lcdtype: %6X\n", decon->ignore_vsync, dsim->priv.lcdconnected, lcdtype);
 
-	abd_printf(m, "==========_FTO_DEBUG_==========\n");
-	decon_debug_fto_print(m, &abd->f_first);
-	decon_debug_fto_print(m, &abd->f_lcdon);
-	decon_debug_fto_print(m, &abd->f_event);
+	for (i = 0; i < ABD_PIN_MAX; i++) {
+		if (abd->pin[i].p_first.count) {
+			abd_printf(m, "==========_PIN_DEBUG_==========\n");
+			break;
+		}
+	}
+	for (i = 0; i < ABD_PIN_MAX; i++)
+		decon_abd_print_pin(m, &abd->pin[i]);
+
+	if (abd->b_first.count) {
+		abd_printf(m, "==========_BIT_DEBUG_==========\n");
+		decon_abd_print_bit(m, &abd->b_first);
+		decon_abd_print_bit(m, &abd->b_event);
+	}
+
+	if (abd->f_first.count) {
+		abd_printf(m, "==========_FTO_DEBUG_==========\n");
+		decon_abd_print_fto(m, &abd->f_first);
+		decon_abd_print_fto(m, &abd->f_lcdon);
+		decon_abd_print_fto(m, &abd->f_event);
+	}
+
+	decon_abd_print_str(m);
 
 	abd_printf(m, "==========_RAM_DEBUG_==========\n");
-	decon_debug_ss_log_print(m);
-
-	decon_debug_event_log_print(m);
+	decon_abd_print_ss_log(m);
 
 	return 0;
 }
 
-static int decon_debug_open(struct inode *inode, struct file *file)
+static int decon_abd_open(struct inode *inode, struct file *file)
 {
-	return single_open(file, decon_debug_show, inode->i_private);
+	return single_open(file, decon_abd_show, inode->i_private);
 }
 
-static const struct file_operations decon_debug_fops = {
+static const struct file_operations decon_abd_fops = {
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.release = seq_release,
-	.open = decon_debug_open,
+	.open = decon_abd_open,
 };
 
 static int decon_abd_reboot_notifier(struct notifier_block *this,
@@ -416,27 +513,45 @@ static int decon_abd_reboot_notifier(struct notifier_block *this,
 	struct decon_device *decon = container_of(abd, struct decon_device, abd);
 	struct dsim_device *dsim = container_of(decon->output_sd, struct dsim_device, sd);
 	unsigned int i = 0;
+	struct seq_file *m = NULL;
 
 	decon_info("++ %s: %lu\n",  __func__, code);
 
-	decon_abd_enable(decon, 0);
+	decon_abd_pin_enable(decon, 0);
 
-	abd_printf(NULL, "isync: %d, lcdconnected: %d\n", decon->ignore_vsync, dsim->priv.lcdconnected);
+	abd_printf(m, "==========_DECON_ABD_==========\n");
+	abd_printf(m, "isync: %d, lcdconnected: %d, lcdtype: %6X\n", decon->ignore_vsync, dsim->priv.lcdconnected, lcdtype);
+
+	for (i = 0; i < ABD_PIN_MAX; i++) {
+		if (abd->pin[i].p_first.count) {
+			abd_printf(m, "==========_PIN_DEBUG_==========\n");
+			break;
+		}
+	}
 	for (i = 0; i < ABD_PIN_MAX; i++)
-		decon_debug_pin_print(NULL, &abd->pin[i]);
+		decon_abd_print_pin(m, &abd->pin[i]);
 
-	decon_debug_fto_print(NULL, &abd->f_first);
-	decon_debug_fto_print(NULL, &abd->f_lcdon);
-	decon_debug_fto_print(NULL, &abd->f_event);
+	if (abd->b_first.count) {
+		abd_printf(m, "==========_BIT_DEBUG_==========\n");
+		decon_abd_print_bit(m, &abd->b_first);
+		decon_abd_print_bit(m, &abd->b_event);
+	}
 
-	decon_debug_event_log_print(NULL);
+	if (abd->f_first.count) {
+		abd_printf(m, "==========_FTO_DEBUG_==========\n");
+		decon_abd_print_fto(m, &abd->f_first);
+		decon_abd_print_fto(m, &abd->f_lcdon);
+		decon_abd_print_fto(m, &abd->f_event);
+	}
+
+	decon_abd_print_str(m);
 
 	decon_info("-- %s: %lu\n",  __func__, code);
 
 	return NOTIFY_DONE;
 }
 
-static int decon_abd_register_function(struct decon_device *decon, struct abd_pin *pin, char *keyword,
+static int decon_abd_pin_register_function(struct decon_device *decon, struct abd_pin *pin, char *keyword,
 		irqreturn_t func(int irq, void *dev_id))
 {
 	int ret = 0, gpio = 0;
@@ -487,7 +602,6 @@ static int decon_abd_register_function(struct decon_device *decon, struct abd_pi
 	irqf_type = (flags & OF_GPIO_ACTIVE_LOW) ? IRQF_TRIGGER_FALLING : IRQF_TRIGGER_RISING;
 	decon_info("%s: %s is active %s, %s\n", __func__, keyword, pin->active_level ? "high" : "low",
 		(irqf_type == IRQF_TRIGGER_RISING) ? "rising" : "falling");
-	ret++;
 
 	pin->name = keyword;
 	pin->p_first.name = "first";
@@ -496,21 +610,23 @@ static int decon_abd_register_function(struct decon_device *decon, struct abd_pi
 
 	irq_set_irq_type(pin->irq, irqf_type);
 	irq_set_status_flags(pin->irq, _IRQ_NOAUTOEN);
-	decon_abd_clear_pending_bit(pin->irq);
+	decon_abd_pin_clear_pending_bit(pin->irq);
 
 	if (devm_request_irq(dev, pin->irq, func, irqf_type, keyword, decon)) {
 		decon_err("%s: failed to request irq for %s\n", __func__, keyword);
 		pin->gpio = 0;
 		pin->irq = 0;
-		ret--;
+		goto exit;
 	}
+
+	INIT_LIST_HEAD(&pin->handler_list);
 
 	pin->level = gpio_get_value(pin->gpio);
 	if (pin->level == pin->active_level) {
 		decon_info("%s: %s(%d) is already %s(%d)\n", __func__, keyword, pin->gpio,
 			(pin->active_level) ? "high" : "low", pin->level);
 
-		decon_abd_save_log_pin(decon, pin, trace, 1);
+		decon_abd_save_pin(decon, pin, trace, 1);
 
 		if (pin->name && !strcmp(pin->name, "pcd")) {
 			decon->ignore_vsync = 1;
@@ -522,35 +638,169 @@ exit:
 	return ret;
 }
 
-int decon_abd_register(struct decon_device *decon)
+static int decon_abd_pin_early_notifier_callback(struct notifier_block *this,
+			unsigned long event, void *data)
 {
-	int ret = 0;
+	struct abd_protect *abd = container_of(this, struct abd_protect, pin_early_notifier);
+	struct decon_device *decon = container_of(abd, struct decon_device, abd);
+	struct fb_event *evdata = data;
+	int fb_blank;
+
+	switch (event) {
+	case FB_EARLY_EVENT_BLANK:
+	case DECON_EARLY_EVENT_DOZE:
+		break;
+	default:
+		return NOTIFY_DONE;
+	}
+
+	fb_blank = *(int *)evdata->data;
+
+	if (evdata->info->node)
+		return NOTIFY_DONE;
+
+	if (IS_EARLY(event) && fb_blank == FB_BLANK_POWERDOWN)
+		decon_abd_pin_enable(decon, 0);
+
+	return NOTIFY_DONE;
+}
+
+static int decon_abd_pin_after_notifier_callback(struct notifier_block *this,
+			unsigned long event, void *data)
+{
+	struct abd_protect *abd = container_of(this, struct abd_protect, pin_after_notifier);
+	struct decon_device *decon = container_of(abd, struct decon_device, abd);
+	struct fb_event *evdata = data;
+	struct abd_pin *pin = NULL;
+	unsigned int i = 0;
+	int fb_blank;
+
+	switch (event) {
+	case FB_EVENT_BLANK:
+	case DECON_EVENT_DOZE:
+		break;
+	default:
+		return NOTIFY_DONE;
+	}
+
+	fb_blank = *(int *)evdata->data;
+
+	if (evdata->info->node)
+		return NOTIFY_DONE;
+
+	if (IS_AFTER(event) && fb_blank == FB_BLANK_UNBLANK)
+		decon_abd_pin_enable(decon, 1);
+	else if (IS_AFTER(event) && fb_blank == FB_BLANK_POWERDOWN) {
+		for (i = 0; i < ABD_PIN_MAX; i++) {
+			pin = &abd->pin[i];
+			if (pin && pin->irq)
+				decon_abd_pin_clear_pending_bit(pin->irq);
+		}
+	}
+
+	return NOTIFY_DONE;
+}
+
+static void decon_abd_pin_register(struct decon_device *decon)
+{
+	struct abd_protect *abd = &decon->abd;
+
+	spin_lock_init(&decon->abd.slock);
+
+	decon_abd_pin_register_function(decon, &abd->pin[ABD_PIN_PCD], "pcd", decon_abd_handler);
+	decon_abd_pin_register_function(decon, &abd->pin[ABD_PIN_DET], "det", decon_abd_handler);
+	decon_abd_pin_register_function(decon, &abd->pin[ABD_PIN_ERR], "err", decon_abd_handler);
+
+	abd->pin_early_notifier.notifier_call = decon_abd_pin_early_notifier_callback;
+	abd->pin_early_notifier.priority = decon_nb_priority_max.priority - 1;
+	decon_register_notifier(&abd->pin_early_notifier);
+
+	abd->pin_after_notifier.notifier_call = decon_abd_pin_after_notifier_callback;
+	abd->pin_after_notifier.priority = decon_nb_priority_min.priority + 1;
+	decon_register_notifier(&abd->pin_after_notifier);
+}
+
+static void decon_abd_register(struct decon_device *decon)
+{
 	struct abd_protect *abd = &decon->abd;
 
 	decon_info("%s: ++\n", __func__);
 
 	atomic_set(&decon->abd.event.log_idx, -1);
 
-	abd->u_first.name = abd->f_first.name = "first";
+	abd->u_first.name = abd->f_first.name = abd->b_first.name = "first";
 	abd->u_lcdon.name = abd->f_lcdon.name = "lcdon";
-	abd->u_event.name = abd->f_event.name = "event";
+	abd->u_event.name = abd->f_event.name = abd->b_event.name = "event";
 
-	spin_lock_init(&decon->abd.slock);
-
-	ret += decon_abd_register_function(decon, &abd->pin[ABD_PIN_PCD], "pcd", decon_abd_handler);
-	ret += decon_abd_register_function(decon, &abd->pin[ABD_PIN_DET], "det", decon_abd_handler);
-	ret += decon_abd_register_function(decon, &abd->pin[ABD_PIN_ERR], "err", decon_abd_handler);
-
-	if (ret < 0)
-		goto exit;
-
-	debugfs_create_file("debug", 0444, decon->debug_root, decon, &decon_debug_fops);
+	debugfs_create_file("debug", 0444, decon->debug_root, decon, &decon_abd_fops);
 
 	abd->reboot_notifier.notifier_call = decon_abd_reboot_notifier;
 	register_reboot_notifier(&abd->reboot_notifier);
-exit:
-	decon_info("%s: -- %d entity was registered\n", __func__, ret);
 
-	return ret;
+	decon_info("%s: -- entity was registered\n", __func__);
 }
+
+static int compare_with_name(struct device *dev, void *data)
+{
+	const char *keyword = data;
+
+	return dev_name(dev) ? !!strstr(dev_name(dev), keyword) : 0;
+}
+
+static struct device *find_platform_device_by_keyword(const char *keyword)
+{
+	return bus_find_device(&platform_bus_type, NULL, (void *)keyword, compare_with_name);
+}
+
+static struct decon_device *find_decon_device(void)
+{
+	struct device *dev = NULL;
+	struct platform_device *pdev = NULL;
+	struct decon_device *decon = NULL;
+
+	dev = find_platform_device_by_keyword("decon");
+	if (!dev) {
+		decon_info("bus_find_device fail for decon\n");
+		return ERR_CAST(dev);
+	}
+
+	pdev = to_platform_device(dev);
+	if (!pdev) {
+		decon_info("to_platform_device fail for decon\n");
+		return ERR_CAST(pdev);
+	}
+
+	decon = platform_get_drvdata(pdev);
+	if (!dev) {
+		decon_info("platform_get_drvdata fail for decon\n");
+		return ERR_CAST(decon);
+	}
+
+	return decon;
+}
+
+static int __init decon_abd_init(void)
+{
+	struct decon_device *decon = find_decon_device();
+
+	if (!decon) {
+		decon_info("find_decon_device fail\n");
+		return 0;
+	}
+
+	if (decon->out_type == DECON_OUT_DSI) {
+		decon->ignore_vsync = lcdtype ? 0 : 1;
+		decon_info("%s: lcdtype: %6X\n", __func__, lcdtype);
+
+		decon_abd_register(decon);
+		if (lcdtype) {
+			decon_abd_pin_register(decon);
+			decon_abd_pin_enable(decon, 1);
+		}
+	}
+
+	return 0;
+}
+
+late_initcall(decon_abd_init);
 

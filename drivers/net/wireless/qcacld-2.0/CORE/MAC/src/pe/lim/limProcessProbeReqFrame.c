@@ -725,6 +725,10 @@ limSendSmeProbeReqInd(tpAniSirGlobal pMac,
     vos_mem_copy(pSirSmeProbeReqInd->WPSPBCProbeReq.peerMacAddr, peerMacAddr, sizeof(tSirMacAddr));
 
     MTRACE(macTraceMsgTx(pMac, psessionEntry->peSessionId, msgQ.type));
+	
+    if (ProbeReqIELen > sizeof(pSirSmeProbeReqInd->WPSPBCProbeReq.probeReqIE))
+        ProbeReqIELen = sizeof(pSirSmeProbeReqInd->WPSPBCProbeReq.probeReqIE);
+
     pSirSmeProbeReqInd->WPSPBCProbeReq.probeReqIELen = (tANI_U16)ProbeReqIELen;
     vos_mem_copy(pSirSmeProbeReqInd->WPSPBCProbeReq.probeReqIE, pProbeReqIE, ProbeReqIELen);
 

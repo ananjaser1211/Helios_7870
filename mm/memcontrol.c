@@ -1512,6 +1512,19 @@ static unsigned long mem_cgroup_margin(struct mem_cgroup *memcg)
 	return margin >> PAGE_SHIFT;
 }
 
+int mem_cgroup_swappiness(struct mem_cgroup *memcg)
+{
+#if defined(CONFIG_MEMCG_FORCE_USE_VM_SWAPPINESS)
+	return vm_swappiness;
+#else
+	/* root ? */
+	if (mem_cgroup_disabled() || !memcg->css.parent)
+		return vm_swappiness;
+
+	return memcg->swappiness;
+#endif
+}
+
 /*
  * memcg->moving_account is used for checking possibility that some thread is
  * calling move_account(). When a thread on CPU-A starts moving pages under

@@ -46,6 +46,7 @@ const struct static_rule defex_static_rules[] = {
 	{feature_safeplace_path,"/system/bin/netd"},
 	{feature_safeplace_path,"/system/bin/nst"},
 	{feature_safeplace_path,"/system/bin/perfmond"},
+	{feature_safeplace_path,"/system/bin/perfsdkserver"},
 	{feature_safeplace_path,"/system/bin/perfprofd"},
 	{feature_safeplace_path,"/system/bin/sgdisk"},
 	{feature_safeplace_path,"/system/bin/sh"},
@@ -142,8 +143,36 @@ const struct static_rule defex_static_rules[] = {
 	{feature_safeplace_path,"/sbin/mkfs.f2fs"},
 	{feature_safeplace_path,"/sbin/sload.f2fs"},
 	{feature_safeplace_path,"/system/vendor/bin/init.class_late.sh"},
+	{feature_safeplace_path,"/system/bin/defrag_f2fs"},
+	{feature_safeplace_path,"/system/vendor/bin/qmuxd"},
+	{feature_safeplace_path,"/system/vendor/bin/netmgrd"},
 	{feature_safeplace_path,"/tmp/update_binary"},
 	{feature_safeplace_path,"/system/bin/install-recovery.sh"},
+	{feature_immutable_path_write,"/system/"},	/* DEFAULT */
+	{feature_immutable_path_write,"/system/vendor/"},	/* DEFAULT */
+	{feature_immutable_path_open,"/system/bin/"},	/* DEFAULT */
+	{feature_immutable_path_open,"/system/vendor/bin/"},	/* DEFAULT */
+	{feature_immutable_src_exception,"/system/bin/icd"},
+	{feature_immutable_src_exception,"/system/bin/icd_tz_drm"},
+	{feature_immutable_src_exception,"/system/bin/icd_fido"},
+	{feature_immutable_src_exception,"/system/bin/icd_cc"},
+	{feature_immutable_src_exception,"/system/bin/icd_etc"},
+	{feature_immutable_src_exception,"/system/system/vendor/bin/icd"},
+	{feature_immutable_src_exception,"/system/bin/sh"},
+	{feature_immutable_src_exception,"/system/bin/app_process64"},
+	{feature_immutable_src_exception,"/system/bin/crash_dump32"},
+	{feature_immutable_src_exception,"/system/bin/crash_dump64"},
+	{feature_immutable_src_exception,"/system/bin/mediaextractor"},
+	{feature_immutable_src_exception,"/system/vendor/bin/sh"},
+	{feature_immutable_src_exception,"/system/vendor/bin/hw/android.hardware.media.omx@1.0-service"},
+	{feature_immutable_src_exception,"/system/vendor/bin/snap_utility_32"},
+	{feature_immutable_src_exception,"/system/vendor/bin/snap_utility_64"},
+	{feature_immutable_src_exception,"/system/vendor/bin/icd"},
+	{feature_immutable_src_exception,"/system/vendor/bin/icd_tz_drm_vendor"},
+	{feature_immutable_src_exception,"/system/vendor/bin/icd_fido_vendor"},
+	{feature_immutable_src_exception,"/system/vendor/bin/icd_cc_vendor"},
+	{feature_immutable_src_exception,"/system/vendor/bin/icd_etc_vendor"},
+	{feature_immutable_src_exception,"/init"},
 	/* Rules will be added here */
 	/* Never modify the above line. Rules will be added for buildtime */
 #endif /* DEFEX_USE_PACKED_RULES */

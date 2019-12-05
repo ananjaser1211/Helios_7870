@@ -13,24 +13,22 @@ struct lcd_seq_info {
 	unsigned int	sleep;
 };
 
-struct i2c_rom_data {
-	u8 addr;
-	u8 val;
-};
+#define TYPE_WRITE	I2C_SMBUS_WRITE
+#define TYPE_DELAY	U8_MAX
 
 static u8 S2DPS01_INIT[] = {
-	0x24, 0x01,	/*BRT MODE i2c setting*/
-	0x22, 0x00,	/*BL 0 Code setting*/
-	0x23, 0x00,	/*BL 0 Code setting*/
-	0x11, 0xDF, /*Headroom up option*/
-	0x1D, 0x4F,	/*OVP 22V setting*/
-	0x1E, 0x78,	/*VP 5.9V setting*/
-	0x1F, 0x12,	/*VN -5.9V setting*/
-	0x24, 0x00,	/*BRT MODE i2c setting*/
+	TYPE_WRITE, 0x24, 0x01,	/*BRT MODE i2c setting*/
+	TYPE_WRITE, 0x22, 0x00,	/*BL 0 Code setting*/
+	TYPE_WRITE, 0x23, 0x00,	/*BL 0 Code setting*/
+	TYPE_WRITE, 0x11, 0xDF, /*Headroom up option*/
+	TYPE_WRITE, 0x1D, 0x4F,	/*OVP 22V setting*/
+	TYPE_WRITE, 0x1E, 0x78,	/*VP 5.9V setting*/
+	TYPE_WRITE, 0x1F, 0x12,	/*VN -5.9V setting*/
+	TYPE_WRITE, 0x24, 0x00,	/*BRT MODE i2c setting*/
 };
 
-static u8 S2DPS01_SUSPEND[] = {
-	0x24, 0x01,
+static u8 S2DPS01_EXIT[] = {
+	TYPE_WRITE, 0x24, 0x01,
 };
 
 static const unsigned char SEQ_TD4101_BLON[] = {

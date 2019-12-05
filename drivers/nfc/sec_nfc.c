@@ -709,6 +709,7 @@ static int nfc_state_print(struct sec_nfc_info *info)
 {
 	int en = gpio_get_value(info->pdata->ven);
 	int firm = gpio_get_value(info->pdata->firm);
+	int irq = gpio_get_value(info->pdata->irq);
 	int pvdd = 0;
 
 #ifdef CONFIG_SEC_NFC_LDO_CONTROL
@@ -725,7 +726,7 @@ static int nfc_state_print(struct sec_nfc_info *info)
 	pvdd = gpio_get_value(info->pdata->pvdd_en);
 #endif
 
-	pr_err("NFC: %s en: %d, firm: %d power: %d\n",__func__, en, firm, pvdd);
+	pr_err("NFC: %s en: %d, firm: %d power: %d irq: %d\n",__func__, en, firm, pvdd, irq);
 	pr_err("NFC: %s mode %d\n",__func__ , info->mode);
 
 	return 0;

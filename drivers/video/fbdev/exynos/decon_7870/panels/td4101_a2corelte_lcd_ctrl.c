@@ -13,14 +13,17 @@
 #include <linux/i2c.h>
 #include <linux/module.h>
 
-#include "../dsim.h"
+#if defined(CONFIG_SEC_INCELL)
+#include <linux/sec_incell.h>
+#endif
+
 #include "../decon.h"
+#include "../decon_notify.h"
+#include "../dsim.h"
 #include "dsim_panel.h"
 
 #include "td4101_a2corelte_param.h"
 #include "dd.h"
-#include "../decon_board.h"
-#include "../decon_notify.h"
 
 #define PANEL_STATE_SUSPENED	0
 #define PANEL_STATE_RESUMED	1
@@ -30,20 +33,16 @@
 #define TD4101_ID_LEN			3
 #define BRIGHTNESS_REG			0x51
 
-#if defined(CONFIG_SEC_INCELL)
-#include <linux/sec_incell.h>
-#endif
-
 #define DSI_WRITE(cmd, size)		do {				\
 	ret = dsim_write_hl_data(lcd, cmd, size);			\
 	if (ret < 0)							\
-		dev_err(&lcd->ld->dev, "%s: failed to write %s\n", __func__, #cmd);	\
+		dev_info(&lcd->ld->dev, "%s: failed to write %s\n", __func__, #cmd);	\
 } while (0)
 
 struct lcd_info {
 	unsigned int	connected;
-	unsigned int 	brightness;
-	unsigned int 	state;
+	unsigned int	brightness;
+	unsigned int	state;
 
 	struct lcd_device *ld;
 	struct backlight_device	*bd;
@@ -63,7 +62,7 @@ struct lcd_info {
 	struct mutex			lock;
 
 	struct notifier_block		fb_notif_panel;
-	struct i2c_client		*backlight_client;
+	struct i2c_client		*blic_client;
 };
 
 static int dsim_write_hl_data(struct lcd_info *lcd, const u8 *cmd, u32 cmdsize)
@@ -86,7 +85,7 @@ try_write:
 		if (--retry)
 			goto try_write;
 		else
-			dev_err(&lcd->ld->dev, "%s: fail. %02x, ret: %d\n", __func__, cmd[0], ret);
+			dev_info(&lcd->ld->dev, "%s: fail. %02x, ret: %d\n", __func__, cmd[0], ret);
 	}
 
 	return ret;
@@ -103,12 +102,13 @@ static int dsim_read_hl_data(struct lcd_info *lcd, u8 addr, u32 size, u8 *buf)
 
 try_read:
 	rx_size = dsim_read_data(lcd->dsim, MIPI_DSI_DCS_READ, (u32)addr, size, buf);
-	dev_info(&lcd->ld->dev, "%s: %02x, %d, %d\n", __func__, addr, size, rx_size);
+	dev_info(&lcd->ld->dev, "%s: %2d(%2d), %02x, %*ph%s\n", __func__, size, rx_size, addr,
+		min_t(u32, min_t(u32, size, rx_size), 5), buf, (rx_size > 5) ? "..." : "");
 	if (rx_size != size) {
 		if (--retry)
 			goto try_read;
 		else {
-			dev_err(&lcd->ld->dev, "%s: fail. %02x, %d\n", __func__, addr, rx_size);
+			dev_info(&lcd->ld->dev, "%s: fail. %02x, %d(%d)\n", __func__, addr, size, rx_size);
 			ret = -EPERM;
 		}
 	}
@@ -119,34 +119,49 @@ try_read:
 
 static int s2dps01_array_write(struct i2c_client *client, u8 *ptr, u8 len)
 {
-	int i = 0;
+	unsigned int i = 0;
 	int ret = 0;
-	struct lcd_info *lcd = i2c_get_clientdata(client);
+	u8 type = 0, command = 0, value = 0;
+	struct lcd_info *lcd = NULL;
+
+	if (!client)
+		return ret;
+
+	lcd = i2c_get_clientdata(client);
+	if (!lcd)
+		return ret;
 
 	if (!lcdtype) {
 		dev_info(&lcd->ld->dev, "%s: lcdtype: %d\n", __func__, lcdtype);
 		return ret;
 	}
 
-	if (len % 2) {
+	if (len % 3) {
 		dev_info(&lcd->ld->dev, "%s: length(%d) invalid\n", __func__, len);
 		return ret;
 	}
 
-	for (i = 0; i < len; i += 2) {
-		ret = i2c_smbus_write_byte_data(lcd->backlight_client, ptr[i], ptr[i + 1]);
-		if (ret < 0)
-			dev_err(&lcd->ld->dev, "%s: fail. %d, %2x, %2x\n", __func__, ret, ptr[i], ptr[i + 1]);
+	for (i = 0; i < len; i += 3) {
+		type = ptr[i + 0];
+		command = ptr[i + 1];
+		value = ptr[i + 2];
+
+		if (type == TYPE_DELAY)
+			(command < 20) ? mdelay(command) : msleep(command);
+		else {
+			ret = i2c_smbus_write_byte_data(client, command, value);
+			if (ret < 0)
+				dev_info(&lcd->ld->dev, "%s: fail. %2x, %2x, %d\n", __func__, command, value, ret);
+		}
 	}
 
 	return ret;
 }
 
-
 static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 {
 	int ret = 0;
-	unsigned char bl_reg[2];
+	unsigned char bl_reg[2] = {0, };
 
 	mutex_lock(&lcd->lock);
 
@@ -160,10 +175,9 @@ static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 	bl_reg[0] = BRIGHTNESS_REG;
 	bl_reg[1] = brightness_table[lcd->brightness];
 
-	dev_info(&lcd->ld->dev, "%s: brightness: %d, %d(%x), lx: %d\n", __func__,
-		lcd->brightness, brightness_table[lcd->brightness], bl_reg[1], lcd->lux);
-
 	DSI_WRITE(bl_reg, ARRAY_SIZE(bl_reg));
+	dev_info(&lcd->ld->dev, "%s: brightness: %3d, %3d(%2x), lx: %d\n", __func__,
+		lcd->brightness, brightness_table[lcd->brightness], bl_reg[1], lcd->lux);
 exit:
 	mutex_unlock(&lcd->lock);
 
@@ -185,7 +199,7 @@ static int panel_set_brightness(struct backlight_device *bd)
 	if (lcd->state == PANEL_STATE_RESUMED) {
 		ret = dsim_panel_set_brightness(lcd, 0);
 		if (ret < 0)
-			dev_err(&lcd->ld->dev, "%s: failed to set brightness\n", __func__);
+			dev_info(&lcd->ld->dev, "%s: failed to set brightness\n", __func__);
 	}
 
 	return ret;
@@ -237,7 +251,7 @@ static int td4101_read_id(struct lcd_info *lcd)
 
 	if (ret < 0 || !lcd->id_info.value) {
 		priv->lcdconnected = lcd->connected = 0;
-		dev_err(&lcd->ld->dev, "%s: connected lcd is invalid\n", __func__);
+		dev_info(&lcd->ld->dev, "%s: connected lcd is invalid\n", __func__);
 	}
 
 	dev_info(&lcd->ld->dev, "%s: %x\n", __func__, cpu_to_be32(lcd->id_info.value));
@@ -256,7 +270,7 @@ static int td4101_displayon_late(struct lcd_info *lcd)
 
 	DSI_WRITE(SEQ_DISPLAY_ON, ARRAY_SIZE(SEQ_DISPLAY_ON));
 
-	s2dps01_array_write(lcd->backlight_client, S2DPS01_INIT, ARRAY_SIZE(S2DPS01_INIT));
+	s2dps01_array_write(lcd->blic_client, S2DPS01_INIT, ARRAY_SIZE(S2DPS01_INIT));
 
 	dsim_panel_set_brightness(lcd, 1);
 
@@ -271,7 +285,7 @@ static int td4101_exit(struct lcd_info *lcd)
 
 	DSI_WRITE(SEQ_DISPLAY_OFF, ARRAY_SIZE(SEQ_DISPLAY_OFF));
 
-	s2dps01_array_write(lcd->backlight_client, S2DPS01_SUSPEND, ARRAY_SIZE(S2DPS01_SUSPEND));
+	s2dps01_array_write(lcd->blic_client, S2DPS01_EXIT, ARRAY_SIZE(S2DPS01_EXIT));
 
 	msleep(20);
 
@@ -423,14 +437,14 @@ static int s2dps01_probe(struct i2c_client *client,
 	}
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-		dev_err(&lcd->ld->dev, "%s: need I2C_FUNC_I2C\n", __func__);
+		dev_info(&lcd->ld->dev, "%s: need I2C_FUNC_I2C\n", __func__);
 		ret = -ENODEV;
 		goto exit;
 	}
 
 	i2c_set_clientdata(client, lcd);
 
-	lcd->backlight_client = client;
+	lcd->blic_client = client;
 
 	dev_info(&lcd->ld->dev, "%s: %s %s\n", __func__, dev_name(&client->adapter->dev), of_node_full_name(client->dev.of_node));
 
@@ -438,12 +452,12 @@ exit:
 	return ret;
 }
 
-static struct i2c_device_id s2dps01_id[] = {
+static struct i2c_device_id s2dps01_i2c_id[] = {
 	{"s2dps01", 0},
 	{},
 };
 
-MODULE_DEVICE_TABLE(i2c, s2dps01_id);
+MODULE_DEVICE_TABLE(i2c, s2dps01_i2c_id);
 
 static const struct of_device_id s2dps01_i2c_dt_ids[] = {
 	{ .compatible = "i2c,s2dps01" },
@@ -458,7 +472,7 @@ static struct i2c_driver s2dps01_i2c_driver = {
 		.name	= "s2dps01",
 		.of_match_table	= of_match_ptr(s2dps01_i2c_dt_ids),
 	},
-	.id_table = s2dps01_id,
+	.id_table = s2dps01_i2c_id,
 	.probe = s2dps01_probe,
 };
 
@@ -476,7 +490,7 @@ static int td4101_probe(struct lcd_info *lcd)
 
 	ret = td4101_read_init_info(lcd);
 	if (ret < 0)
-		dev_err(&lcd->ld->dev, "%s: failed to init information\n", __func__);
+		dev_info(&lcd->ld->dev, "%s: failed to init information\n", __func__);
 
 	lcd->fb_notif_panel.notifier_call = fb_notifier_callback;
 	decon_register_notifier(&lcd->fb_notif_panel);
@@ -485,7 +499,7 @@ static int td4101_probe(struct lcd_info *lcd)
 	incell_data.blank_unblank = incell_blank_unblank;
 #endif
 
-	s2dps01_id->driver_data = (kernel_ulong_t)lcd;
+	s2dps01_i2c_id->driver_data = (kernel_ulong_t)lcd;
 	i2c_add_driver(&s2dps01_i2c_driver);
 
 	dev_info(&lcd->ld->dev, "- %s\n", __func__);
@@ -511,6 +525,18 @@ static ssize_t window_type_show(struct device *dev,
 	sprintf(buf, "%02x %02x %02x\n", lcd->id_info.id[0], lcd->id_info.id[1], lcd->id_info.id[2]);
 
 	return strlen(buf);
+}
+
+static ssize_t brightness_table_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	int i;
+	char *pos = buf;
+
+	for (i = 0; i <= EXTEND_BRIGHTNESS; i++)
+		pos += sprintf(pos, "%3d %3d\n", i, brightness_table[i]);
+
+	return pos - buf;
 }
 
 static ssize_t lux_show(struct device *dev,
@@ -545,11 +571,13 @@ static ssize_t lux_store(struct device *dev,
 
 static DEVICE_ATTR(lcd_type, 0444, lcd_type_show, NULL);
 static DEVICE_ATTR(window_type, 0444, window_type_show, NULL);
+static DEVICE_ATTR(brightness_table, 0444, brightness_table_show, NULL);
 static DEVICE_ATTR(lux, 0644, lux_show, lux_store);
 
 static struct attribute *lcd_sysfs_attributes[] = {
 	&dev_attr_lcd_type.attr,
 	&dev_attr_window_type.attr,
+	&dev_attr_brightness_table.attr,
 	&dev_attr_lux.attr,
 	NULL,
 };
@@ -561,15 +589,15 @@ static const struct attribute_group lcd_sysfs_attr_group = {
 static void lcd_init_sysfs(struct lcd_info *lcd)
 {
 	int ret = 0;
-	struct i2c_client *clients[] = {lcd->backlight_client, NULL};
+	struct i2c_client *clients[] = {lcd->blic_client, NULL};
 
 	ret = sysfs_create_group(&lcd->ld->dev.kobj, &lcd_sysfs_attr_group);
 	if (ret < 0)
-		dev_err(&lcd->ld->dev, "failed to add lcd sysfs\n");
+		dev_info(&lcd->ld->dev, "failed to add lcd sysfs\n");
 
 	init_debugfs_backlight(lcd->bd, brightness_table, clients);
 
-	init_debugfs_param("blic", &S2DPS01_INIT, 8 * sizeof(u8), ARRAY_SIZE(S2DPS01_INIT), 2);
+	init_debugfs_param("blic_init", &S2DPS01_INIT, U8_MAX, ARRAY_SIZE(S2DPS01_INIT), 3);
 }
 
 static int dsim_panel_probe(struct dsim_device *dsim)
@@ -603,7 +631,7 @@ static int dsim_panel_probe(struct dsim_device *dsim)
 	lcd->dsim = dsim;
 	ret = td4101_probe(lcd);
 	if (ret < 0)
-		dev_err(&lcd->ld->dev, "%s: failed to probe panel\n", __func__);
+		dev_info(&lcd->ld->dev, "%s: failed to probe panel\n", __func__);
 
 	lcd_init_sysfs(lcd);
 
@@ -644,7 +672,6 @@ static int dsim_panel_displayon(struct dsim_device *dsim)
 static int dsim_panel_suspend(struct dsim_device *dsim)
 {
 	struct lcd_info *lcd = dsim->priv.par;
-	int ret = 0;
 
 	dev_info(&lcd->ld->dev, "+ %s: %d\n", __func__, lcd->state);
 
@@ -664,7 +691,7 @@ static int dsim_panel_suspend(struct dsim_device *dsim)
 	dev_info(&lcd->ld->dev, "- %s: %d, %d\n", __func__, lcd->state, lcd->connected);
 
 exit:
-	return ret;
+	return 0;
 }
 
 struct mipi_dsim_lcd_driver td4101_mipi_lcd_driver = {

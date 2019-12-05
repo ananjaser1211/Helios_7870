@@ -76,7 +76,7 @@ int dsim_panel_ops_init(struct dsim_device *dsim)
 	return ret;
 }
 
-int register_lcd_driver(struct mipi_dsim_lcd_driver *drv)
+int replace_lcd_driver(struct mipi_dsim_lcd_driver *drv)
 {
 	struct device_node *node;
 	int count = 0;
@@ -128,8 +128,7 @@ static int __init get_lcd_type(char *arg)
 {
 	get_option(&arg, &lcdtype);
 
-	dsim_info("--- Parse LCD TYPE ---\n");
-	dsim_info("LCDTYPE : %08x\n", lcdtype);
+	dsim_info("%s: lcdtype: %6X\n", __func__, lcdtype);
 
 	return 0;
 }

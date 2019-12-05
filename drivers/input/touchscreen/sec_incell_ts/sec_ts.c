@@ -1150,7 +1150,7 @@ static int sec_ts_parse_dt(struct i2c_client *client)
 	}
 #endif
 
-	if (strncmp(pdata->model_name, "G950", 4) == 0)
+	if ((strncmp(pdata->model_name, "G950", 4) == 0) || (strncmp(pdata->model_name, "J737", 4) == 0))
 		pdata->panel_revision = 0;
 	else
 		pdata->panel_revision = ((lcdtype >> 8) & 0xFF) >> 4;

@@ -36,8 +36,6 @@
 #define LDI_LEN_CHIP_ID				5
 #define LDI_LEN_MTP					35
 #define LDI_LEN_HBM					31
-#define LDI_LEN_RDDPM				1
-#define LDI_LEN_RDDSM				1
 #define LDI_LEN_ESDERR				1
 #define LDI_LEN_MANUFACTURE_INFO	20
 

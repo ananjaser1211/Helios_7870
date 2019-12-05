@@ -30,7 +30,7 @@ int dsms_is_initialized(void)
 
 static __init int dsms_init(void)
 {
-	printk(DSMS_TAG "Started"
+	dsms_log_write(LOG_INFO, "Started"
 #ifdef DSMS_DEBUG_ENABLE
 		" (DSMS_DEBUG_ENABLE"
 #ifdef DSMS_DEBUG_TRACE_DSMS_CALLS
