@@ -182,6 +182,14 @@ su -c "pm enable com.google.android.gsf/.update.SystemUpdateService"
 su -c "pm enable com.google.android.gsf/.update.SystemUpdateService$Receiver"
 su -c "pm enable com.google.android.gsf/.update.SystemUpdateService$SecretCodeReceiver"
 
+   log_print "Kill CPU Hotplug for good"
+
+# Samsung HOTPLUG Begone
+echo "0" > /sys/power/cpuhotplug/enable
+echo "0" > /sys/power/cpuhotplug/enabled
+echo "0" > /sys/power/cpuhotplug/governor/enable
+echo "0" > /sys/power/cpuhotplug/governor/enabled
+
    log_print "Remount"
 
 mount -o remount,ro -t auto /

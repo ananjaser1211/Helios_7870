@@ -1098,14 +1098,14 @@ on boot
 
     # Project-Butter for KRAKEN @SPARTANICUS
     # Permissions for Hotplug helpers and disablers
-    write 0 /sys/power/cpuhotplug/enabled
-    write 0 /sys/power/cpuhotplug/governor/enabled
+    write 0 /sys/power/cpuhotplug/enable
+    write 0 /sys/power/cpuhotplug/governor/enable
     chmod 000 /sys/power/cpuhotplug/control_online_cpus
-    chmod 000 /sys/power/cpuhotplug/enabled
+    chmod 000 /sys/power/cpuhotplug/enable
     chmod 000 /sys/power/cpuhotplug/max_online_cpu
     chmod 000 /sys/power/cpuhotplug/min_online_cpu
     chmod 000 /sys/power/cpuhotplug/governor/down_freq
-    chmod 000 /sys/power/cpuhotplug/governor/enabled
+    chmod 000 /sys/power/cpuhotplug/governor/enable
     chmod 000 /sys/power/cpuhotplug/governor/load
     chmod 000 /sys/power/cpuhotplug/governor/rate
     chmod 000 /sys/power/cpuhotplug/governor/up_freq

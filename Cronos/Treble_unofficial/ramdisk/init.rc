@@ -114,7 +114,7 @@ on init
     mkdir /mnt/secure/staging 0700 root root
     restorecon_recursive /mnt/secure/staging
     # Samsung ODE <<<
-    
+
     # Directory-target for where the secure container
     # imagefile directory will be bind-mounted
     mkdir /mnt/secure/asec 0700 root root
@@ -506,11 +506,11 @@ on post-fs-data
     chown system system /keydata
     chmod 0771 /keydata
     restorecon /keydata
-	
+
     chown system system /keyrefuge
     chmod 0771 /keyrefuge
     restorecon /keyrefuge
-	
+
     # mobicore
     export MC_AUTH_TOKEN_PATH /efs
     mkdir /efs/TEE  0770 radio system
@@ -528,7 +528,7 @@ on post-fs-data
     chmod 0660 /dev/tzic
     restorecon /dev/icd
     restorecon /dev/icdr
-    
+
     #SideSync
     chown system system /dev/android_ssusbcon
     chmod 0660 /dev/android_ssusbcon
@@ -697,7 +697,7 @@ on post-fs-data
     # give system access to wpa_supplicant.conf for backup and restore
     mkdir /data/misc/wifi 0770 wifi system
     mkdir /data/misc/wifi_share_profile 0771 wifi system
-    mkdir /data/misc/wifi_hostapd 0771 wifi system    
+    mkdir /data/misc/wifi_hostapd 0771 wifi system
 
     mkdir /data/log/wifi/ 0775 system root
     mkdir /data/misc/dhcp 0775 dhcp dhcp
@@ -715,7 +715,7 @@ on post-fs-data
     write /data/misc/conn/.wificable.info E
     chown system root /data/misc/conn/.wificable.info
     chmod 0666 /data/misc/conn/.wificable.info
-    
+
     mkdir /data/vendor 0771 root root
     mkdir /data/vendor_ce 0771 root root
     mkdir /data/vendor_de 0771 root root
@@ -878,7 +878,7 @@ on post-fs-data
 
 # Magnetic sensor YAS539 lib
     mkdir /data/vendor/yas_lib 0770 system system
-	
+
     # super slow motion
     mkdir /data/vendor/mediacodec 0700 mediacodec mediacodec
     mkdir /data/vendor/mediacodec/fruc_files 0700 mediacodec mediacodec
@@ -912,7 +912,7 @@ on post-fs-data
     chown cameraserver cameraserver /data/vendor/snap/snap_gpu_kernel_64.bin
     chmod 0755 /data/vendor/snap/snap_gpu_kernel_32.bin
     chmod 0755 /data/vendor/snap/snap_gpu_kernel_64.bin
-    
+
 # It is recommended to put unnecessary data/ initialization from post-fs-data
 # to start-zygote in device's init.rc to unblock zygote start.
 on zygote-start && property:ro.crypto.state=unencrypted
@@ -988,7 +988,7 @@ on boot
     chown system system /sys/class/sec/led/led_control
     chown system system /sys/class/sec/led/led_r
     chown system system /sys/class/sec/led/led_g
-    chown system system /sys/class/sec/led/led_b	
+    chown system system /sys/class/sec/led/led_b
 
     # Switch Device
     chown system radio /sys/class/sec/switch/usb_sel
@@ -998,7 +998,7 @@ on boot
     chown system radio /sys/class/sec/switch/apo_factory
     chown system radio /sys/class/sec/switch/afc_disable
     chown system radio /sys/class/sec/switch/hiccup
-    chown system radio /sys/class/sec/switch/jig_disable	
+    chown system radio /sys/class/sec/switch/jig_disable
     chown system radio /sys/class/sec/switch/factory_uart
 
     # OTG Test
@@ -1234,7 +1234,7 @@ on boot
 	chmod 0664 /sys/class/power_supply/battery/batt_tune_ui_term_cur_1st
 	chmod 0664 /sys/class/power_supply/battery/batt_tune_ui_term_cur_2nd
 	chmod 0664 /sys/class/power_supply/battery/batt_misc_event
-    chmod 0664 /sys/class/power_supply/battery/batt_tx_event 
+    chmod 0664 /sys/class/power_supply/battery/batt_tx_event
 	chown system radio /sys/class/power_supply/battery/batt_filter_cfg
 	chown system radio /sys/class/power_supply/battery/batt_current_ua_avg
 	chown system radio /sys/class/power_supply/battery/batt_current_ua_now
@@ -1299,7 +1299,7 @@ on boot
 	chown system radio /sys/class/power_supply/battery/wc_tx_en
 	chmod 0664 /sys/class/power_supply/battery/wc_tx_en
 	chown system system /dev/batt_misc
-	chmod 0664 /dev/batt_misc  
+	chmod 0664 /dev/batt_misc
 	chown system radio /sys/class/power_supply/battery/wc_tx_stop_capacity
 	chmod 0664 /sys/class/power_supply/battery/wc_tx_stop_capacity
 	chown system radio /sys/class/power_supply/battery/wc_tx_vout
@@ -1311,7 +1311,7 @@ on boot
 	chown system radio /sys/class/power_supply/battery/wc_tx_mfc_vin_from_uno
 	chmod 0660 /sys/class/power_supply/battery/wc_tx_mfc_vin_from_uno
 	chown system radio /sys/class/power_supply/battery/wc_tx_mfc_iin_from_uno
-	chmod 0660 /sys/class/power_supply/battery/wc_tx_mfc_iin_from_uno    
+	chmod 0660 /sys/class/power_supply/battery/wc_tx_mfc_iin_from_uno
 	chown system radio /sys/class/power_supply/battery/wc_tx_avg_curr
 	chmod 0660 /sys/class/power_supply/battery/wc_tx_avg_curr
 	chown system radio /sys/class/power_supply/battery/wc_tx_total_pwr
@@ -1327,7 +1327,7 @@ on boot
 	chown system system /sys/class/power_supply/battery/batt_shipmode_test
 	chmod 0664 /sys/class/power_supply/battery/batt_shipmode_test
 	chown system system /sys/class/power_supply/battery/batt_jig_gpio
-	chmod 0664 /sys/class/power_supply/battery/batt_jig_gpio 
+	chmod 0664 /sys/class/power_supply/battery/batt_jig_gpio
 	chown system system /sys/class/power_supply/battery/dchg_adc_mode_ctrl
 	chmod 0664 /sys/class/power_supply/battery/dchg_adc_mode_ctrl
 	chown system system /sys/class/power_supply/battery/direct_charging_status
@@ -1518,11 +1518,11 @@ on boot
     # Permissions for Auto Input
     chown system system /sys/class/sec/sec_auto_input/enable
     chown system system /sys/class/sec/sec_auto_input/tsp_event
-	
+
 	# MTP device permission
 	chmod 0660 /dev/usb_mtp_gadget
 	chown system mtp /dev/usb_mtp_gadget
-	mkdir /dev/socket/mtp 0770 system mtp	
+	mkdir /dev/socket/mtp 0770 system mtp
 
     # Define default initial receive window size in segments.
     setprop net.tcp.default_init_rwnd 60
@@ -1719,7 +1719,7 @@ on boot
     chown system radio /sys/class/sensors/hidden_hole/hh_write_all_data
     chown system radio /sys/class/sensors/hidden_hole/hh_is_exist_efs
     chown system radio /sys/class/sensors/hidden_hole/hh_ext_prox_th
-	
+
 on nonencrypted
     # mobicore mcRegistry
     mkdir /data/vendor/mcRegistry 0775 system system
@@ -1735,7 +1735,7 @@ on property:ro.build.version.release=9
     start zygote_secondaryP
 on property:ro.build.version.release=10
     start zygoteQ
-    start zygote_secondaryQ    
+    start zygote_secondaryQ
 
 on charger
     chmod 0664 /sys/class/power_supply/battery/batt_temp_table
@@ -2105,7 +2105,7 @@ service defrag_service /system/bin/idledefrag
 
 on property:vold.should_defrag=1
     start defrag_service
-    
+
 service SIDESYNC_service /system/bin/ss_conn_daemon
     class main
     socket ss_conn_daemon stream 0666 system system
