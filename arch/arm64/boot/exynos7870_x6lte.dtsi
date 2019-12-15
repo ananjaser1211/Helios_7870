@@ -453,8 +453,8 @@
 		/* For CPUFREQ table */
 		/* CL0 */
 		cl0_idx_num = <17>;
-		cl0_max_support_idx = <2>;
-		cl0_min_support_idx = <14>;
+		cl0_max_support_idx = <3>;
+		cl0_min_support_idx = <16>;
 		cl0_boot_max_qos = <1482000>;
 		cl0_boot_min_qos = <1482000>;
 		cl0_boot_lock_time = <40000000>;
@@ -463,8 +463,8 @@
 
 		/* CL1 */
 		cl1_idx_num = <17>;
-		cl1_max_support_idx = <2>;
-		cl1_min_support_idx = <14>;
+		cl1_max_support_idx = <3>;
+		cl1_min_support_idx = <16>;
 		cl1_boot_max_qos = <1482000>;
 		cl1_boot_min_qos = <1482000>;
 		cl1_boot_lock_time = <40000000>;
@@ -575,10 +575,10 @@
 		devfreq_domain_name = "dvfs_int";
 		opp_list_length = <4>;
 		/* idx freq volt */
-		opp_list = <0 400000 900000
-			    1 334000 900000
-			    2 200000 900000
-			    3 134000 900000>;
+		opp_list = <0 400000 875000
+			    1 334000 875000
+			    2 200000 875000
+			    3 134000 875000>;
 
 		/* <initial_freq, default_qos, suspend_freq, cal_qos_max, min, max> */
 		freq_info = <400000 134000 134000 400000 134000 400000>;
