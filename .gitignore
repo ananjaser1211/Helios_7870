@@ -166,3 +166,5 @@ Cronos/Out/*.zip
 Cronos/Out/*.img
 Cronos/Product/*.img
 Cronos/Product/*.zip
+arch/arm64/boot/dts/*.dtb
+arch/arm64/boot/dts/exynos7870.dtsi
