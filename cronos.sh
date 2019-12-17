@@ -351,9 +351,9 @@ PACK_FLASHABLE()
   zip -r $CR_OUT/$CR_NAME-$CR_VERSION-$FL_VARIANT-$CR_DATE.zip .
   cd $CR_DIR
   rm -rf $FL_EXPORT
-  echo " Zip Generated at $CR_OUT/$CR_NAME-$CR_VERSION-$FL_VARIANT-$CR_DATE.zip"
   # Copy zip to production
   cp $CR_OUT/$CR_NAME-$CR_VERSION-$FL_VARIANT-$CR_DATE.zip $CR_PRODUCT
+  echo " Zip Generated at $CR_PRODUCT/$CR_NAME-$CR_VERSION-$FL_VARIANT-$CR_DATE.zip"
   # Respect CLEAN build rules
   BUILD_CLEAN
 }
