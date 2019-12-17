@@ -1075,40 +1075,11 @@ on boot
     chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
     chmod 0660 /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
 
-    # Project-Butter for KRAKEN @SPARTANICUS
-    # Permissions for CPU DVFS helpers and disablers
+    # Permission for DVFS helper
     chown system radio /sys/power/cpufreq_min_limit
-    chmod 000 /sys/power/cpufreq_min_limit
+    chmod 0664 /sys/power/cpufreq_min_limit
     chown system radio /sys/power/cpufreq_max_limit
-    chmod 000 /sys/power/cpufreq_max_limit
-    chmod 000 /sys/power/cpufreq_table
-
-    # Project-Butter for KRAKEN @SPARTANICUS
-    # Permissions for GPU DVFS helpers and disablers
-    chmod 644 /sys/devices/11400000.mali/clock
-    chmod 000 /sys/devices/11400000.mali/dvfs
-    chmod 644 /sys/devices/11400000.mali/dvfs_governor
-    chmod 000 /sys/devices/11400000.mali/dvfs_max_lock
-    chmod 000 /sys/devices/11400000.mali/dvfs_max_lock_status
-    chmod 000 /sys/devices/11400000.mali/dvfs_min_lock
-    chmod 000 /sys/devices/11400000.mali/dvfs_min_lock_status
-    chmod 000 /sys/devices/11400000.mali/dvfs_period
-    chmod 000 /sys/devices/11400000.mali/dvfs_table
-    chmod 000 /sys/devices/11400000.mali/core_availability_policy
-
-    # Project-Butter for KRAKEN @SPARTANICUS
-    # Permissions for Hotplug helpers and disablers
-    write 0 /sys/power/cpuhotplug/enable
-    write 0 /sys/power/cpuhotplug/governor/enable
-    chmod 000 /sys/power/cpuhotplug/control_online_cpus
-    chmod 000 /sys/power/cpuhotplug/enable
-    chmod 000 /sys/power/cpuhotplug/max_online_cpu
-    chmod 000 /sys/power/cpuhotplug/min_online_cpu
-    chmod 000 /sys/power/cpuhotplug/governor/down_freq
-    chmod 000 /sys/power/cpuhotplug/governor/enable
-    chmod 000 /sys/power/cpuhotplug/governor/load
-    chmod 000 /sys/power/cpuhotplug/governor/rate
-    chmod 000 /sys/power/cpuhotplug/governor/up_freq
+    chmod 0664 /sys/power/cpufreq_max_limit
 
 	# permission for CHARGING
 	mkdir /efs/Battery 0775 radio system
