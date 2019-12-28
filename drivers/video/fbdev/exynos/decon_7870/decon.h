@@ -29,7 +29,6 @@
 #include "regs-decon.h"
 #include "decon_common.h"
 #include "./panels/decon_lcd.h"
-#include "decon_abd.h"
 
 extern struct ion_device *ion_exynos;
 extern struct decon_device *decon_int_drvdata;
@@ -628,6 +627,73 @@ void DISP_SS_DUMP(u32 type);
 #else
 #define DISP_SS_DUMP(...)
 #endif
+
+struct abd_log {
+	u64 stamp;
+
+	unsigned int level;
+	unsigned int state;
+	unsigned int onoff;
+
+	unsigned int winid;
+	struct sync_fence fence;
+
+	unsigned int frm_status;
+	unsigned long mif;
+	unsigned long iint;
+	unsigned long disp;
+};
+
+#define ABD_LOG_MAX	10
+
+struct abd_trace {
+	const char *name;
+	unsigned int count;
+	unsigned int lcdon_flag;
+	struct abd_log log[ABD_LOG_MAX];
+};
+
+struct abd_pin {
+	const char *name;
+	unsigned int irq;
+	int gpio;
+	int level;
+	int active_level;
+
+	struct abd_trace p_first;
+	struct abd_trace p_lcdon;
+	struct abd_trace p_event;
+
+	irq_handler_t	handler;
+	void		*dev_id;
+};
+
+enum {
+	ABD_PIN_PCD,
+	ABD_PIN_DET,
+	ABD_PIN_ERR,
+	ABD_PIN_MAX
+};
+
+struct abd_protect {
+	struct abd_pin pin[ABD_PIN_MAX];
+
+	struct abd_trace f_first;
+	struct abd_trace f_lcdon;
+	struct abd_trace f_event;
+
+	struct abd_trace u_first;
+	struct abd_trace u_lcdon;
+	struct abd_trace u_event;
+
+	unsigned int irq_enable;
+	struct notifier_block reboot_notifier;
+};
+
+void decon_abd_enable(struct decon_device *decon, int enable);
+int decon_abd_register(struct decon_device *decon);
+void decon_abd_save_log_fto(struct abd_protect *abd, struct sync_fence *fence);
+int decon_abd_register_pin_handler(int irq, irq_handler_t handler, void *dev_id);
 
 struct decon_device {
 	void __iomem			*regs;

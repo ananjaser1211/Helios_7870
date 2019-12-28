@@ -6,9 +6,6 @@
  * published by the Free Software Foundation.
  */
 
-#ifndef __DD_H__
-#define __DD_H__
-
 struct mdnie_info;
 struct mdnie_table;
 #if defined(CONFIG_DEBUG_FS) && !defined(CONFIG_SAMSUNG_PRODUCT_SHIP) && defined(CONFIG_SEC_GPIO_DVS) && defined(CONFIG_EXYNOS_DECON_MDNIE_LITE)
@@ -59,7 +56,5 @@ static inline int dd_simple_write_to_buffer(char *ibuf, size_t sizeof_ibuf,
 
 	return 0;
 };
-#endif
-
 #endif
 

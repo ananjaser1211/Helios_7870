@@ -174,7 +174,6 @@ struct mdnie_info {
 	struct mutex		lock;
 
 	unsigned int		enable;
-	unsigned int		lpm;
 
 	struct mdnie_tune	*tune;
 

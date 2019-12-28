@@ -51,8 +51,6 @@ struct mipi_dsim_lcd_driver *mipi_lcd_driver = &s6e8aa5x01_mipi_lcd_driver;
 struct mipi_dsim_lcd_driver *mipi_lcd_driver = &s6e8aa5x01_mipi_lcd_driver;
 #elif defined(CONFIG_PANEL_S6D7AT0B_M10LTE)
 struct mipi_dsim_lcd_driver *mipi_lcd_driver = &s6d7at0b_mipi_lcd_driver;
-#elif defined(CONFIG_PANEL_TD4101_A2CORELTE)
-struct mipi_dsim_lcd_driver *mipi_lcd_driver = &td4101_mipi_lcd_driver;
 #endif
 
 int dsim_panel_ops_init(struct dsim_device *dsim)
@@ -76,7 +74,7 @@ int dsim_panel_ops_init(struct dsim_device *dsim)
 	return ret;
 }
 
-int replace_lcd_driver(struct mipi_dsim_lcd_driver *drv)
+int register_lcd_driver(struct mipi_dsim_lcd_driver *drv)
 {
 	struct device_node *node;
 	int count = 0;
@@ -128,7 +126,8 @@ static int __init get_lcd_type(char *arg)
 {
 	get_option(&arg, &lcdtype);
 
-	dsim_info("%s: lcdtype: %6X\n", __func__, lcdtype);
+	dsim_info("--- Parse LCD TYPE ---\n");
+	dsim_info("LCDTYPE : %08x\n", lcdtype);
 
 	return 0;
 }

@@ -36,8 +36,10 @@
 #define LDI_LEN_CHIP_ID				5
 #define LDI_LEN_MTP					35
 #define LDI_LEN_HBM					31
+#define LDI_LEN_RDDPM				1
+#define LDI_LEN_RDDSM				1
 #define LDI_LEN_ESDERR				1
-#define LDI_LEN_MANUFACTURE_INFO	20
+#define LDI_LEN_MANUFACTURE_INFO	21
 
 /* offset is position including addr, not only para */
 #define LDI_OFFSET_AOR_1	10
@@ -56,7 +58,6 @@
 
 #define LDI_GPARA_DATE		4	/* 0xA1 5th para */
 #define LDI_GPARA_HBM_ELVSS	23	/* 0xB5 24th para */
-#define LDI_GPARA_MANUFACTURE_INFO	1	/* C9h 2nd Para */
 
 struct lcd_seq_info {
 	unsigned char	*cmd;
@@ -630,10 +631,12 @@ static unsigned char AOR_TABLE[EXTEND_BRIGHTNESS + 1][AID_CMD_CNT] = {
 /* platform brightness <-> acl opr and percent */
 static unsigned int brightness_opr_table[ACL_STATUS_MAX][EXTEND_BRIGHTNESS + 1] = {
 	{
-		[0 ... EXTEND_BRIGHTNESS]			= OPR_STATUS_OFF,
+		[0 ... UI_MAX_BRIGHTNESS - 1]	= OPR_STATUS_15P,
+		[UI_MAX_BRIGHTNESS ... 281]		= OPR_STATUS_OFF,	/* 420 */
+		[282 ... EXTEND_BRIGHTNESS]		= OPR_STATUS_08P
 	}, {
-		[0 ... 281]					= OPR_STATUS_15P,
-		[282 ... EXTEND_BRIGHTNESS]			= OPR_STATUS_08P
+		[0 ... 281]						= OPR_STATUS_15P,
+		[282 ... EXTEND_BRIGHTNESS]		= OPR_STATUS_08P
 	}
 };
 

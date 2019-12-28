@@ -36,6 +36,9 @@
  * ex) echo 1 2 3 4: 5 6 7 8 > /d/dd_backlight/bl_tuning = this means 1 2 3 4 for tune_value and 5 6 7 8 for brightness
  * ex) echo 0 > /d/dd_backlight/bl_tuning = this means reset brightness table to default
  *
+ * ex) echo 1 3 2 = echo 1 2 3 because we re-order it automatically
+ * ex) echo 2 1 3: 6 5 4 =  echo 1 2 3: 4 5 6 because we re-order it automatically
+ *
  * ex) echo 1 2 3 4: 5 6 7 > /d/dd_backlight/bl_tuning (X) because tune_value(1 2 3 4) part count is 4 but brightness(5 6 7) part count is 3
  * ex) echo 1 2 3 4: 5 6 7: 8 9 10 > /d/dd_backlight/bl_tuning (X) because we allow only one :(colon) to separate platform brightness point
  *
@@ -89,7 +92,7 @@ struct ic_info {
 	struct backlight_device *bd;
 	struct i2c_client *client;
 	unsigned int command;
-	int (*i2c_cmd)(struct i2c_client *client, unsigned int num, void *arg);
+	int (*i2c_cmd)(struct i2c_client *client, unsigned int cmd, void *arg);
 
 	char *i2c_debugfs_name;
 };
@@ -125,21 +128,9 @@ static void make_bl_default_point(struct bl_info *bl)
 	}
 }
 
-static void reverse_order(unsigned int *o, unsigned int size)
+static int cmp_number(const void *a, const void *b)
 {
-	unsigned int a = 0, b = size - 1, t;
-
-	if (!size || !b)
-		return;
-
-	while (a < b) {
-		t = o[a];
-		o[a] = o[b];
-		o[b] = t;
-
-		a++;
-		b--;
-	}
+	return -(*(unsigned int *)a - *(unsigned int *)b);
 }
 
 static unsigned int parse_curve(char *str, char *delim, unsigned int *out)
@@ -163,15 +154,14 @@ static unsigned int parse_curve(char *str, char *delim, unsigned int *out)
 	/* separate with delimiter */
 	i = 0;
 	while ((p = strsep(&str, delim)) != NULL) {
-		if (*p == '\0')
-			continue;
 		ret = kstrtouint(p, 0, out + i);
 		if (ret < 0)
 			break;
 		i++;
 	}
 
-	reverse_order(out, i);
+	/* big -> small */
+	sort(out, i, sizeof(unsigned int), cmp_number, NULL);
 
 	return i;
 }
@@ -342,19 +332,6 @@ static int bl_tuning_show(struct seq_file *m, void *unused)
 	for (i = 0; i <= bl->bd->props.max_brightness; i++)
 		seq_printf(m, "[%4d] = %4d\n", i, bl->brightness_table[i]);
 
-	seq_puts(m, "COPY FROM HERE------------------------------------\n");
-	seq_puts(m, "DEFAULT ------------------------------------------\n");
-	seq_printf(m, "%8s| %8s| %8s\n", " ", "tune", "platform");
-	for (i = BL_POINT_OFF; i >= end; i--) {
-		seq_printf(m, "%8s| %8d| %8d\n", BL_POINT_NAME[i], bl->default_tune_value[i], bl->default_brightness[i]);
-	};
-
-	if (off) {
-		seq_puts(m, "TUNING -------------------------------------------\n");
-		for (i = off; i >= 0; i--)
-			seq_printf(m, "%8s| %8d| %8d\n", " ", bl->input_tune_value[i], bl->input_brightness[i]);
-	}
-
 	seq_puts(m, "TABLE 2-------------------------------------------\n");
 	for (i = 0; i <= bl->bd->props.max_brightness; i++) {
 		seq_printf(m, "%d,", bl->brightness_table[i]);
@@ -372,6 +349,21 @@ static int bl_tuning_show(struct seq_file *m, void *unused)
 		}
 	}
 	seq_puts(m, "\n");
+
+	seq_puts(m, "DEFAULT ------------------------------------------\n");
+	seq_printf(m, "%8s| %8s| %8s\n", " ", "tune", "platform");
+	for (i = BL_POINT_OFF; i >= end; i--) {
+		seq_printf(m, "%8s| %8d| %8d\n", BL_POINT_NAME[i], bl->default_tune_value[i], bl->default_brightness[i]);
+	};
+
+	if (!off)
+		return 0;
+
+	seq_puts(m, "TUNING -------------------------------------------\n");
+	for (i = off; i >= 0; i--)
+		seq_printf(m, "%8s| %8d| %8d\n", " ", bl->input_tune_value[i], bl->input_brightness[i]);
+
+	seq_puts(m, "--------------------------------------------------\n");
 
 	return 0;
 }
@@ -405,8 +397,6 @@ static ssize_t bl_tuning_write(struct file *f, const char __user *user_buf,
 				break;
 			}
 		}
-		memset(bl->input_tune_value, 0, sizeof(bl->input_tune_value));
-		memset(bl->input_brightness, 0, sizeof(bl->input_brightness));
 		goto exit;
 	}
 
@@ -464,10 +454,8 @@ static ssize_t ic_tuning_write(struct file *f, const char __user *user_buf,
 {
 	struct ic_info *ic = ((struct seq_file *)f->private_data)->private;
 	int ret = 0, command = 0, value = 0;
+	u32 i2c_msg[2] = {0, };
 	char ibuf[INPUT_LIMIT] = {0, };
-	struct i2c_msg xfer[2] = {{0, }, {0, } };
-	u8 i2c_wbuf[3] = {0, };
-	u8 i2c_rbuf[1] = {0, };
 
 	if (ic->bd->props.fb_blank != FB_BLANK_UNBLANK) {
 		dbg_info("fb_blank is invalid, %d\n", ic->bd->props.fb_blank);
@@ -496,52 +484,24 @@ static ssize_t ic_tuning_write(struct file *f, const char __user *user_buf,
 		goto exit;
 	}
 
-	dbg_info("command: %02x, value: %02x%s\n", command, value, (ret == 2) ? ", tx_mode" : "");
+	dbg_info("command: %02x, value: %02x%s\n", command, value, (ret == 2) ? ", write_mode" : "");
 
 	ic->command = command;
 
-	if (command > U8_MAX) {
-		i2c_wbuf[0] = (command & 0xff00) >> 8;
-		i2c_wbuf[1] = (command & 0x00ff);
-		i2c_wbuf[2] = value;
+	i2c_msg[0] = command;
+	i2c_msg[1] = value;
 
-		xfer[0].addr = ic->client->addr;
-		xfer[0].flags = I2C_M_TEN;
-		xfer[0].len = 3;
-		xfer[0].buf = i2c_wbuf;
-
-		xfer[1].addr = ic->client->addr;
-		xfer[1].flags = I2C_M_TEN | I2C_M_RD;
-		xfer[1].len = ARRAY_SIZE(i2c_rbuf);
-		xfer[1].buf = i2c_rbuf;
-	} else {
-		i2c_wbuf[0] = (command & 0x00ff);
-		i2c_wbuf[1] = value;
-
-		xfer[0].addr = ic->client->addr;
-		xfer[0].flags = 0;
-		xfer[0].len = 2;
-		xfer[0].buf = i2c_wbuf;
-
-		xfer[1].addr = ic->client->addr;
-		xfer[1].flags = I2C_M_RD;
-		xfer[1].len = ARRAY_SIZE(i2c_rbuf);
-		xfer[1].buf = i2c_rbuf;
-	}
-
-	/* tx */
 	if (ret == 2) {
-		ret = ic->i2c_cmd ? ic->i2c_cmd(ic->client, 1, (void *)&xfer) : i2c_smbus_write_byte_data(ic->client, ic->command, value);
+		ret = ic->i2c_cmd ? ic->i2c_cmd(ic->client, 0, (void *)&i2c_msg) : i2c_smbus_write_byte_data(ic->client, ic->command, value);
 		if (ret < 0)
 			dbg_info("%02x, i2c_tx errno: %d\n", command, ret);
 	}
 
-	/* rx */
-	ret = ic->i2c_cmd ? ic->i2c_cmd(ic->client, 2, (void *)&xfer) : i2c_smbus_read_byte_data(ic->client, ic->command);
+	ret = ic->i2c_cmd ? ic->i2c_cmd(ic->client, I2C_M_RD, (void *)&i2c_msg) : i2c_smbus_read_byte_data(ic->client, ic->command);
 	if (ret < 0)
 		dbg_info("%02x, i2c_rx errno: %d\n", command, ret);
 	else
-		dbg_info("%02x, i2c_rx: %02x\n", command, ret);
+		dbg_info("%02x, i2c_rx %02x\n", command, ret);
 
 exit:
 	return count;

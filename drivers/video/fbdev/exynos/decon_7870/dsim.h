@@ -55,6 +55,10 @@
 extern struct dsim_device *dsim0_for_decon;
 extern struct dsim_device *dsim1_for_decon;
 
+#define PANEL_STATE_SUSPENED	0
+#define PANEL_STATE_RESUMED		1
+#define PANEL_STATE_SUSPENDING	2
+
 
 enum mipi_dsim_pktgo_state {
 	DSIM_PKTGO_DISABLED,

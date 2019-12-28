@@ -13,13 +13,14 @@
 #include <linux/i2c.h>
 #include <linux/module.h>
 
-#include "../decon.h"
-#include "../decon_notify.h"
 #include "../dsim.h"
+#include "../decon.h"
 #include "dsim_panel.h"
 
 #include "s6d7at0b_m10lte_param.h"
 #include "dd.h"
+#include "../decon_board.h"
+#include "../decon_notify.h"
 
 #define PANEL_STATE_SUSPENED	0
 #define PANEL_STATE_RESUMED	1
@@ -29,12 +30,15 @@
 #define S6D7AT0B_ID_LEN			3
 #define BRIGHTNESS_REG			0x51
 
+#define VGL_READ_REG			0xF4
+#define VGL_READ_LEN			5
+
 #define get_bit(value, shift, width)	((value >> shift) & (GENMASK(width - 1, 0)))
 
 #define DSI_WRITE(cmd, size)		do {				\
 	ret = dsim_write_hl_data(lcd, cmd, size);			\
 	if (ret < 0)							\
-		dev_info(&lcd->ld->dev, "%s: failed to write %s\n", __func__, #cmd);	\
+		dev_err(&lcd->ld->dev, "%s: failed to write %s\n", __func__, #cmd);	\
 } while (0)
 
 struct lcd_info {
@@ -55,13 +59,15 @@ struct lcd_info {
 		u32			value;
 	} id_info;
 
-	int				lux;
+	int						lux;
 
 	struct dsim_device		*dsim;
 	struct mutex			lock;
 
 	struct notifier_block		fb_notif_panel;
-	struct i2c_client		*blic_client;
+	struct i2c_client		*backlight_client;
+
+	unsigned char			vgl_reg[VGL_READ_LEN+1];
 };
 
 static int dsim_write_hl_data(struct lcd_info *lcd, const u8 *cmd, u32 cmdsize)
@@ -84,7 +90,7 @@ try_write:
 		if (--retry)
 			goto try_write;
 		else
-			dev_info(&lcd->ld->dev, "%s: fail. %02x, ret: %d\n", __func__, cmd[0], ret);
+			dev_err(&lcd->ld->dev, "%s: fail. %02x, ret: %d\n", __func__, cmd[0], ret);
 	}
 
 	return ret;
@@ -101,13 +107,12 @@ static int dsim_read_hl_data(struct lcd_info *lcd, u8 addr, u32 size, u8 *buf)
 
 try_read:
 	rx_size = dsim_read_data(lcd->dsim, MIPI_DSI_DCS_READ, (u32)addr, size, buf);
-	dev_info(&lcd->ld->dev, "%s: %2d(%2d), %02x, %*ph%s\n", __func__, size, rx_size, addr,
-		min_t(u32, min_t(u32, size, rx_size), 5), buf, (rx_size > 5) ? "..." : "");
+	dev_info(&lcd->ld->dev, "%s: %02x, %d, %d\n", __func__, addr, size, rx_size);
 	if (rx_size != size) {
 		if (--retry)
 			goto try_read;
 		else {
-			dev_info(&lcd->ld->dev, "%s: fail. %02x, %d(%d)\n", __func__, addr, size, rx_size);
+			dev_err(&lcd->ld->dev, "%s: fail. %02x, %d\n", __func__, addr, rx_size);
 			ret = -EPERM;
 		}
 	}
@@ -118,17 +123,9 @@ try_read:
 
 static int lm3632_array_write(struct i2c_client *client, u8 *ptr, u8 len)
 {
-	unsigned int i = 0;
+	int i = 0;
 	int ret = 0;
-	u8 command = 0, value = 0;
-	struct lcd_info *lcd = NULL;
-
-	if (!client)
-		return ret;
-
-	lcd = i2c_get_clientdata(client);
-	if (!lcd)
-		return ret;
+	struct lcd_info *lcd = i2c_get_clientdata(client);
 
 	if (!lcdtype) {
 		dev_info(&lcd->ld->dev, "%s: lcdtype: %d\n", __func__, lcdtype);
@@ -141,12 +138,9 @@ static int lm3632_array_write(struct i2c_client *client, u8 *ptr, u8 len)
 	}
 
 	for (i = 0; i < len; i += 2) {
-		command = ptr[i + 0];
-		value = ptr[i + 1];
-
-		ret = i2c_smbus_write_byte_data(client, command, value);
+		ret = i2c_smbus_write_byte_data(lcd->backlight_client, ptr[i], ptr[i + 1]);
 		if (ret < 0)
-			dev_info(&lcd->ld->dev, "%s: fail. %2x, %2x, %d\n", __func__, command, value, ret);
+			dev_err(&lcd->ld->dev, "%s: fail. %d, %2x, %2x\n", __func__, ret, ptr[i], ptr[i + 1]);
 	}
 
 	return ret;
@@ -155,7 +149,7 @@ static int lm3632_array_write(struct i2c_client *client, u8 *ptr, u8 len)
 static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 {
 	int ret = 0;
-	unsigned char bl_reg[3] = {0, };
+	unsigned char bl_reg[3];
 
 	mutex_lock(&lcd->lock);
 
@@ -170,14 +164,15 @@ static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 	bl_reg[1] = get_bit(brightness_table[lcd->brightness], 4, 8);
 	bl_reg[2] = get_bit(brightness_table[lcd->brightness], 0, 4) << 4 | BIT(0);
 
+	dev_info(&lcd->ld->dev, "%s: brightness: %d, %d(%x %x), lx: %d\n", __func__,
+		lcd->brightness, brightness_table[lcd->brightness], bl_reg[1], bl_reg[2], lcd->lux);
+
 	DSI_WRITE(SEQ_TEST_KEY_ON_9F, ARRAY_SIZE(SEQ_TEST_KEY_ON_9F));
 
 	DSI_WRITE(bl_reg, ARRAY_SIZE(bl_reg));
 
 	DSI_WRITE(SEQ_TEST_KEY_OFF_9F, ARRAY_SIZE(SEQ_TEST_KEY_OFF_9F));
 
-	dev_info(&lcd->ld->dev, "%s: brightness: %3d, %4d(%2x %2x), lx: %d\n", __func__,
-		lcd->brightness, brightness_table[lcd->brightness], bl_reg[1], bl_reg[2], lcd->lux);
 exit:
 	mutex_unlock(&lcd->lock);
 
@@ -199,7 +194,7 @@ static int panel_set_brightness(struct backlight_device *bd)
 	if (lcd->state == PANEL_STATE_RESUMED) {
 		ret = dsim_panel_set_brightness(lcd, 0);
 		if (ret < 0)
-			dev_info(&lcd->ld->dev, "%s: failed to set brightness\n", __func__);
+			dev_err(&lcd->ld->dev, "%s: failed to set brightness\n", __func__);
 	}
 
 	return ret;
@@ -237,10 +232,29 @@ static int s6d7at0b_read_id(struct lcd_info *lcd)
 	ret = dsim_read_hl_data(lcd, S6D7AT0B_ID_REG, S6D7AT0B_ID_LEN, lcd->id_info.id);
 	if (ret < 0 || !lcd->id_info.value) {
 		priv->lcdconnected = lcd->connected = 0;
-		dev_info(&lcd->ld->dev, "%s: connected lcd is invalid\n", __func__);
+		dev_err(&lcd->ld->dev, "%s: connected lcd is invalid\n", __func__);
 	}
 
 	dev_info(&lcd->ld->dev, "%s: %x\n", __func__, cpu_to_be32(lcd->id_info.value));
+
+	return ret;
+}
+
+static int vgl_read_reg(struct lcd_info *lcd)
+{
+	int ret = 0;
+	unsigned char buf[VGL_READ_LEN] = {0, };
+	unsigned int pwrctl_cmd_cnt = VGL_READ_LEN + 1;
+
+	ret = dsim_read_hl_data(lcd, VGL_READ_REG, VGL_READ_LEN, buf);
+	if (ret < 0)
+		dev_err(&lcd->ld->dev, "%s: read fail\n", __func__);
+
+	lcd->vgl_reg[0] = VGL_READ_REG;
+
+	memcpy(&lcd->vgl_reg[1], buf, VGL_READ_LEN);
+
+	dev_info(&lcd->ld->dev, "%s: %*ph\n", __func__, pwrctl_cmd_cnt, lcd->vgl_reg);
 
 	return ret;
 }
@@ -328,6 +342,10 @@ static int s6d7at0b_init(struct lcd_info *lcd)
 	DSI_WRITE(SEQ_S6D7AT0B_53, ARRAY_SIZE(SEQ_S6D7AT0B_53));
 	DSI_WRITE(SEQ_S6D7AT0B_55, ARRAY_SIZE(SEQ_S6D7AT0B_55));
 
+#if defined(CONFIG_SEC_FACTORY)
+	vgl_read_reg(lcd);
+#endif
+
 	DSI_WRITE(SEQ_SLEEP_OUT, ARRAY_SIZE(SEQ_SLEEP_OUT));
 	msleep(120);
 
@@ -361,7 +379,7 @@ static int fb_notifier_callback(struct notifier_block *self,
 	dev_info(&lcd->ld->dev, "%s: %d\n", __func__, fb_blank);
 
 	if (evdata->info->node)
-		return NOTIFY_DONE;
+		return 0;
 
 	if (fb_blank == FB_BLANK_UNBLANK)
 		s6d7at0b_displayon_late(lcd);
@@ -385,14 +403,14 @@ static int lm3632_probe(struct i2c_client *client,
 	}
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-		dev_info(&lcd->ld->dev, "%s: need I2C_FUNC_I2C\n", __func__);
+		dev_err(&lcd->ld->dev, "%s: need I2C_FUNC_I2C\n", __func__);
 		ret = -ENODEV;
 		goto exit;
 	}
 
 	i2c_set_clientdata(client, lcd);
 
-	lcd->blic_client = client;
+	lcd->backlight_client = client;
 
 	dev_info(&lcd->ld->dev, "%s: %s %s\n", __func__, dev_name(&client->adapter->dev), of_node_full_name(client->dev.of_node));
 
@@ -400,12 +418,12 @@ exit:
 	return ret;
 }
 
-static struct i2c_device_id lm3632_i2c_id[] = {
+static struct i2c_device_id lm3632_id[] = {
 	{"lm3632", 0},
 	{},
 };
 
-MODULE_DEVICE_TABLE(i2c, lm3632_i2c_id);
+MODULE_DEVICE_TABLE(i2c, lm3632_id);
 
 static const struct of_device_id lm3632_i2c_dt_ids[] = {
 	{ .compatible = "i2c,lm3632" },
@@ -420,7 +438,7 @@ static struct i2c_driver lm3632_i2c_driver = {
 		.name	= "lm3632",
 		.of_match_table	= of_match_ptr(lm3632_i2c_dt_ids),
 	},
-	.id_table = lm3632_i2c_id,
+	.id_table = lm3632_id,
 	.probe = lm3632_probe,
 };
 
@@ -438,13 +456,19 @@ static int s6d7at0b_probe(struct lcd_info *lcd)
 
 	ret = s6d7at0b_read_init_info(lcd);
 	if (ret < 0)
-		dev_info(&lcd->ld->dev, "%s: failed to init information\n", __func__);
+		dev_err(&lcd->ld->dev, "%s: failed to init information\n", __func__);
 
 	lcd->fb_notif_panel.notifier_call = fb_notifier_callback;
 	decon_register_notifier(&lcd->fb_notif_panel);
 
-	lm3632_i2c_id->driver_data = (kernel_ulong_t)lcd;
+	lm3632_id->driver_data = (kernel_ulong_t)lcd;
 	i2c_add_driver(&lm3632_i2c_driver);
+
+#if defined(CONFIG_SEC_FACTORY)
+	DSI_WRITE(SEQ_TEST_KEY_ON_F0, ARRAY_SIZE(SEQ_TEST_KEY_ON_F0));
+	vgl_read_reg(lcd);
+	DSI_WRITE(SEQ_TEST_KEY_OFF_F0, ARRAY_SIZE(SEQ_TEST_KEY_OFF_F0));
+#endif
 
 	dev_info(&lcd->ld->dev, "- %s\n", __func__);
 
@@ -466,7 +490,7 @@ static ssize_t window_type_show(struct device *dev,
 {
 	struct lcd_info *lcd = dev_get_drvdata(dev);
 
-	sprintf(buf, "%02x %02x %02x\n", lcd->id_info.id[0], lcd->id_info.id[1], lcd->id_info.id[2]);
+	sprintf(buf, "%x %x %x\n", lcd->id_info.id[0], lcd->id_info.id[1], lcd->id_info.id[2]);
 
 	return strlen(buf);
 }
@@ -558,15 +582,15 @@ static const struct attribute_group lcd_sysfs_attr_group = {
 static void lcd_init_sysfs(struct lcd_info *lcd)
 {
 	int ret = 0;
-	struct i2c_client *clients[] = {lcd->blic_client, NULL};
+	struct i2c_client *clients[] = {lcd->backlight_client, NULL};
 
 	ret = sysfs_create_group(&lcd->ld->dev.kobj, &lcd_sysfs_attr_group);
 	if (ret < 0)
-		dev_info(&lcd->ld->dev, "failed to add lcd sysfs\n");
+		dev_err(&lcd->ld->dev, "failed to add lcd sysfs\n");
 
 	init_debugfs_backlight(lcd->bd, brightness_table, clients);
 
-	init_debugfs_param("blic_init", &LM3632_INIT, U8_MAX, ARRAY_SIZE(LM3632_INIT), 2);
+	init_debugfs_param("blic", &LM3632_INIT, 8 * sizeof(u8), ARRAY_SIZE(LM3632_INIT), 2);
 }
 
 static int dsim_panel_probe(struct dsim_device *dsim)
@@ -600,7 +624,7 @@ static int dsim_panel_probe(struct dsim_device *dsim)
 	lcd->dsim = dsim;
 	ret = s6d7at0b_probe(lcd);
 	if (ret < 0)
-		dev_info(&lcd->ld->dev, "%s: failed to probe panel\n", __func__);
+		dev_err(&lcd->ld->dev, "%s: failed to probe panel\n", __func__);
 
 	lcd_init_sysfs(lcd);
 
@@ -615,7 +639,9 @@ static int dsim_panel_resume_early(struct dsim_device *dsim)
 
 	dev_info(&lcd->ld->dev, "+ %s\n", __func__);
 
-	lm3632_array_write(lcd->blic_client, LM3632_INIT, ARRAY_SIZE(LM3632_INIT));
+	/* VSP VSN setting, So, It should be called before power enabling */
+
+	lm3632_array_write(lcd->backlight_client, LM3632_INIT, ARRAY_SIZE(LM3632_INIT));
 
 	dev_info(&lcd->ld->dev, "- %s: %d, %d\n", __func__, lcd->state, lcd->connected);
 
@@ -643,6 +669,7 @@ static int dsim_panel_displayon(struct dsim_device *dsim)
 static int dsim_panel_suspend(struct dsim_device *dsim)
 {
 	struct lcd_info *lcd = dsim->priv.par;
+	int ret = 0;
 
 	dev_info(&lcd->ld->dev, "+ %s: %d\n", __func__, lcd->state);
 
@@ -660,7 +687,7 @@ static int dsim_panel_suspend(struct dsim_device *dsim)
 	dev_info(&lcd->ld->dev, "- %s: %d, %d\n", __func__, lcd->state, lcd->connected);
 
 exit:
-	return 0;
+	return ret;
 }
 
 struct mipi_dsim_lcd_driver s6d7at0b_mipi_lcd_driver = {
@@ -670,4 +697,3 @@ struct mipi_dsim_lcd_driver s6d7at0b_mipi_lcd_driver = {
 	.displayon	= dsim_panel_displayon,
 	.suspend	= dsim_panel_suspend,
 };
-

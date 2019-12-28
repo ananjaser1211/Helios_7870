@@ -43,7 +43,7 @@
 #define LDI_LEN_ESDERR		1
 #define LDI_LEN_HBM_GAMMA_1	6
 #define LDI_LEN_HBM_GAMMA_2	15
-#define LDI_LEN_MANUFACTURE_INFO	20
+#define LDI_LEN_MANUFACTURE_INFO	21
 
 /* offset is position including addr, not only para */
 #define LDI_OFFSET_AOR_1	1
@@ -60,7 +60,6 @@
 #define LDI_GPARA_DATE		40	/* 0xC8 41th para */
 #define LDI_GPARA_HBM_GAMMA_1	33	/* 0xC8 34th ~ 39th para */
 #define LDI_GPARA_HBM_GAMMA_2	72	/* 0xC8 73th ~ 87th para */
-#define LDI_GPARA_MANUFACTURE_INFO	1	/* C9h 2nd Para */
 
 struct lcd_seq_info {
 	unsigned char	*cmd;
@@ -255,57 +254,11 @@ static const unsigned char SEQ_MTP_READ_HBM_GP_2[] = {
 	LDI_GPARA_HBM_GAMMA_2,
 };
 
-#if defined(CONFIG_DISPLAY_USE_INFO)
-struct bit_info {
-	unsigned int reg;
-	unsigned int len;
-	char **print;
-	unsigned int expect;
-	unsigned int invert;
-	unsigned int mask;
-	unsigned int result;
-};
+#ifdef CONFIG_DISPLAY_USE_INFO
 
-enum {
-	LDI_BIT_ENUM_05,	LDI_BIT_ENUM_RDNUMED = LDI_BIT_ENUM_05,
-	LDI_BIT_ENUM_0A,	LDI_BIT_ENUM_RDDPM = LDI_BIT_ENUM_0A,
-	LDI_BIT_ENUM_0E,	LDI_BIT_ENUM_RDDSM = LDI_BIT_ENUM_0E,
-	LDI_BIT_ENUM_0F,	LDI_BIT_ENUM_RDDSDR = LDI_BIT_ENUM_0F,
-	LDI_BIT_ENUM_EE,	LDI_BIT_ENUM_ESDERR = LDI_BIT_ENUM_EE,
-	LDI_BIT_ENUM_MAX
-};
-
-char *LDI_BIT_DESC_05[BITS_PER_BYTE] = {
-	[0 ... 6] = "number of corrupted packets",
-	[7] = "overflow on number of corrupted packets",
-};
-
-char *LDI_BIT_DESC_0A[BITS_PER_BYTE] = {
-	[2] = "Display is Off",
-	[7] = "Booster has a fault",
-};
-
-char *LDI_BIT_DESC_0E[BITS_PER_BYTE] = {
-	[0] = "Error on DSI",
-};
-
-char *LDI_BIT_DESC_0F[BITS_PER_BYTE] = {
-	[7] = "Register Loading Detection",
-};
-
-char *LDI_BIT_DESC_EE[BITS_PER_BYTE] = {
-	[2] = "VLIN3 error",
-	[3] = "ELVDD error",
-	[6] = "VLIN1 error",
-};
-
-struct bit_info ldi_bit_info_list[LDI_BIT_ENUM_MAX] = {
-	[LDI_BIT_ENUM_05] = {0x05, 1, LDI_BIT_DESC_05, 0x00, },
-	[LDI_BIT_ENUM_0A] = {0x0A, 1, LDI_BIT_DESC_0A, 0x9C, .invert = (BIT(2) | BIT(7)), },
-	[LDI_BIT_ENUM_0E] = {0x0E, 1, LDI_BIT_DESC_0E, 0x00, },
-	[LDI_BIT_ENUM_0F] = {0x0F, 1, LDI_BIT_DESC_0F, 0x80, .invert = (BIT(7)), },
-	[LDI_BIT_ENUM_EE] = {0xEE, 1, LDI_BIT_DESC_EE, 0x00, },
-};
+#define ERR_READ_REG 0xee
+#define ERR_RDNUMED_REG 0x05
+#define ERR_RDDSDR_REG 0x0f
 
 /* Write COMMAND before read */
 static const unsigned char SEQ_ESD_MONITOR_ON[] = {

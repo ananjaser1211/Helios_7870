@@ -110,22 +110,9 @@ static int dsi_data_type_is_rx(u8 type)
 	return 0;
 }
 
-static int dsi_data_cmd_is_partial(u8 data)
-{
-	switch (data) {
-	case MIPI_DCS_SET_COLUMN_ADDRESS:
-	case MIPI_DCS_SET_PAGE_ADDRESS:
-		return 1;
-	}
-
-	return 0;
-}
-
 void dsim_write_data_dump(struct dsim_device *dsim, u32 id, unsigned long d0, u32 d1)
 {
 	if (likely(!tx_dump))
-		return;
-	if (likely(tx_dump == 2 && dsi_data_type_is_tx_long(id) && dsi_data_cmd_is_partial(*(u8 *)d0)))
 		return;
 
 	if (dsi_data_type_is_tx_long(id))
@@ -287,8 +274,6 @@ static int make_tx(struct d_info *d, struct rw_info *rw, unsigned char *ibuf)
 	}
 
 	while ((token = strsep(&pbuf, " ,"))) {
-		if (*token == '\0')
-			continue;
 		ret = kstrtou8(token, 16, &data);
 		if (ret < 0 || end == ARRAY_SIZE(obuf))
 			break;
@@ -716,8 +701,6 @@ static int help_show(struct seq_file *m, void *unused)
 	seq_puts(m, "= turn on dsi tx dump\n");
 	seq_puts(m, "# echo 0 > tx_dump\n");
 	seq_puts(m, "= turn off dsi tx dump\n");
-	seq_puts(m, "# echo 2 > tx_dump\n");
-	seq_puts(m, "= turn on dsi tx dump except partial\n");
 	seq_puts(m, "# cat tx_dump\n");
 	seq_puts(m, "= check current tx_dump status\n");
 	seq_puts(m, "\n");
@@ -755,12 +738,12 @@ static int compare_with_name(struct device *dev, void *data)
 	return dev_name(dev) ? !!strstr(dev_name(dev), keyword) : 0;
 }
 
-static struct device *find_platform_device_by_keyword(const char *keyword)
+struct device *find_platform_device_by_keyword(const char *keyword)
 {
 	return bus_find_device(&platform_bus_type, NULL, (void *)keyword, compare_with_name);
 }
 
-static struct device *find_lcd_device(void)
+struct device *find_lcd_device(void)
 {
 	struct device *parent = NULL;
 	struct device *dev = NULL;
@@ -897,8 +880,6 @@ static ssize_t write_store(struct kobject *kobj,
 
 	pos = (char *)buf;
 	while ((token = strsep(&pos, " ")) != NULL) {
-		if (*token == '\0')
-			continue;
 		ret = kstrtouint(token, 16, &val);
 		if (!ret) {
 			seqbuf[len] = val;

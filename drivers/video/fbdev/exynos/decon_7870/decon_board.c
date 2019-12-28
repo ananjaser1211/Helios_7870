@@ -53,7 +53,7 @@ There are 5 pre-defined types
 4. example:
 decon_board = <&node>;
 node: node {
-	compatible = "simple-bus"; <- add this when you need pinctrl to create platform_device with name 'node'
+	compatible = "simple-bus"; <- add this when you need pinctrol to create platform_device with name 'node'
 
 	pinctrl-names = "pin_off", "pin_on", "backlight_pin_only"; <- pinctrl position is here not in each subnode
 	pinctrl-0 = <&backlight_pin_off &lcd_pin_off>;
@@ -376,7 +376,7 @@ static int decide_subinfo(struct device_node *np, struct action_info *action)
 	switch (action->idx) {
 	case ACTION_GPIO_HIGH:
 	case ACTION_GPIO_LOW:
-		action->gpio = of_get_named_gpio(np->parent, subinfo, 0);
+		action->gpio = of_get_named_gpio_flags(np->parent, subinfo, 0, NULL);
 		if (!gpio_is_valid(action->gpio)) {
 			bd_warn("of_get_named_gpio fail %d %s\n", action->gpio, subinfo);
 			ret = -EINVAL;
@@ -493,21 +493,13 @@ static int make_list(struct device *dev, struct list_head *lh, const char *name)
 	const char *type = NULL;
 	const char *subinfo = NULL;
 
-	np = (dev && dev->of_node) ? dev->of_node : of_find_node_with_property(NULL, DECON_BOARD_DTS_NAME);
-	if (!np) {
-		bd_warn("%s property does not exist, so create dummy\n", DECON_BOARD_DTS_NAME);
-		action = kzalloc(sizeof(struct action_info), GFP_KERNEL);
-		list_add_tail(&action->node, lh);
-		return -EINVAL;
-	}
-
-	np = of_parse_phandle(np, DECON_BOARD_DTS_NAME, 0);
+	np = of_parse_phandle(dev->of_node, DECON_BOARD_DTS_NAME, 0);
 	if (!np)
 		bd_warn("%s node does not exist, so create dummy\n", DECON_BOARD_DTS_NAME);
 
 	np = of_find_node_by_name(np, name);
 	if (!np) {
-		bd_warn("%s node does not exist in %s, so create dummy\n", name, DECON_BOARD_DTS_NAME);
+		bd_warn("%s node does not exist, so create dummy\n", name);
 		action = kzalloc(sizeof(struct action_info), GFP_KERNEL);
 		list_add_tail(&action->node, lh);
 		return -EINVAL;
@@ -676,127 +668,5 @@ void run_list(struct device *dev, const char *name)
 	}
 
 	do_list(lh);
-}
-
-int of_gpio_get_active(const char *gpioname)
-{
-	int ret = 0, gpio = 0, gpio_level, active_level;
-	struct device_node *np = NULL;
-	enum of_gpio_flags flags = {0, };
-
-	np = of_find_node_with_property(NULL, gpioname);
-	if (!np) {
-		bd_info("of_find_node_with_property fail for %s\n", gpioname);
-		ret = -EINVAL;
-		goto exit;
-	}
-
-	bd_dbg("%s property find in node %s\n", gpioname, np->name);
-
-	gpio = of_get_named_gpio_flags(np, gpioname, 0, &flags);
-	if (!gpio_is_valid(gpio)) {
-		bd_warn("of_get_named_gpio fail %d %s\n", gpio, gpioname);
-		ret = -EINVAL;
-		goto exit;
-	}
-	of_node_put(np);
-
-	active_level = !(flags & OF_GPIO_ACTIVE_LOW);
-	gpio_level = gpio_get_value(gpio);
-	ret = (gpio_level == active_level) ? 1 : 0;
-exit:
-	return ret;
-}
-
-int of_gpio_get_value(const char *gpioname)
-{
-	int ret = 0, gpio = 0, gpio_level, active_level;
-	struct device_node *np = NULL;
-	enum of_gpio_flags flags = {0, };
-
-	np = of_find_node_with_property(NULL, gpioname);
-	if (!np) {
-		bd_info("of_find_node_with_property fail for %s\n", gpioname);
-		ret = -EINVAL;
-		goto exit;
-	}
-
-	bd_dbg("%s property find in node %s\n", gpioname, np->name);
-
-	gpio = of_get_named_gpio_flags(np, gpioname, 0, &flags);
-	if (!gpio_is_valid(gpio)) {
-		bd_warn("of_get_named_gpio fail %d %s\n", gpio, gpioname);
-		of_node_put(np);
-		ret = -EINVAL;
-		goto exit;
-	}
-	of_node_put(np);
-
-	active_level = !(flags & OF_GPIO_ACTIVE_LOW);
-	gpio_level = gpio_get_value(gpio);
-	ret = gpio_level;
-
-exit:
-	return ret;
-}
-
-int of_gpio_set_value(const char *gpioname, int value)
-{
-	int ret = 0, gpio = 0;
-	struct device_node *np = NULL;
-	enum of_gpio_flags flags = {0, };
-
-	np = of_find_node_with_property(NULL, gpioname);
-	if (!np) {
-		bd_info("of_find_node_with_property fail for %s\n", gpioname);
-		ret = -EINVAL;
-		goto exit;
-	}
-
-	bd_dbg("%s property find in node %s\n", gpioname, np->name);
-
-	gpio = of_get_named_gpio_flags(np, gpioname, 0, &flags);
-	if (!gpio_is_valid(gpio)) {
-		bd_warn("of_get_named_gpio fail %d %s\n", gpio, gpioname);
-		of_node_put(np);
-		ret = -EINVAL;
-		goto exit;
-	}
-	of_node_put(np);
-
-	ret = gpio_request_one(gpio, value ? GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW, NULL);
-	if (ret < 0)
-		bd_warn("gpio_request_one fail %d, %d, %s\n", ret, gpio, gpioname);
-	gpio_free(gpio);
-exit:
-	return ret;
-}
-
-int of_get_gpio_with_name(const char *gpioname)
-{
-	int ret = 0, gpio = 0;
-	struct device_node *np = NULL;
-	enum of_gpio_flags flags = {0, };
-
-	np = of_find_node_with_property(NULL, gpioname);
-	if (!np) {
-		bd_info("of_find_node_with_property fail for %s\n", gpioname);
-		ret = -EINVAL;
-		goto exit;
-	}
-
-	bd_dbg("%s property find in node %s\n", gpioname, np->name);
-
-	gpio = of_get_named_gpio_flags(np, gpioname, 0, &flags);
-	if (!gpio_is_valid(gpio)) {
-		bd_warn("of_get_named_gpio fail %d %s\n", gpio, gpioname);
-		ret = -EINVAL;
-		goto exit;
-	}
-	of_node_put(np);
-
-	ret = gpio;
-exit:
-	return ret;
 }
 

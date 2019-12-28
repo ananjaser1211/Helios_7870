@@ -31,58 +31,58 @@ static bool log_boot;
 
 #define LCD_INFO_DTS_NAME	"lcd_info"
 
-#define DD_DPU_LIST	\
-__XX(REFRESH,		"timing,refresh",	"refresh",		0400)	\
-__XX(PMS_P,		"timing,pms",		"pms",			0600)	\
-__XX(PMS_M,		"",			"",			0)	\
-__XX(PMS_S,		"",			"",			0)	\
-__XX(PMSK_P,		"timing,pmsk",		"pms",			0600)	\
-__XX(PMSK_M,		"",			"",			0)	\
-__XX(PMSK_S,		"",			"",			0)	\
-__XX(PMSK_K,		"",			"",			0)	\
-__XX(HS_CLK,		"timing,dsi-hs-clk",	"hs_clk",		0600)	\
-__XX(ESC_CLK,		"timing,dsi-escape-clk",	"esc_clk",	0400)	\
-__XX(HBP,		"timing,h-porch",	"hporch",		0600)	\
-__XX(HFP,		"",			"",			0)	\
-__XX(HSA,		"",			"",			0)	\
-__XX(VBP,		"timing,v-porch",	"vporch",		0600)	\
-__XX(VFP,		"",			"",			0)	\
-__XX(VSA,		"",			"",			0)	\
-__XX(VT_COMPENSATION,	"vt_compensation",	"vt_compensation",	0600)	\
-__XX(MRES_WIDTH,	"mres_width",		"mres_width",		0400)	\
-__XX(MRES_WIDTH_2,	"",			"",			0)	\
-__XX(MRES_WIDTH_3,	"",			"",			0)	\
-__XX(MRES_HEIGHT,	"mres_height",		"mres_height",		0400)	\
-__XX(MRES_HEIGHT_2,	"",			"",			0)	\
-__XX(MRES_HEIGHT_3,	"",			"",			0)	\
-__XX(CMD_UNDERRUN_LP_REF,	"cmd_underrun_lp_ref",	"cmd_underrun_lp_ref",	0600)	\
-__XX(CMD_UNDERRUN_LP_REF_2,	"",		"",			0)	\
-__XX(CMD_UNDERRUN_LP_REF_3,	"",		"",			0)	\
-__XX(DSIM_HBP,		"timing,dsim_h-porch",	"dsim_hporch",		0600)	\
-__XX(DSIM_HFP,		"",			"",			0)	\
-__XX(DSIM_HSA,		"",			"",			0)	\
-__XX(DSIM_VBP,		"timing,dsim_v-porch",	"dsim_vporch",		0600)	\
-__XX(DSIM_VFP,		"",			"",			0)	\
-__XX(DSIM_VSA,		"",			"",			0)	\
-__XX(DECON_HBP,		"timing,decon_h-porch",	"decon_hporch",		0600)	\
-__XX(DECON_HFP,		"",			"",			0)	\
-__XX(DECON_HSA,		"",			"",			0)	\
-__XX(DECON_VBP,		"timing,decon_v-porch",	"decon_vporch",		0600)	\
-__XX(DECON_VFP,		"",			"",			0)	\
-__XX(DECON_VSA,		"",			"",			0)	\
-__XX(LCD_INFO_END,	"",			"",			0)	\
-__XX(VCLK_NUMERATOR,	"vclk-num",		"vclk_numerator",	0400)	\
-__XX(VCLK_DENOMINATOR,	"vclk-denom",		"vclk_denominator",	0600)	\
-__XX(DISP_VCLK,		"disp-vclk",		"disp_vclk",		0600)	\
-__XX(DISP_PLL_CLK,	"disp-pll-clk",		"disp_pll",		0600)	\
+#define D_LIST	\
+_X(REFRESH,		"timing,refresh",	"refresh",		0400)	\
+_X(PMS_P,		"timing,pms",		"pms",			0600)	\
+_X(PMS_M,		"",			"",			0)	\
+_X(PMS_S,		"",			"",			0)	\
+_X(PMSK_P,		"timing,pmsk",		"pmsk",			0600)	\
+_X(PMSK_M,		"",			"",			0)	\
+_X(PMSK_S,		"",			"",			0)	\
+_X(PMSK_K,		"",			"",			0)	\
+_X(HS_CLK,		"timing,dsi-hs-clk",	"hs_clk",		0400)	\
+_X(ESC_CLK,		"timing,dsi-escape-clk",	"esc_clk",	0400)	\
+_X(HBP,			"timing,h-porch",	"hporch",		0600)	\
+_X(HFP,			"",			"",			0)	\
+_X(HSA,			"",			"",			0)	\
+_X(VBP,			"timing,v-porch",	"vporch",		0600)	\
+_X(VFP,			"",			"",			0)	\
+_X(VSA,			"",			"",			0)	\
+_X(VT_COMPENSATION,	"vt_compensation",	"vt_compensation",	0600)	\
+_X(MRES_WIDTH,		"mres_width",		"mres_width",		0400)	\
+_X(MRES_WIDTH_2,	"",			"",			0)	\
+_X(MRES_WIDTH_3,	"",			"",			0)	\
+_X(MRES_HEIGHT,		"mres_height",		"mres_height",		0400)	\
+_X(MRES_HEIGHT_2,	"",			"",			0)	\
+_X(MRES_HEIGHT_3,	"",			"",			0)	\
+_X(CMD_UNDERRUN_LP_REF,	"cmd_underrun_lp_ref",	"cmd_underrun_lp_ref",	0600)	\
+_X(CMD_UNDERRUN_LP_REF_2,	"",		"",			0)	\
+_X(CMD_UNDERRUN_LP_REF_3,	"",		"",			0)	\
+_X(DSIM_HBP,		"timing,dsim_h-porch",	"dsim_hporch",		0600)	\
+_X(DSIM_HFP,		"",			"",			0)	\
+_X(DSIM_HSA,		"",			"",			0)	\
+_X(DSIM_VBP,		"timing,dsim_v-porch",	"dsim_vporch",		0600)	\
+_X(DSIM_VFP,		"",			"",			0)	\
+_X(DSIM_VSA,		"",			"",			0)	\
+_X(DECON_HBP,		"timing,decon_h-porch",	"decon_hporch",	0600)	\
+_X(DECON_HFP,		"",			"",			0)	\
+_X(DECON_HSA,		"",			"",			0)	\
+_X(DECON_VBP,		"timing,decon_v-porch",	"decon_vporch",	0600)	\
+_X(DECON_VFP,		"",			"",			0)	\
+_X(DECON_VSA,		"",			"",			0)	\
+_X(LCD_INFO_END,	"",			"",			0)	\
+_X(VCLK_NUMERATOR,	"vclk-num",		"vclk_numerator",	0400)	\
+_X(VCLK_DENOMINATOR,	"vclk-denom",		"vclk_denominator",	0600)	\
+_X(DISP_VCLK,		"disp-vclk",		"disp_vclk",		0600)	\
+_X(DISP_PLL_CLK,	"disp-pll-clk",		"disp_pll",		0600)	\
 
-#define __XX(id, dts, sysfs, mode) D_##id,
-enum { DD_DPU_LIST DD_DPU_LIST_MAX };
-#undef __XX
+#define _X(id, dts, sysfs, mode) D_##id,
+enum { D_LIST D_MAX };
+#undef _X
 
-#define __XX(id, dts, sysfs, mode) (#id),
-static char *DD_DPU_LIST_NAME[] = { DD_DPU_LIST };
-#undef __XX
+#define _X(id, dts, sysfs, mode) (#id),
+static char *D_LIST_NAME[] = { D_LIST };
+#undef _X
 
 static struct {
 	char *dts_name;
@@ -90,9 +90,9 @@ static struct {
 	umode_t mode;
 	u32	length;
 } debugfs_list[] = {
-#define __XX(id, dts, sysfs, mode) {dts, sysfs, mode, 0},
-	DD_DPU_LIST
-#undef __XX
+#define _X(id, dts, sysfs, mode) {dts, sysfs, mode, 0},
+	D_LIST
+#undef _X
 };
 
 struct d_info {
@@ -104,12 +104,12 @@ struct d_info {
 
 	u32 regdump;
 
-	u32 default_param[DD_DPU_LIST_MAX];	/* get from dts */
-	u32 request_param[DD_DPU_LIST_MAX];	/* get from sysfs input */
-	u32 pending_param[DD_DPU_LIST_MAX];	/* get from sysfs input flag */
-	u32 current_param[DD_DPU_LIST_MAX];	/* get from real data */
+	u32 default_param[D_MAX];	/* get from dts */
+	u32 request_param[D_MAX];	/* get from sysfs input */
+	u32 pending_param[D_MAX];	/* get from sysfs input flag */
+	u32 current_param[D_MAX];	/* get from real data */
 
-	u32 *point[DD_DPU_LIST_MAX];
+	u32 *point[D_MAX];
 };
 
 static void configure_param(struct d_info *d)
@@ -200,7 +200,7 @@ static void update_point(u32 **dest, u32 *src, u32 *update)
 {
 	unsigned int i, j;
 
-	for (i = 0; i < DD_DPU_LIST_MAX; i++) {
+	for (i = 0; i < D_MAX; i++) {
 		for (j = 0; j < debugfs_list[i].length; j++) {
 			update_value(dest[i + j], &src[i + j], update ? update[i + j] : 1);
 			if (update)
@@ -213,7 +213,7 @@ static void update_param(u32 *dest, u32 **src, u32 *update)
 {
 	unsigned int i, j;
 
-	for (i = 0; i < DD_DPU_LIST_MAX; i++) {
+	for (i = 0; i < D_MAX; i++) {
 		for (j = 0; j < debugfs_list[i].length; j++)
 			update_value(&dest[i + j], src[i + j], update ? update[i + j] : 1);
 	}
@@ -240,6 +240,9 @@ static int fb_notifier_callback(struct notifier_block *self,
 
 	if (evdata->info->node)
 		return NOTIFY_DONE;
+
+	dbg_info("%s: %d\n",
+		(event == FB_EVENT_BLANK) ? "FB_EVENT_BLANK" : "FB_EARLY_EVENT_BLANK", fb_blank);
 
 	log_boot = true;
 
@@ -287,8 +290,6 @@ static ssize_t u32_array_write(struct file *f, const char __user *user_buf,
 	pbuf = ibuf;
 	while (--array_size >= 0 && (token = strsep(&pbuf, " "))) {
 		dbg_info("%d, %s\n", array_size, token);
-		if (*token == '\0')
-			continue;
 		ret = kstrtou32(token, 0, &value);
 		if (ret < 0) {
 			dbg_info("kstrtou32 fail: ret: %d\n", ret);
@@ -418,7 +419,7 @@ static int init_debugfs_lcd_info(struct d_info *d)
 
 	configure_param(d);
 
-	for (i = 0; i < DD_DPU_LIST_MAX; i++) {
+	for (i = 0; i < D_MAX; i++) {
 		if (!strlen(debugfs_list[i].dts_name))
 			continue;
 
@@ -459,12 +460,12 @@ static int status_show(struct seq_file *m, void *unused)
 	seq_puts(m, "--------------------------------------------------------------\n");
 	seq_puts(m, "                    |    DEFAULT|    REQUEST|    CURRENT|   RW\n");
 	seq_puts(m, "--------------------------------------------------------------\n");
-	for (i = 0; i < DD_DPU_LIST_MAX; i++) {
+	for (i = 0; i < D_MAX; i++) {
 		for (j = 0; j < debugfs_list[i].length; j++) {
 			if (d->pending_param[i + j])
-				seq_printf(m, "%20s| %10u| %10u| %10u| %4s\n", DD_DPU_LIST_NAME[i + j], d->default_param[i + j], d->request_param[i + j], d->current_param[i + j], (debugfs_list[i].mode & 0222) ? "RW" : "R");
+				seq_printf(m, "%20s| %10u| %10u| %10u| %4s\n", D_LIST_NAME[i + j], d->default_param[i + j], d->request_param[i + j], d->current_param[i + j], (debugfs_list[i].mode & 0222) ? "RW" : "R");
 			else
-				seq_printf(m, "%20s| %10u| %10s| %10u| %4s\n", DD_DPU_LIST_NAME[i + j], d->default_param[i + j], " ", d->current_param[i + j], (debugfs_list[i].mode & 0222) ? "RW" : "R");
+				seq_printf(m, "%20s| %10u| %10s| %10u| %4s\n", D_LIST_NAME[i + j], d->default_param[i + j], " ", d->current_param[i + j], (debugfs_list[i].mode & 0222) ? "RW" : "R");
 		}
 	}
 	seq_puts(m, "\n");
@@ -640,17 +641,17 @@ static int help_show(struct seq_file *m, void *unused)
 	seq_puts(m, "\n");
 	seq_puts(m, "---------- usage\n");
 	seq_puts(m, "1. you can request to change paremter like below\n");
-	for (i = 0; i < DD_DPU_LIST_MAX; i++) {
+	for (i = 0; i < D_MAX; i++) {
 		if (!debugfs_list[i].length || !(debugfs_list[i].mode & 0222))
 			continue;
 
 		seq_puts(m, "# echo ");
 		for (j = 0; j < debugfs_list[i].length; j++)
-			seq_printf(m, "%s ", DD_DPU_LIST_NAME[i + j]);
+			seq_printf(m, "%s ", D_LIST_NAME[i + j]);
 		seq_printf(m, "> %s\n", debugfs_list[i].sysfs_name);
 	}
 
-	for (i = 0; i < DD_DPU_LIST_MAX; i++) {
+	for (i = 0; i < D_MAX; i++) {
 		if (!debugfs_list[i].length || !(debugfs_list[i].mode & 0222))
 			continue;
 
@@ -670,23 +671,18 @@ static int help_show(struct seq_file *m, void *unused)
 	seq_puts(m, "--------------------------------------------------------------\n");
 	seq_puts(m, "                    |    DEFAULT|    REQUEST|    CURRENT|   RW\n");
 	seq_puts(m, "--------------------------------------------------------------\n");
-	for (i = 0; i < DD_DPU_LIST_MAX; i++) {
+	for (i = 0; i < D_MAX; i++) {
 		for (j = 0; j < debugfs_list[i].length; j++) {
 			if (d->pending_param[i + j])
-				seq_printf(m, "%20s| %10u| %10u| %10u| %4s\n", DD_DPU_LIST_NAME[i + j], d->default_param[i + j], d->request_param[i + j], d->current_param[i + j], (debugfs_list[i].mode & 0222) ? "RW" : "R");
+				seq_printf(m, "%20s| %10u| %10u| %10u| %4s\n", D_LIST_NAME[i + j], d->default_param[i + j], d->request_param[i + j], d->current_param[i + j], (debugfs_list[i].mode & 0222) ? "RW" : "R");
 			else
-				seq_printf(m, "%20s| %10u| %10s| %10u| %4s\n", DD_DPU_LIST_NAME[i + j], d->default_param[i + j], " ", d->current_param[i + j], (debugfs_list[i].mode & 0222) ? "RW" : "R");
+				seq_printf(m, "%20s| %10u| %10s| %10u| %4s\n", D_LIST_NAME[i + j], d->default_param[i + j], " ", d->current_param[i + j], (debugfs_list[i].mode & 0222) ? "RW" : "R");
 		}
 	}
 	seq_puts(m, "\n");
-	seq_puts(m, "= R: Read Only. you can not modify this value\n");
 	seq_puts(m, "= DEFAULT: default booting parameter\n");
 	seq_puts(m, "= REQUEST: request parameter (not applied yet)\n");
 	seq_puts(m, "= CURRENT: current applied parameter\n");
-	seq_puts(m, "------------------------------------------------------------\n");
-	seq_printf(m, "To change MIPI Speed, you must modify pms, hs_clk, %s\n",
-		debugfs_list[D_VT_COMPENSATION].length ? debugfs_list[D_VT_COMPENSATION].sysfs_name : debugfs_list[D_CMD_UNDERRUN_LP_REF].sysfs_name);
-	seq_puts(m, "------------------------------------------------------------\n");
 	seq_puts(m, "\n");
 
 
