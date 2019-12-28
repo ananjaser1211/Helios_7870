@@ -1,8 +1,8 @@
 # Used to disable USB when switching states
 on property:sys.usb.config=none && property:sys.usb.configfs=1
-    write /sys/class/android_usb/android0/enable 0
     stop adbd
     setprop sys.usb.ffs.ready 0
+    write /sys/class/android_usb/android0/enable 0
     write /sys/kernel/config/usb_gadget/g1/bDeviceClass 0
     write /sys/kernel/config/usb_gadget/g1/bDeviceSubClass 0
     write /sys/kernel/config/usb_gadget/g1/bDeviceProtocol 0

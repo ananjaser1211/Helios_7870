@@ -159,10 +159,6 @@ vendor.mdlogger.Running  u:object_r:debug_mdlogger_prop:s0
 # http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-2057
 tas.smartamp.disable				u:object_r:smartamp_prop:s0
 
-# http://mobilerndhub.sec.samsung.net/its/browse/SEANDROID-2344
-persist.security.cmfa      u:object_r:cmfa_prop:s0
-persist.security.cmfa.data      u:object_r:cmfa_data_prop:s0
-
 #line 1 "vendor/samsung/system/sepolicy/BSP/slsi/common/property_contexts"
 ##########################
 # property service keys

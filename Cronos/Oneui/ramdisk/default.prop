@@ -50,10 +50,9 @@ log.tag.stats_log=I
 #
 # BOOTIMAGE_BUILD_PROPERTIES
 #
-ro.bootimage.build.date=Thu Aug 22 16:48:46 KST 2019
-ro.bootimage.build.date.utc=1566460126
-ro.bootimage.build.fingerprint=samsung/j5y17ltexx/j5y17lte:9/PPR1.180610.011/J530FXWU5CSH7:user/test-keys
-
+ro.bootimage.build.date=Fri Nov 29 13:41:24 KST 2019
+ro.bootimage.build.date.utc=1575002484
+ro.bootimage.build.fingerprint=samsung/j7y17ltexx/j7y17lte:9/PPR1.180610.011/J730FXXU6CSK6:user/test-keys
 #
 # Helios tweaks
 #
