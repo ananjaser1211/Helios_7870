@@ -184,7 +184,7 @@ su -c "pm enable com.google.android.gsf/.update.SystemUpdateService$SecretCodeRe
 
    log_print "Kill CPU Hotplug for good"
 
-# Google play services wakelock fix
+# Samsung HOTPLUG Begone
 echo "0" > /sys/power/cpuhotplug/enable
 echo "0" > /sys/power/cpuhotplug/enabled
 echo "0" > /sys/power/cpuhotplug/governor/enable

@@ -1,9 +1,17 @@
 #
 # Helios tweaks
 #
+wlan.wfd.hdcp=disable
+ro.config.tima=0
 ro.security.vaultkeeper.feature=0
+ro.frp.pst=
+ro.securestorage.support=false
 ro.config.dmverity=false
+ro.config.rkp=false
+security.knox_kap_mode=false
+ro.config.kap_default_on=false
 ro.config.kap=false
+ro.config.tima=0
 persist.sys.usb.config=mtp,adb
 persist.service.adb.enable=1
 persist.service.debuggable=1

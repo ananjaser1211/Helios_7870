@@ -952,6 +952,7 @@ on fs
 # FM Radio
     chown system audio /dev/radio0
     chmod 0660 /dev/radio0
+    chown bluetooth bluetooth /sys/devices/bluetooth/fm_dtv_ctrl
     chown bluetooth bluetooth /sys/devices/bluetooth/lna_en
 
 # ARGOSD network_throughput
@@ -1125,7 +1126,28 @@ on property:ro.multisim.simslotcount=1
 on property:ro.multisim.simslotcount=2
     setprop persist.radio.multisim.config dsds
 
+on post-fs-data
+    write /sys/power/cpuhotplug/enable 0
+    chown root root /sys/power/cpuhotplug/enable
+    chmod 0444 /sys/power/cpuhotplug/enable
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor performance
+    write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor performance
+#IO parameters tuning during boot
+    chown system system /sys/block/mmcblk0/queue/read_ahead_kb
+    chown system system /sys/block/dm-0/queue/read_ahead_kb
+    chown system system /sys/block/dm-1/queue/read_ahead_kb
+    chown system system /sys/block/mmcblk0/queue/nr_requests
+    chmod 0664 /sys/block/mmcblk0/queue/read_ahead_kb
+    chmod 0664 /sys/block/dm-0/queue/read_ahead_kb
+    chmod 0664 /sys/block/dm-1/queue/read_ahead_kb
+    chmod 0664 /sys/block/mmcblk0/queue/nr_requests
+    write /sys/block/mmcblk0/queue/read_ahead_kb 2048
+    write /sys/block/dm-0/queue/read_ahead_kb 1024
+    write /sys/block/dm-1/queue/read_ahead_kb 1024
+    write /sys/block/mmcblk0/queue/nr_requests 256
+
 on property:sys.boot_completed=1
+#Governor reset to interactive
     write /sys/power/cpuhotplug/enable 0
     write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor interactive
     write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor interactive

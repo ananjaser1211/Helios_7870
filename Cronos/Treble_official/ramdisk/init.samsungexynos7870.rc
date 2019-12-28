@@ -33,6 +33,9 @@ on post-fs
     setrlimit 8 67108864 67108864
 
 on post-fs-data
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor performance
+    write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor performance
+
 # Log data folder
 #   mkdir /data/log 0771 radio system
 
@@ -69,6 +72,13 @@ on post-fs-data
 # /efs/factory.prop for Dual / Single SIM settings
     chown radio radio /efs/factory.prop
     chmod 0600 /efs/factory.prop
+
+# Samsung Pay
+    mkdir /efs/pfw_data 0760 spay spay
+
+# MST/NFC Switch
+    chown spay system /dev/mst_ctrl
+    chmod 0660 /dev/mst_ctrl
 
 # Permissions for audio
     chown system radio /sys/class/audio/earjack/select_jack
@@ -183,7 +193,7 @@ on boot
     chown system system /sys/power/cpuhotplug/max_online_cpu
     chmod 0664 /sys/power/cpuhotplug/max_online_cpu
 
-    # Cstate node
+    # CPU C-state node
     chown radio system /sys/module/cpuidle/parameters/off
     chmod 0664 /sys/module/cpuidle/parameters/off
 
@@ -395,6 +405,16 @@ on boot
 	chown system radio /sys/class/sensors/grip_sensor/grip_diff_d
     chown system radio /sys/class/sensors/grip_sensor/grip_baseline
     chown system radio /sys/class/sensors/grip_sensor/grip_irq_count
+
+# Fingerprint_sensor
+    chmod 0660 /dev/esfp0
+    chown system system /dev/esfp0
+
+    chown system radio /sys/class/fingerprint/fingerprint/type_check
+    chown system radio /sys/class/fingerprint/fingerprint/name
+    chown system radio /sys/class/fingerprint/fingerprint/vendor
+    chown system radio /sys/class/fingerprint/fingerprint/adm
+    chown system radio /sys/class/fingerprint/fingerprint/bfs_values
 
 #device
     chown system system /dev/iio:device0
@@ -722,6 +742,13 @@ on boot
     chmod 0660 /sys/class/android_usb/android0/functions
     chown system system /sys/class/android_usb/android0/bDeviceClass
     chmod 0660 /sys/class/android_usb/android0/bDeviceClass
+
+# Samsung Pay
+    mkdir /efs/pfw_data 0760 spay spay
+
+# MST/NFC Switch
+    chown spay system /dev/mst_ctrl
+    chmod 0660 /dev/mst_ctrl
 
 # Support DM logging
 #    chmod 0770 /system/bin/dmd
@@ -1136,8 +1163,7 @@ on property:sys.boot_completed=1
     write /sys/power/cpuhotplug/enable 0
     write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor interactive
     write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor interactive
-
-    # Change permission for interactive governor
+# Change permission for interactive governor
     chown system system /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_rate
     chmod 0660 /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_rate
     chown system system /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_slack
