@@ -82,5 +82,5 @@ run_program("/sbin/busybox", "sh", "/tmp/magisk/META-INF/com/google/android/upda
 
 unmount("/system");
 unmount("/vendor");
-ui_print(" Enjoy Helios ");
+ui_print(" Enjoy Cronos ");
 ui_print("***********************");
