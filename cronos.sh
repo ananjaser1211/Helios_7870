@@ -1,6 +1,6 @@
   #!/bin/bash
 #
-# Cronos Build Script V4.0
+# Cronos Build Script V4.1
 # For Exynos7870
 # Coded by BlackMesa/AnanJaser1211 @2019
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,6 @@ CR_DIR=$(pwd)
 CR_TC=~/Android/Toolchains/linaro-7.4.1-aarch64-linux/bin/aarch64-linux-gnu-
 # Define proper arch and dir for dts files
 CR_DTS=arch/arm64/boot/dts
-# TODO: add ODM mount variant
 CR_DTS_TREBLE=arch/arm64/boot/exynos7870_Treble.dtsi
 CR_DTS_ONEUI=arch/arm64/boot/exynos7870_Oneui.dtsi
 CR_DTS_X6LTE=arch/arm64/boot/exynos7870_x6lte.dtsi
@@ -253,6 +252,20 @@ BUILD_GENERATE_CONFIG()
   CR_CONFIG=tmp_defconfig
 }
 
+BUILD_OUT()
+{
+    echo " "
+    echo "----------------------------------------------"
+    echo "$CR_VARIANT kernel build finished."
+    echo "Compiled DTB Size = $sizdT Kb"
+    echo "Kernel Image Size = $sizT Kb"
+    echo "Boot Image   Size = $sizkT Kb"
+    echo "Image Generated at $CR_PRODUCT/$CR_IMAGE_NAME.img"
+    echo "Zip Generated at $CR_PRODUCT/$CR_NAME-$CR_VERSION-$FL_VARIANT-$CR_DATE.zip"
+    echo "Press Any key to end the script"
+    echo "----------------------------------------------"
+}
+
 BUILD_ZIMAGE()
 {
 	echo "----------------------------------------------"
@@ -353,7 +366,7 @@ PACK_FLASHABLE()
   rm -rf $FL_EXPORT
   # Copy zip to production
   cp $CR_OUT/$CR_NAME-$CR_VERSION-$FL_VARIANT-$CR_DATE.zip $CR_PRODUCT
-  echo " Zip Generated at $CR_PRODUCT/$CR_NAME-$CR_VERSION-$FL_VARIANT-$CR_DATE.zip"
+  # Move out dir to BUILD_OUT
   # Respect CLEAN build rules
   BUILD_CLEAN
 }
@@ -392,15 +405,7 @@ do
             BUILD_DTB
             PACK_BOOT_IMG
             PACK_FLASHABLE
-            echo " "
-            echo "----------------------------------------------"
-            echo "$CR_VARIANT kernel build finished."
-            echo "Compiled DTB Size = $sizdT Kb"
-            echo "Kernel Image Size = $sizT Kb"
-            echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
-            echo "Press Any key to end the script"
-            echo "----------------------------------------------"
+            BUILD_OUT
             read -n1 -r key
             break
             ;;
@@ -429,15 +434,7 @@ do
             BUILD_DTB
             PACK_BOOT_IMG
             PACK_FLASHABLE
-            echo " "
-            echo "----------------------------------------------"
-            echo "$CR_VARIANT kernel build finished."
-            echo "Compiled DTB Size = $sizdT Kb"
-            echo "Kernel Image Size = $sizT Kb"
-            echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
-            echo "Press Any key to end the script"
-            echo "----------------------------------------------"
+            BUILD_OUT
             read -n1 -r key
             break
             ;;
@@ -467,15 +464,8 @@ do
             BUILD_DTB
             PACK_BOOT_IMG
             PACK_FLASHABLE
-            echo " "
-            echo "----------------------------------------------"
-            echo "$CR_VARIANT kernel build finished."
-            echo "Compiled DTB Size = $sizdT Kb"
-            echo "Kernel Image Size = $sizT Kb"
-            echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
-            echo "Press Any key to end the script"
-            echo "----------------------------------------------"
+            BUILD_OUT
+
             read -n1 -r key
             break
             ;;
@@ -503,15 +493,8 @@ do
             BUILD_DTB
             PACK_BOOT_IMG
             PACK_FLASHABLE
-            echo " "
-            echo "----------------------------------------------"
-            echo "$CR_VARIANT kernel build finished."
-            echo "Compiled DTB Size = $sizdT Kb"
-            echo "Kernel Image Size = $sizT Kb"
-            echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
-            echo "Press Any key to end the script"
-            echo "----------------------------------------------"
+            BUILD_OUT
+
             read -n1 -r key
             break
             ;;
@@ -539,15 +522,8 @@ do
             BUILD_DTB
             PACK_BOOT_IMG
             PACK_FLASHABLE
-            echo " "
-            echo "----------------------------------------------"
-            echo "$CR_VARIANT kernel build finished."
-            echo "Compiled DTB Size = $sizdT Kb"
-            echo "Kernel Image Size = $sizT Kb"
-            echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
-            echo "Press Any key to end the script"
-            echo "----------------------------------------------"
+            BUILD_OUT
+
             read -n1 -r key
             break
             ;;
@@ -575,15 +551,8 @@ do
             BUILD_DTB
             PACK_BOOT_IMG
             PACK_FLASHABLE
-            echo " "
-            echo "----------------------------------------------"
-            echo "$CR_VARIANT kernel build finished."
-            echo "Compiled DTB Size = $sizdT Kb"
-            echo "Kernel Image Size = $sizT Kb"
-            echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
-            echo "Press Any key to end the script"
-            echo "----------------------------------------------"
+            BUILD_OUT
+
             read -n1 -r key
             break
             ;;
@@ -611,15 +580,8 @@ do
             BUILD_DTB
             PACK_BOOT_IMG
             PACK_FLASHABLE
-            echo " "
-            echo "----------------------------------------------"
-            echo "$CR_VARIANT kernel build finished."
-            echo "Compiled DTB Size = $sizdT Kb"
-            echo "Kernel Image Size = $sizT Kb"
-            echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
-            echo "Press Any key to end the script"
-            echo "----------------------------------------------"
+            BUILD_OUT
+
             read -n1 -r key
             break
             ;;
@@ -644,14 +606,6 @@ do
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
-            echo " "
-            echo "----------------------------------------------"
-            echo "$CR_VARIANT kernel build finished."
-            echo "Compiled DTB Size = $sizdT Kb"
-            echo "Kernel Image Size = $sizT Kb"
-            echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
-            echo "----------------------------------------------"
             # J730X
             CR_CONFIG_USB=$CR_CONFIG_TREBLE
             CR_VARIANT=$CR_VARIANT_J730X-TREBLE
@@ -666,14 +620,6 @@ do
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
-            echo " "
-            echo "----------------------------------------------"
-            echo "$CR_VARIANT kernel build finished."
-            echo "Compiled DTB Size = $sizdT Kb"
-            echo "Kernel Image Size = $sizT Kb"
-            echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
-            echo "----------------------------------------------"
             # J710X
             echo "J710X: Export NOUGAT version for WiFi Driver"
             export ANDROID_MAJOR_VERSION=$CR_ANDROID_J710X
@@ -691,14 +637,6 @@ do
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
-            echo " "
-            echo "----------------------------------------------"
-            echo "$CR_VARIANT kernel build finished."
-            echo "Compiled DTB Size = $sizdT Kb"
-            echo "Kernel Image Size = $sizT Kb"
-            echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
-            echo "----------------------------------------------"
             # J701X
             export ANDROID_MAJOR_VERSION=$CR_ANDROID
             export PLATFORM_VERSION=$CR_PLATFORM
@@ -715,14 +653,6 @@ do
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
-            echo " "
-            echo "----------------------------------------------"
-            echo "$CR_VARIANT kernel build finished."
-            echo "Compiled DTB Size = $sizdT Kb"
-            echo "Kernel Image Size = $sizT Kb"
-            echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
-            echo "----------------------------------------------"
             # G610X
             export ANDROID_MAJOR_VERSION=$CR_ANDROID
             export PLATFORM_VERSION=$CR_PLATFORM
@@ -739,14 +669,6 @@ do
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
-            echo " "
-            echo "----------------------------------------------"
-            echo "$CR_VARIANT kernel build finished."
-            echo "Compiled DTB Size = $sizdT Kb"
-            echo "Kernel Image Size = $sizT Kb"
-            echo "Boot Image   Size = $sizkT Kb"
-            echo "$CR_OUT/$CR_IMAGE_NAME.img Ready"
-            echo "----------------------------------------------"
             echo " "
             echo " "
             echo " Treble_unofficial compilation finished "
