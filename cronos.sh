@@ -377,7 +377,7 @@ echo "----------------------------------------------"
 echo "$CR_NAME $CR_VERSION Build Script"
 echo "----------------------------------------------"
 PS3='Please select your option (1-9): '
-menuvar=("SM-J530X" "SM-J730X" "SM-J710X" "SM-J701X" "SM-G610X" "SM-J600X" "SM-A600X" "Treble-Unofficial" "Exit")
+menuvar=("SM-J530X" "SM-J730X" "SM-J710X" "SM-J701X" "SM-G610X" "SM-J600X" "SM-A600X" "Build_All" "Exit")
 select menuvar in "${menuvar[@]}"
 do
     case $menuvar in
@@ -465,7 +465,6 @@ do
             PACK_BOOT_IMG
             PACK_FLASHABLE
             BUILD_OUT
-
             read -n1 -r key
             break
             ;;
@@ -494,7 +493,6 @@ do
             PACK_BOOT_IMG
             PACK_FLASHABLE
             BUILD_OUT
-
             read -n1 -r key
             break
             ;;
@@ -523,7 +521,6 @@ do
             PACK_BOOT_IMG
             PACK_FLASHABLE
             BUILD_OUT
-
             read -n1 -r key
             break
             ;;
@@ -552,7 +549,6 @@ do
             PACK_BOOT_IMG
             PACK_FLASHABLE
             BUILD_OUT
-
             read -n1 -r key
             break
             ;;
@@ -581,98 +577,187 @@ do
             PACK_BOOT_IMG
             PACK_FLASHABLE
             BUILD_OUT
-
             read -n1 -r key
             break
             ;;
-        "Treble-Unofficial")
-            clear
-            echo "----------------------------------------------"
-            echo "Starting Treble_unofficial kernels"
-            # set treble mode
-            CR_MODE="2"
-            # set device identifiers
-            # J530X
-            CR_CONFIG_USB=$CR_CONFIG_TREBLE
-            CR_VARIANT=$CR_VARIANT_J530X-TREBLE
-            CR_RAMDISK=$CR_RAMDISK_PORT
-            CR_DTB_MOUNT=$CR_DTS_TREBLE
+        "Build_All")
             echo "Starting $CR_VARIANT_J530X kernel build..."
             CR_CONFIG=$CR_CONFG_J530X
             CR_DTSFILES=$CR_DTSFILES_J530X
-            # Compile
+            if [ $CR_MODE = "2" ]; then
+              echo " Building Treble variant "
+              CR_CONFIG_USB=$CR_CONFIG_TREBLE
+              CR_VARIANT=$CR_VARIANT_J530X-TREBLE
+              CR_RAMDISK=$CR_RAMDISK_PORT
+              CR_DTB_MOUNT=$CR_DTS_TREBLE
+            else
+              echo " Building OneUI variant "
+              CR_CONFIG_USB=$CR_CONFIG_ONEUI
+              CR_VARIANT=$CR_VARIANT_J530X-ONEUI
+              CR_DTB_MOUNT=$CR_DTS_ONEUI
+              CR_RAMDISK=$CR_RAMDISK_ONEUI
+            fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
-            # J730X
-            CR_CONFIG_USB=$CR_CONFIG_TREBLE
-            CR_VARIANT=$CR_VARIANT_J730X-TREBLE
-            CR_RAMDISK=$CR_RAMDISK_PORT
-            CR_DTB_MOUNT=$CR_DTS_TREBLE
+            PACK_FLASHABLE
+            BUILD_OUT
             echo "Starting $CR_VARIANT_J730X kernel build..."
+            CR_VARIANT=$CR_VARIANT_J730X
             CR_CONFIG=$CR_CONFG_J730X
             CR_DTSFILES=$CR_DTSFILES_J730X
-            # Compile
+            if [ $CR_MODE = "2" ]; then
+              echo " Building Treble variant "
+              CR_CONFIG_USB=$CR_CONFIG_TREBLE
+              CR_VARIANT=$CR_VARIANT_J730X-TREBLE
+              CR_RAMDISK=$CR_RAMDISK_PORT
+              CR_DTB_MOUNT=$CR_DTS_TREBLE
+            else
+              echo " Building OneUI variant "
+              CR_CONFIG_USB=$CR_CONFIG_ONEUI
+              CR_VARIANT=$CR_VARIANT_J730X-ONEUI
+              CR_DTB_MOUNT=$CR_DTS_ONEUI
+              CR_RAMDISK=$CR_RAMDISK_ONEUI
+            fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
-            # J710X
-            echo "J710X: Export NOUGAT version for WiFi Driver"
+            PACK_FLASHABLE
+            BUILD_OUT
+            echo "Starting $CR_VARIANT_J710X kernel build..."
+            # Build Nougat WiFi HAL
             export ANDROID_MAJOR_VERSION=$CR_ANDROID_J710X
             export PLATFORM_VERSION=$CR_PLATFORM_J710X
-            CR_CONFIG_USB=$CR_CONFIG_TREBLE
-            CR_VARIANT=$CR_VARIANT_J710X-TREBLE
-            CR_RAMDISK=$CR_RAMDISK_PORT
-            CR_DTB_MOUNT=$CR_DTS_TREBLE
-            echo "Starting $CR_VARIANT_J710X kernel build..."
             CR_CONFIG=$CR_CONFG_J710X
             CR_DTSFILES=$CR_DTSFILES_J710X
-            # Compile
+            if [ $CR_MODE = "2" ]; then
+              echo " Building Treble variant "
+              CR_CONFIG_USB=$CR_CONFIG_TREBLE
+              CR_VARIANT=$CR_VARIANT_J710X-TREBLE
+              CR_RAMDISK=$CR_RAMDISK_PORT
+              CR_DTB_MOUNT=$CR_DTS_TREBLE
+            else
+              echo " Building OneUI variant "
+              CR_CONFIG_USB=$CR_CONFIG_ONEUI
+              CR_VARIANT=$CR_VARIANT_J710X-ONEUI
+              CR_DTB_MOUNT=$CR_DTS_ONEUI
+              CR_RAMDISK=$CR_RAMDISK_ONEUI
+            fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
-            # J701X
-            export ANDROID_MAJOR_VERSION=$CR_ANDROID
-            export PLATFORM_VERSION=$CR_PLATFORM
-            CR_CONFIG_USB=$CR_CONFIG_TREBLE
-            CR_VARIANT=$CR_VARIANT_J701X-TREBLE
-            CR_RAMDISK=$CR_RAMDISK_PORT
-            CR_DTB_MOUNT=$CR_DTS_TREBLE
+            PACK_FLASHABLE
+            BUILD_OUT
             echo "Starting $CR_VARIANT_J701X kernel build..."
             CR_CONFIG=$CR_CONFG_J701X
             CR_DTSFILES=$CR_DTSFILES_J701X
-            # Compile
+            # Build Oreo WiFi HAL
+            export ANDROID_MAJOR_VERSION=$CR_ANDROID
+            export PLATFORM_VERSION=$CR_PLATFORM
+            if [ $CR_MODE = "2" ]; then
+              echo " Building Treble variant "
+              CR_CONFIG_USB=$CR_CONFIG_TREBLE
+              CR_VARIANT=$CR_VARIANT_J701X-TREBLE
+              CR_RAMDISK=$CR_RAMDISK_PORT
+              CR_DTB_MOUNT=$CR_DTS_TREBLE
+            else
+              echo " Building OneUI variant "
+              CR_CONFIG_USB=$CR_CONFIG_ONEUI
+              CR_VARIANT=$CR_VARIANT_J701X-ONEUI
+              CR_DTB_MOUNT=$CR_DTS_ONEUI
+              CR_RAMDISK=$CR_RAMDISK_ONEUI
+            fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
-            # G610X
-            export ANDROID_MAJOR_VERSION=$CR_ANDROID
-            export PLATFORM_VERSION=$CR_PLATFORM
-            CR_CONFIG_USB=$CR_CONFIG_TREBLE
-            CR_VARIANT=$CR_VARIANT_G610X-TREBLE
-            CR_RAMDISK=$CR_RAMDISK_PORT
-            CR_DTB_MOUNT=$CR_DTS_TREBLE
+            PACK_FLASHABLE
+            BUILD_OUT
             echo "Starting $CR_VARIANT_G610X kernel build..."
             CR_CONFIG=$CR_CONFG_G610X
             CR_DTSFILES=$CR_DTSFILES_G610X
-            # Compile
+            # Build Oreo WiFi HAL
+            export ANDROID_MAJOR_VERSION=$CR_ANDROID
+            export PLATFORM_VERSION=$CR_PLATFORM
+            if [ $CR_MODE = "2" ]; then
+              echo " Building Treble variant "
+              CR_CONFIG_USB=$CR_CONFIG_TREBLE
+              CR_VARIANT=$CR_VARIANT_G610X-TREBLE
+              CR_RAMDISK=$CR_RAMDISK_PORT
+              CR_DTB_MOUNT=$CR_DTS_TREBLE
+            else
+              echo " Building OneUI variant "
+              CR_CONFIG_USB=$CR_CONFIG_ONEUI
+              CR_VARIANT=$CR_VARIANT_G610X-ONEUI
+              CR_DTB_MOUNT=$CR_DTS_ONEUI
+              CR_RAMDISK=$CR_RAMDISK_ONEUI
+            fi
             BUILD_IMAGE_NAME
             BUILD_GENERATE_CONFIG
             BUILD_ZIMAGE
             BUILD_DTB
             PACK_BOOT_IMG
+            PACK_FLASHABLE
+            BUILD_OUT
+            echo "Starting $CR_VARIANT_J600X kernel build..."
+            CR_DTSFILES=$CR_DTSFILES_J600X
+            CR_RAMDISK=$CR_RAMDISK_TREBLE
+            CR_CONFIG=$CR_CONFG_J600X
+            CR_DTB_MOUNT=$CR_DTS_X6LTE
+            # Build Oreo WiFi HAL
+            export ANDROID_MAJOR_VERSION=$CR_ANDROID
+            export PLATFORM_VERSION=$CR_PLATFORM
+            if [ $CR_MODE = "2" ]; then
+              echo " Building Treble variant "
+              CR_CONFIG_USB=$CR_CONFIG_TREBLE
+              CR_VARIANT=$CR_VARIANT_J600X-TREBLE
+            else
+              echo " Building OneUI variant "
+              CR_CONFIG_USB=$CR_CONFIG_ONEUI
+              CR_VARIANT=$CR_VARIANT_J600X-ONEUI
+            fi
+            BUILD_IMAGE_NAME
+            BUILD_GENERATE_CONFIG
+            BUILD_ZIMAGE
+            BUILD_DTB
+            PACK_BOOT_IMG
+            PACK_FLASHABLE
+            BUILD_OUT
+            echo "Starting $CR_VARIANT_A600X kernel build..."
+            CR_DTSFILES=$CR_DTSFILES_A600X
+            CR_RAMDISK=$CR_RAMDISK_TREBLE
+            CR_CONFIG=$CR_CONFG_A600X
+            CR_DTB_MOUNT=$CR_DTS_X6LTE
+            # Build Oreo WiFi HAL
+            export ANDROID_MAJOR_VERSION=$CR_ANDROID
+            export PLATFORM_VERSION=$CR_PLATFORM
+            if [ $CR_MODE = "2" ]; then
+              echo " Building Treble variant "
+              CR_CONFIG_USB=$CR_CONFIG_TREBLE
+              CR_VARIANT=$CR_VARIANT_A600X-TREBLE
+            else
+              echo " Building OneUI variant "
+              CR_CONFIG_USB=$CR_CONFIG_ONEUI
+              CR_VARIANT=$CR_VARIANT_A600X-ONEUI
+            fi
+            BUILD_IMAGE_NAME
+            BUILD_GENERATE_CONFIG
+            BUILD_ZIMAGE
+            BUILD_DTB
+            PACK_BOOT_IMG
+            PACK_FLASHABLE
+            BUILD_OUT
             echo " "
             echo " "
-            echo " Treble_unofficial compilation finished "
-            echo " Target at $CR_OUT"
+            echo " compilation finished "
+            echo " Targets at $CR_OUT"
             echo " "
             echo "Press Any key to end the script"
             echo "----------------------------------------------"
