@@ -10,6 +10,7 @@ on early-init
     mkdir /efs 0771 radio system
     mkdir /cpefs 0771 radio system
     mount debugfs /sys/kernel/debug /sys/kernel/debug
+    mount ext4 /dev/block/platform/13540000.dwmmc0/by-name/EFS /efs nosuid nodev noatime noauto_da_alloc,discard,journal_async_commit,errors=panic
 
 on init
     start watchdogd
@@ -974,22 +975,20 @@ service gpsd /vendor/bin/hw/gpsd -c /vendor/etc/gnss/gps.cfg
 
 
 # LPM
-service lpm /system/bin/lpm
-    class sec-charger
-    critical
-
 on property:ro.bootmode=charger
    mount ext4 /dev/block/platform/13540000.dwmmc0/by-name/SYSTEM /system wait ro
 
 on property:ro.bootmode=charger
     wait /dev/block/platform/13540000.dwmmc0/by-name/EFS
-    check_fs /dev/block/platform/13540000.dwmmc0/by-name/EFS ext4
-    mount ext4 /dev/block/platform/13540000.dwmmc0/by-name/EFS /efs nosuid nodev noatime noauto_da_alloc,discard,journal_async_commit
+    mount ext4 /dev/block/platform/113540000.dwmmc0/by-name/EFS /efs nosuid nodev noatime noauto_da_alloc,discard,journal_async_commit,errors=panic
 
 on property:ro.bootmode=charger
-   mkdir /efs/lpm 0775 system system
-   class_start sec-charger
-   start lpm
+    mkdir /efs/lpm 0775 system system
+    class_start sec-charger
+
+service lpm /system/bin/lpm
+    class sec-charger
+    critical
 
 # MobiCore startup
 #service mobicore /system/bin/mcDriverDaemon -r /system/app/020a0000000000000000000000000000.drbin -r /system/app/mcRegistry/FFFFFFFFD00000000000000000000016.tlbin
