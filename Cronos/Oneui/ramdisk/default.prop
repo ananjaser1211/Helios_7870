@@ -68,5 +68,4 @@ security.knox_kap_mode=false
 ro.config.kap_default_on=false
 ro.config.kap=false
 ro.config.tima=0
-ro.securestorage.support=false
 wlan.wfd.hdcp=disable
