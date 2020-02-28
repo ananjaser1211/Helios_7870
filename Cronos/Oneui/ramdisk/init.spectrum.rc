@@ -1,6 +1,7 @@
 # SPECTRUM KERNEL MANAGER
 # Ramdisk file for profile based kernel management
 # Implimentation inspired by Franco's fku profiles
+# Improvements and implementation by Jukmisael
 
 on late-fs  
 ## Change permission for all files that we are going to touch now and then
@@ -35,7 +36,7 @@ on late-fs
     chown system system /sys/devices/system/cpu/cpu4/cpufreq/interactive/boostpulse_duration
     chown system system /sys/devices/system/cpu/cpu4/cpufreq/interactive/io_is_busy
 
-    chown system system /sys/power/cpuhotplug/enable
+    chown system system /sys/power/cpuhotplug/enabled
     chown system system /sys/devices/11400000.mali/max_clock
     chown system system /sys/devices/11400000.mali/min_clock
     chown system system /sys/devices/11400000.mali/power_policy
@@ -72,7 +73,7 @@ on late-fs
     chmod 0660 /sys/devices/system/cpu/cpu4/cpufreq/interactive/boostpulse_duration
     chmod 0660 /sys/devices/system/cpu/cpu4/cpufreq/interactive/io_is_busy
 
-    chmod 644 /sys/power/cpuhotplug/enable
+    chmod 644 /sys/power/cpuhotplug/enabled
     chmod 644 /sys/devices/11400000.mali/max_clock
     chmod 644 /sys/devices/11400000.mali/min_clock
     chmod 644 /sys/devices/11400000.mali/power_policy
@@ -80,6 +81,8 @@ on late-fs
     chmod 644 /sys/kernel/dyn_fsync/Dyn_fsync_active
     chmod 644 /sys/kernel/sched/gentle_fair_sleepers
     chmod 644 /sys/kernel/sched/arch_power
+    chmod 644 /sys/block/mmcblk1/queue/read_ahead_kb
+    chmod 644 /sys/block/mmcblk0/queue/read_ahead_kb
 
 # Initialization
 on property:sys.boot_completed=1
@@ -89,7 +92,7 @@ on property:sys.boot_completed=1
    # Enable Spectrum support
    setprop spectrum.support 1
    # Add kernel name
-   setprop persist.spectrum.kernel HeliosKernel
+   setprop persist.spectrum.kernel PhantomKernel
 
 # Balance (default profile)
 on property:persist.spectrum.profile=0
@@ -104,11 +107,13 @@ on property:persist.spectrum.profile=0
     write /sys/devices/11400000.mali/min_clock 343
     write /sys/devices/11400000.mali/power_policy coarse_demand
 
-    write /sys/power/cpuhotplug/enable 1
+    write /sys/power/cpuhotplug/enabled 0
     write /sys/module/sync/parameters/fsync_enabled Y
     write /sys/kernel/dyn_fsync/Dyn_fsync_active 1
     write /sys/kernel/sched/gentle_fair_sleepers 0
     write /sys/kernel/sched/arch_power 1
+    write /sys/block/mmcblk1/queue/read_ahead_kb 512
+    write /sys/block/mmcblk0/queue/read_ahead_kb 512
 
 # Performance
 on property:persist.spectrum.profile=1
@@ -123,11 +128,13 @@ on property:persist.spectrum.profile=1
     write /sys/devices/11400000.mali/min_clock 644
     write /sys/devices/11400000.mali/power_policy always_on
 
-    write /sys/power/cpuhotplug/enable 0
+    write /sys/power/cpuhotplug/enabled 1
     write /sys/module/sync/parameters/fsync_enabled N
     write /sys/kernel/dyn_fsync/Dyn_fsync_active 0
     write /sys/kernel/sched/gentle_fair_sleepers 0
     write /sys/kernel/sched/arch_power 0
+    write /sys/block/mmcblk1/queue/read_ahead_kb 2048
+    write /sys/block/mmcblk0/queue/read_ahead_kb 2048
 
 # Battery
 on property:persist.spectrum.profile=2
@@ -142,11 +149,13 @@ on property:persist.spectrum.profile=2
     write /sys/devices/11400000.mali/min_clock 343
     write /sys/devices/11400000.mali/power_policy coarse_demand
 
-    write /sys/power/cpuhotplug/enable 1
+    write /sys/power/cpuhotplug/enabled 0
     write /sys/module/sync/parameters/fsync_enabled Y
     write /sys/kernel/dyn_fsync/Dyn_fsync_active 1
     write /sys/kernel/sched/gentle_fair_sleepers 0
     write /sys/kernel/sched/arch_power 1
+    write /sys/block/mmcblk1/queue/read_ahead_kb 256
+    write /sys/block/mmcblk0/queue/read_ahead_kb 256
 
 # Gaming
 on property:persist.spectrum.profile=3
@@ -161,8 +170,11 @@ on property:persist.spectrum.profile=3
     write /sys/devices/11400000.mali/min_clock 644
     write /sys/devices/11400000.mali/power_policy coarse_demand
 
-    write /sys/power/cpuhotplug/enable 0
+    write /sys/power/cpuhotplug/enabled 1
     write /sys/module/sync/parameters/fsync_enabled N
     write /sys/kernel/dyn_fsync/Dyn_fsync_active 0
     write /sys/kernel/sched/gentle_fair_sleepers 0
     write /sys/kernel/sched/arch_power 0
+    write /sys/block/mmcblk1/queue/read_ahead_kb 2048
+    write /sys/block/mmcblk0/queue/read_ahead_kb 2048
+
