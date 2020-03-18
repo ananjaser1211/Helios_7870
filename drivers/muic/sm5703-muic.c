@@ -1656,6 +1656,15 @@ static void sm5703_muic_detect_dev(struct sm5703_muic_data *muic_data)
 				pr_info("%s : UNDEFINED_CHARGING DETECTED\n", MUIC_DEV_NAME);
 			}
 			break;
+#if defined (CONFIG_MUIC_SM5703_MHL_WA)
+		case ADC_SEND_END:
+			sm5703_print_reg_dump(muic_data);
+			pr_info("%s : 2K DETECTED : MUIC Reset\n", MUIC_DEV_NAME);
+			sm5703_i2c_write_byte(i2c, SM5703_MUIC_REG_RESET, 0x01);
+			sm5703_muic_reg_init(muic_data);
+			set_int_mask(muic_data, false);
+			return;
+#endif
 		case ADC_OPEN:
 			/* sometimes muic fails to catch JIG_UART_OFF detaching */
 			/* double check with ADC */

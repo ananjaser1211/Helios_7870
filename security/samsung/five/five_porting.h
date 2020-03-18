@@ -19,6 +19,12 @@
 #define __LINUX_FIVE_PORTING_H
 
 #include <linux/version.h>
+#include <linux/magic.h>
+
+/* OVERLAYFS_SUPER_MAGIC is defined since v4.5.0 */
+#ifndef OVERLAYFS_SUPER_MAGIC
+#define OVERLAYFS_SUPER_MAGIC 0x794c7630
+#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 21)
 /* d_backing_inode is absent on some Linux Kernel 3.x. but it back porting for
@@ -111,16 +117,83 @@ static inline int integrity_kernel_read(struct file *file, loff_t offset,
 	mm_segment_t old_fs;
 	char __user *buf = (char __user *)addr;
 	ssize_t ret;
+	struct inode *inode = file_inode(file);
 
 	if (!(file->f_mode & FMODE_READ))
 		return -EBADF;
 
 	old_fs = get_fs();
 	set_fs(get_ds());
+
+	if (inode->i_sb->s_magic == OVERLAYFS_SUPER_MAGIC && file->private_data)
+		file = (struct file *)file->private_data;
+
 	ret = __vfs_read(file, buf, count, &offset);
 	set_fs(old_fs);
 
 	return ret;
+}
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 16, 0)
+#include <linux/fs.h>
+
+static inline bool
+inode_eq_iversion(const struct inode *inode, u64 old)
+{
+	return inode->i_version == old;
+}
+
+static inline u64
+inode_query_iversion(struct inode *inode)
+{
+	return inode->i_version;
+}
+#else
+#include <linux/iversion.h>
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 8)
+static inline struct dentry *file_dentry(const struct file *file)
+{
+	return file->f_path.dentry;
+}
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 5, 2)
+static inline struct dentry *d_real_comp(struct dentry *dentry)
+{
+	return dentry;
+}
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
+static inline struct dentry *d_real_comp(struct dentry *dentry)
+{
+	return d_real(dentry);
+}
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
+static inline struct dentry *d_real_comp(struct dentry *dentry)
+{
+	return d_real(dentry, NULL, 0);
+}
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
+static inline struct dentry *d_real_comp(struct dentry *dentry)
+{
+	return d_real(dentry, NULL, 0, 0);
+}
+#else
+static inline struct dentry *d_real_comp(struct dentry *dentry)
+{
+	return d_real(dentry, NULL);
+}
+#endif
+
+/* d_real_inode was added in v4.4.16, removed in v4.5.0 and added again in v4.6.5 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 16) || \
+	(LINUX_VERSION_CODE > KERNEL_VERSION(4, 5, 0) && \
+	LINUX_VERSION_CODE < KERNEL_VERSION(4, 6, 5))
+static inline struct inode *d_real_inode(struct dentry *dentry)
+{
+	return d_backing_inode(d_real_comp(dentry));
 }
 #endif
 

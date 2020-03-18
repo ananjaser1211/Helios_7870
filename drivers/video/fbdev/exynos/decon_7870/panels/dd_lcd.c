@@ -13,8 +13,8 @@
 #include <linux/debugfs.h>
 #include <linux/device.h>
 #include <linux/lcd.h>
-#include <linux/platform_device.h>
 #include <linux/module.h>
+#include <linux/of_platform.h>
 
 #include <video/mipi_display.h>
 
@@ -25,8 +25,6 @@
 
 #define dbg_info(fmt, ...)	pr_info(pr_fmt("%s: %3d: %s: " fmt), "lcd panel", __LINE__, __func__, ##__VA_ARGS__)
 #define dbg_warn(fmt, ...)	pr_warn(pr_fmt("%s: %3d: %s: " fmt), "lcd panel", __LINE__, __func__, ##__VA_ARGS__)
-
-#define DEVICE_NAME		"panel"
 
 struct rw_info {
 	u8 type;
@@ -42,8 +40,6 @@ struct cmdlist_info {
 };
 
 struct d_info {
-	struct device	*dev;
-
 	struct rw_info	rx;
 	struct rw_info	tx;
 	struct list_head	unlock_list;
@@ -428,13 +424,13 @@ static int tx_show(struct seq_file *m, void *unused)
 	seq_printf(m, "type: %02x, cmd: %02x, len: %02x, pos: %02x\n", type, cmd, len, pos);
 	seq_printf(m, "+ [%02x]\n", cmd);
 	for (i = 0; i < len; i++)
-		seq_printf(m, "%2d: %02x\n", i + pos + 1, rbuf[i]);
+		seq_printf(m, "%2d(%2x): %02x\n", i + pos + 1, i + pos + 1, rbuf[i]);
 	seq_printf(m, "- [%02x]\n", cmd);
 
 	dbg_info("type: %02x, cmd: %02x, len: %02x, pos: %02x\n", type, cmd, len, pos);
 	dbg_info("+ [%02x]\n", cmd);
 	for (i = 0; i < len; i++)
-		dbg_info("%2d: %02x\n", i + pos + 1, rbuf[i]);
+		dbg_info("%2d(%2x): %02x\n", i + pos + 1, i + pos + 1, rbuf[i]);
 	dbg_info("- [%02x]\n", cmd);
 
 exit:
@@ -522,12 +518,12 @@ static int rx_show(struct seq_file *m, void *unused)
 
 	seq_printf(m, "+ [%02x]\n", cmd);
 	for (i = 0; i < len; i++)
-		seq_printf(m, "%2d: %02x\n", i + pos + 1, rbuf[i]);
+		seq_printf(m, "%2d(%2x): %02x\n", i + pos + 1, i + pos + 1, rbuf[i]);
 	seq_printf(m, "- [%02x]\n", cmd);
 
 	dbg_info("+ [%02x]\n", cmd);
 	for (i = 0; i < len; i++)
-		dbg_info("%2d: %02x\n", i + pos + 1, rbuf[i]);
+		dbg_info("%2d(%2x): %02x\n", i + pos + 1, i + pos + 1, rbuf[i]);
 	dbg_info("- [%02x]\n", cmd);
 
 exit:
@@ -607,7 +603,7 @@ static ssize_t rx_store(struct file *f, const char __user *user_buf,
 
 	dbg_info("+ [%02x]\n", cmd);
 	for (i = 0; i < len; i++)
-		dbg_info("%2d: %02x\n", i + pos + 1, rbuf[i]);
+		dbg_info("%2d(%2x): %02x\n", i + pos + 1, i + pos + 1, rbuf[i]);
 	dbg_info("- [%02x]\n", cmd);
 
 exit:
@@ -748,41 +744,6 @@ static const struct file_operations help_fops = {
 	.release	= seq_release,
 };
 
-static int compare_with_name(struct device *dev, void *data)
-{
-	const char *keyword = data;
-
-	return dev_name(dev) ? !!strstr(dev_name(dev), keyword) : 0;
-}
-
-static struct device *find_platform_device_by_keyword(const char *keyword)
-{
-	return bus_find_device(&platform_bus_type, NULL, (void *)keyword, compare_with_name);
-}
-
-static struct device *find_lcd_device(void)
-{
-	struct device *parent = NULL;
-	struct device *dev = NULL;
-
-	parent = find_platform_device_by_keyword("dsim");
-
-	if (!parent) {
-		dbg_warn("bus_find_device fail\n");
-		return parent;
-	}
-
-	dev = device_find_child(parent, DEVICE_NAME, compare_with_name);
-
-	if (parent)
-		put_device(parent);
-
-	if (dev)
-		put_device(dev);
-
-	return dev ? dev : parent;
-}
-
 static int fb_notifier_callback(struct notifier_block *self,
 			unsigned long event, void *data)
 {
@@ -847,7 +808,7 @@ static ssize_t read_show(struct kobject *kobj,
 
 	dbg_info("+ [%02x]\n", reg);
 	for (i = 0; i < len; i++)
-		dbg_info("%2d: %02x\n", i + 1, dump[i]);
+		dbg_info("%2d(%2x): %02x\n", i + 1, i + 1, dump[i]);
 	dbg_info("- [%02x]\n", reg);
 
 	kfree(dump);
@@ -985,13 +946,6 @@ static int init_debugfs_lcd(void)
 	int ret = 0;
 	static struct dentry *debugfs_root;
 	struct d_info *d = NULL;
-	struct device *dev = find_lcd_device();
-
-	if (!dev) {
-		dbg_warn("failed to get device\n");
-		ret = -ENODEV;
-		goto exit;
-	}
 
 	dbg_info("+\n");
 
@@ -1002,7 +956,6 @@ static int init_debugfs_lcd(void)
 		debugfs_create_file("_help", 0400, debugfs_root, d, &help_fops);
 	}
 
-	d->dev = dev;
 	d->tx_dump = &tx_dump;
 
 	debugfs_create_u32("tx_dump", 0600, debugfs_root, d->tx_dump);
@@ -1023,7 +976,6 @@ static int init_debugfs_lcd(void)
 
 	dbg_info("-\n");
 
-exit:
 	return ret;
 }
 

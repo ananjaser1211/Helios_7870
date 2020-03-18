@@ -890,6 +890,8 @@ int f2fs_get_valid_checkpoint(struct f2fs_sb_info *sbi)
 		goto free_fail_no_cp;
 	}
 
+	f2fs_get_fsck_stat(sbi);
+
 	if (cp_blks <= 1)
 		goto done;
 

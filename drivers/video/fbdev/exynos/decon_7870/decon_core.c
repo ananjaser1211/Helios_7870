@@ -1228,6 +1228,7 @@ static int decon_blank(int blank_mode, struct fb_info *info)
 			decon_err("skipped to disable decon\n");
 			goto blank_exit;
 		}
+		atomic_set(&decon->ffu_flag, 2);
 		break;
 	case FB_BLANK_UNBLANK:
 		DISP_SS_EVENT_LOG(DISP_EVT_UNBLANK, &decon->sd, ktime_set(0, 0));
@@ -1236,6 +1237,7 @@ static int decon_blank(int blank_mode, struct fb_info *info)
 			decon_err("skipped to enable decon\n");
 			goto blank_exit;
 		}
+		atomic_set(&decon->ffu_flag, 2);
 		break;
 	case FB_BLANK_VSYNC_SUSPEND:
 	case FB_BLANK_HSYNC_SUSPEND:
@@ -2543,6 +2545,13 @@ static void decon_update_regs(struct decon_device *decon, struct decon_reg_data 
 	decon_write_mask(DECON_INT, VIDINTCON1, ~0, VIDINTCON1_INT_I80);
 	decon->frame_done_cnt_target = decon->frame_done_cnt_cur + 1;
 
+	if (decon->out_type == DECON_OUT_DSI && atomic_read(&decon->ffu_flag)) {
+		if (regs->num_of_window) {
+			atomic_dec(&decon->ffu_flag);
+			decon_simple_notifier_call_chain(DECON_EVENT_FRAME_SEND, FB_BLANK_UNBLANK);
+		}
+	}
+
 	if (decon->pdata->trig_mode == DECON_HW_TRIG)
 		decon_reg_set_trigger(DECON_INT, decon->pdata->dsi_mode,
 				decon->pdata->trig_mode, DECON_TRIG_DISABLE);
@@ -2754,6 +2763,13 @@ windows_config:
 	regs->bandwidth = bw;
 	decon_dbg("Total BW = %llu Mbits, Max BW per window = %llu Mbits\n",
 			regs->bandwidth >> 20, decon->max_win_bw >> 20);
+
+	if (decon->out_type == DECON_OUT_DSI && atomic_read(&decon->ffu_flag)) {
+		if (regs->num_of_window) {
+			atomic_dec(&decon->ffu_flag);
+			decon_simple_notifier_call_chain(DECON_EVENT_FRAME, FB_BLANK_UNBLANK);
+		}
+	}
 
 	if (ret) {
 #ifdef CONFIG_FB_WINDOW_UPDATE
@@ -3146,13 +3162,6 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 		break;
 
 #ifdef CONFIG_LCD_DOZE_MODE
-{
-	struct fb_event v = {0, };
-	int blank = 0;
-
-	v.info = info;
-	v.data = &blank;
-
 	case S3CFB_POWER_MODE:
 		if (get_user(decon->pwr_mode, (int __user *)arg)) {
 			ret = -EFAULT;
@@ -3160,24 +3169,22 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 		}
 		switch (decon->pwr_mode) {
 		case DECON_POWER_MODE_DOZE:
-			blank = FB_BLANK_UNBLANK;
-			decon_notifier_call_chain(DECON_EARLY_EVENT_DOZE, &v);
+			decon_simple_notifier_call_chain(DECON_EARLY_EVENT_DOZE, FB_BLANK_UNBLANK);
 			ret = decon_doze_enable(decon);
 			if (ret) {
 				decon_err("%s: failed to decon_doze_enable: %d\n", __func__, ret);
 				ret = 0;
 			}
-			decon_notifier_call_chain(DECON_EVENT_DOZE, &v);
+			decon_simple_notifier_call_chain(DECON_EVENT_DOZE, FB_BLANK_UNBLANK);
 			break;
 		case DECON_POWER_MODE_DOZE_SUSPEND:
-			blank = FB_BLANK_POWERDOWN;
-			decon_notifier_call_chain(DECON_EARLY_EVENT_DOZE, &v);
+			decon_simple_notifier_call_chain(DECON_EARLY_EVENT_DOZE, FB_BLANK_POWERDOWN);
 			ret = decon_doze_suspend(decon);
 			if (ret) {
 				decon_err("%s: failed to decon_doze_suspend: %d\n", __func__, ret);
 				ret = 0;
 			}
-			decon_notifier_call_chain(DECON_EVENT_DOZE, &v);
+			decon_simple_notifier_call_chain(DECON_EVENT_DOZE, FB_BLANK_POWERDOWN);
 			break;
 		default:
 			decon_info("%s: pwr_mode: %d\n", __func__, decon->pwr_mode);
@@ -3185,7 +3192,6 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 			break;
 		}
 		break;
-}
 #endif
 
 	default:
@@ -4570,8 +4576,6 @@ static void decon_shutdown(struct platform_device *pdev)
 {
 	struct decon_device *decon = platform_get_drvdata(pdev);
 	struct fb_info *fbinfo = decon->windows[decon->pdata->default_win]->fbinfo;
-	struct fb_event v = {0, };
-	int blank = FB_BLANK_POWERDOWN;
 
 	dev_info(decon->dev, "%s + state:%d\n", __func__, decon->state);
 
@@ -4588,12 +4592,9 @@ static void decon_shutdown(struct platform_device *pdev)
 	decon_lpd_block_exit(decon);
 	/* Unused DECON state is DECON_STATE_INIT */
 	if (decon->state == DECON_STATE_ON) {
-		v.info = fbinfo;
-		v.data = &blank;
-
-		decon_notifier_call_chain(FB_EARLY_EVENT_BLANK, &v);
+		decon_simple_notifier_call_chain(FB_EARLY_EVENT_BLANK, FB_BLANK_POWERDOWN);
 		decon_disable(decon);
-		decon_notifier_call_chain(FB_EVENT_BLANK, &v);
+		decon_simple_notifier_call_chain(FB_EVENT_BLANK, FB_BLANK_POWERDOWN);
 	}
 
 	/* decon_lpd_unblock(decon); */

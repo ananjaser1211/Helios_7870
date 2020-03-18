@@ -89,7 +89,7 @@ efi_head:
 #ifdef CONFIG_PROCA
 	.quad	_proca_conf_offset		// memory info for proca ta
 #else
-	.quad	0xecefecef				// Magic number for proca ta
+	.quad	0xecefecef			// Magic number for proca ta
 #endif
 	.quad	0				// reserved
 	.byte	0x41				// Magic number, "ARM\x64"
@@ -514,8 +514,7 @@ CPU_LE(	bic	x0, x0, #(3 << 24)	)	// Clear the EE and E0E bits for EL1
 	/* GICv3 system register access */
 	mrs	x0, id_aa64pfr0_el1
 	ubfx	x0, x0, #24, #4
-	cmp	x0, #1
-	b.ne	3f
+	cbz	x0, 3f
 
 	mrs_s	x0, ICC_SRE_EL2
 	orr	x0, x0, #ICC_SRE_EL2_SRE	// Set ICC_SRE_EL2.SRE==1

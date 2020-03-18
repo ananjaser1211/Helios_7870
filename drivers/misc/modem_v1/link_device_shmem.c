@@ -801,20 +801,6 @@ static int tx_func(struct mem_link_device *mld, struct hrtimer *timer,
 	}
 #endif
 
-	if (unlikely(under_tx_flow_ctrl(mld, dev))) {
-		ret = check_tx_flow_ctrl(mld, dev);
-		if (ret < 0) {
-			if (ret == -EBUSY || ret == -ETIME) {
-				skb_queue_tail(skb_txq, skb);
-				need_schedule = true;
-			} else {
-				shmem_forced_cp_crash(mld);
-				need_schedule = false;
-			}
-			goto exit;
-		}
-	}
-
 	ret = txq_write(mld, dev, skb);
 	if (unlikely(ret < 0)) {
 		if (ret == -EBUSY || ret == -ENOSPC) {

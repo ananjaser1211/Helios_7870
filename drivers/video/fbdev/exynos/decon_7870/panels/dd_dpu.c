@@ -40,7 +40,7 @@ __XX(PMSK_P,		"timing,pmsk",		"pms",			0600)	\
 __XX(PMSK_M,		"",			"",			0)	\
 __XX(PMSK_S,		"",			"",			0)	\
 __XX(PMSK_K,		"",			"",			0)	\
-__XX(HS_CLK,		"timing,dsi-hs-clk",	"hs_clk",		0600)	\
+__XX(HS_CLK,		"timing,dsi-hs-clk",	"hs_clk",		0400)	\
 __XX(ESC_CLK,		"timing,dsi-escape-clk",	"esc_clk",	0400)	\
 __XX(HBP,		"timing,h-porch",	"hporch",		0600)	\
 __XX(HFP,		"",			"",			0)	\
@@ -684,7 +684,7 @@ static int help_show(struct seq_file *m, void *unused)
 	seq_puts(m, "= REQUEST: request parameter (not applied yet)\n");
 	seq_puts(m, "= CURRENT: current applied parameter\n");
 	seq_puts(m, "------------------------------------------------------------\n");
-	seq_printf(m, "To change MIPI Speed, you must modify pms, hs_clk, %s\n",
+	seq_printf(m, "To change MIPI Speed, you must modify pms, %s\n",
 		debugfs_list[D_VT_COMPENSATION].length ? debugfs_list[D_VT_COMPENSATION].sysfs_name : debugfs_list[D_CMD_UNDERRUN_LP_REF].sysfs_name);
 	seq_puts(m, "------------------------------------------------------------\n");
 	seq_puts(m, "\n");

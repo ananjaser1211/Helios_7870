@@ -18,6 +18,7 @@
  */
 
 #include "five_cache.h"
+#include "five_porting.h"
 
 enum five_file_integrity five_get_cache_status(
 		const struct integrity_iint_cache *iint)
@@ -25,7 +26,7 @@ enum five_file_integrity five_get_cache_status(
 	if (unlikely(!iint))
 		return FIVE_FILE_UNKNOWN;
 
-	if (iint->version != iint->inode->i_version)
+	if (!inode_eq_iversion(iint->inode, iint->version))
 		return FIVE_FILE_UNKNOWN;
 
 	return iint->five_status;
@@ -37,7 +38,7 @@ void five_set_cache_status(struct integrity_iint_cache *iint,
 	if (unlikely(!iint))
 		return;
 
-	iint->version = iint->inode->i_version;
+	iint->version = inode_query_iversion(iint->inode);
 	iint->five_status = status;
 }
 

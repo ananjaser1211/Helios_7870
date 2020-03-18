@@ -68,7 +68,8 @@ config F2FS_FS_SECURITY
 
 config F2FS_CHECK_FS
 	bool "F2FS consistency checking feature"
-	depends on F2FS_FS
+	depends on F2FS_FS && SEC_FACTORY
+	default y
 	help
 	  Enables BUG_ONs which check the filesystem consistency in runtime.
 

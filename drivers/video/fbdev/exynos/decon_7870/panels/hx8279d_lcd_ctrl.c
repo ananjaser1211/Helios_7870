@@ -14,26 +14,21 @@
 #include <linux/module.h>
 #include <video/mipi_display.h>
 #include <linux/i2c.h>
-#include <linux/clk.h>
 
 #include "../decon.h"
 #include "../dsim.h"
 #include "dsim_panel.h"
 
 #include "hx8279d_param.h"
+#include "dd.h"
 
 #define PANEL_STATE_SUSPENED	0
 #define PANEL_STATE_RESUMED	1
 #define PANEL_STATE_SUSPENDING	2
 
-#define POWER_IS_ON(pwr)			(pwr <= FB_BLANK_NORMAL)
-#define LEVEL_IS_HBM(brightness)		(brightness == EXTEND_BRIGHTNESS)
-
 struct lcd_info {
 	unsigned int			connected;
 	unsigned int			brightness;
-	unsigned int			current_hbm;
-	unsigned int			ldi_enable;
 
 	struct lcd_device		*ld;
 	struct backlight_device		*bd;
@@ -54,7 +49,7 @@ struct lcd_info {
 	unsigned int			pwm_max;
 	unsigned int			pwm_outdoor;
 
-	int			tp_mode;
+	unsigned int			tp_mode;
 };
 
 
@@ -124,11 +119,7 @@ static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 		goto exit;
 	}
 
-	bl_reg[1] = lcd->brightness * lcd->pwm_max / 0xFF;
-
-	/* OUTDOOR MODE */
-	if (LEVEL_IS_HBM(lcd->brightness))
-		bl_reg[1] = lcd->pwm_outdoor;
+	bl_reg[1] = brightness_table[lcd->brightness];
 
 	ret = dsim_write_hl_data(lcd, SEQ_TABLE_4, ARRAY_SIZE(SEQ_TABLE_4));
 	if (ret < 0) {
@@ -142,7 +133,7 @@ static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 		goto exit;
 	}
 
-	dev_info(&lcd->ld->dev, "%s: %02d [0x%02x]\n", __func__, lcd->brightness, bl_reg[1]);
+	dev_info(&lcd->ld->dev, "%s: %03d: %3d (0x%02x)\n", __func__, lcd->brightness, bl_reg[1], bl_reg[1]);
 
 exit:
 	mutex_unlock(&lcd->lock);
@@ -152,7 +143,9 @@ exit:
 
 static int panel_get_brightness(struct backlight_device *bd)
 {
-	return bd->props.brightness;
+	struct lcd_info *lcd = bl_get_data(bd);
+
+	return brightness_table[lcd->brightness];
 }
 
 static int panel_set_brightness(struct backlight_device *bd)
@@ -173,7 +166,6 @@ static const struct backlight_ops panel_backlight_ops = {
 	.get_brightness = panel_get_brightness,
 	.update_status = panel_set_brightness,
 };
-
 
 static int hx8279d_exit(struct lcd_info *lcd)
 {
@@ -247,6 +239,10 @@ static int hx8279d_read_id(struct lcd_info *lcd)
 	struct panel_private *priv = &lcd->dsim->priv;
 	int i, ret = 0;
 	char buf = 0;
+	struct decon_device *decon = get_decon_drvdata(0);
+	static char *LDI_BIT_DESC_ID[BITS_PER_BYTE * HX8279D_ID_LEN] = {
+		[0 ... 23] = "ID Read Fail",
+	};
 
 	lcd->id_info.value = 0;
 	priv->lcdconnected = lcd->connected = lcdtype ? 1 : 0;
@@ -267,6 +263,9 @@ stop:
 	if (ret < 0 || !lcd->id_info.value) {
 		priv->lcdconnected = lcd->connected = 0;
 		dev_info(&lcd->ld->dev, "%s: connected lcd is invalid\n", __func__);
+
+		if (!lcdtype && decon)
+			decon_abd_save_bit(&decon->abd, BITS_PER_BYTE * HX8279D_ID_LEN, cpu_to_be32(lcd->id_info.value), LDI_BIT_DESC_ID);
 	}
 
 	dev_info(&lcd->ld->dev, "%s: %x\n", __func__, cpu_to_be32(lcd->id_info.value));
@@ -309,7 +308,7 @@ static int hx8279d_init(struct lcd_info *lcd)
 
 	decon = (struct decon_device *)dsim->decon;
 
-	dev_info(&lcd->ld->dev, "%s\n", __func__);
+	dev_info(&lcd->ld->dev, "%s: ++\n", __func__);
 
 	dev_info(&lcd->ld->dev, "%s: porch: real: vclk:%lu hbp:%d hfp:%d hsa:%d vbp:%d vfp:%d vsa:%d\n",
 				__func__, clk_get_rate(decon->res.vclk_leaf),
@@ -417,6 +416,8 @@ static int hx8279d_init(struct lcd_info *lcd)
 
 	msleep(110);
 
+	dev_info(&lcd->ld->dev, "%s: --\n", __func__);
+
 init_err:
 	return ret;
 }
@@ -432,7 +433,6 @@ static int hx8279d_probe(struct lcd_info *lcd)
 	lcd->bd->props.brightness = UI_DEFAULT_BRIGHTNESS;
 
 	lcd->state = PANEL_STATE_RESUMED;
-	lcd->current_hbm = 0;
 	lcd->tp_mode = 0;
 
 	np = of_find_node_with_property(NULL, "lcd_info");
@@ -443,6 +443,9 @@ static int hx8279d_probe(struct lcd_info *lcd)
 	ret = of_property_read_u32(np, "duty_outdoor", &lcd->pwm_outdoor);
 	if (ret < 0)
 		dev_info(&lcd->ld->dev, "%s: %d: of_property_read_u32_duty_outdoor\n", __func__, __LINE__);
+
+	if (lcd->pwm_max == 168)
+		memcpy(brightness_table, brightness_table_note, sizeof(brightness_table));
 
 	ret = hx8279d_read_init_info(lcd);
 	if (ret < 0)
@@ -515,6 +518,8 @@ static void lcd_init_sysfs(struct lcd_info *lcd)
 	ret = sysfs_create_group(&lcd->ld->dev.kobj, &lcd_sysfs_attr_group);
 	if (ret < 0)
 		dev_info(&lcd->ld->dev, "failed to add lcd sysfs\n");
+
+	init_debugfs_backlight(lcd->bd, brightness_table, NULL);
 }
 
 
@@ -587,7 +592,9 @@ static int dsim_panel_suspend(struct dsim_device *dsim)
 	if (lcd->state == PANEL_STATE_SUSPENED)
 		goto exit;
 
+	mutex_lock(&lcd->lock);
 	lcd->state = PANEL_STATE_SUSPENDING;
+	mutex_unlock(&lcd->lock);
 
 	hx8279d_exit(lcd);
 

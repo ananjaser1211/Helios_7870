@@ -234,7 +234,7 @@ static int sdcardfs_name_match(void *__buf, const char *name, int namelen,
 	struct sdcardfs_name_data *buf = (struct sdcardfs_name_data *) __buf;
 	struct qstr candidate = QSTR_INIT(name, namelen);
 
-	if (qstr_n_case_eq(buf->to_find, &candidate)) {
+	if (qstr_case_eq(buf->to_find, &candidate)) {
 		memcpy(buf->name, name, namelen);
 		buf->name[namelen] = 0;
 		buf->found = true;

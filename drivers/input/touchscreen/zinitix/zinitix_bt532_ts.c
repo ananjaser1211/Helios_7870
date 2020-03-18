@@ -2907,6 +2907,15 @@ static void fw_update(void *device_data)
 	int ret;
 
 	set_default_result(info);
+#if defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+	if (info->factory_info->cmd_param[0] == 1) {
+		info->factory_info->cmd_state = 2;
+		snprintf(result, sizeof(result) , "%s", "OK");
+		set_cmd_result(info, result, strnlen(result, sizeof(result)));
+		tsp_debug_info(true, &client->dev, "%s: user_ship, success\n", __func__);
+		return;
+	}
+#endif
 
 	switch (info->factory_info->cmd_param[0]) {
 	case BUILT_IN:

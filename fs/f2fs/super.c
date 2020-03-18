@@ -23,6 +23,7 @@
 #include <linux/f2fs_fs.h>
 #include <linux/sysfs.h>
 #include <linux/quota.h>
+#include <linux/nls.h>
 #ifdef CONFIG_QUOTA
 #include <linux/seq_file.h>
 #endif
@@ -114,6 +115,7 @@ enum {
 	Opt_data_flush,
 	Opt_reserve_root,
 	Opt_reserve_core,
+	Opt_flush_group,
 	Opt_resgid,
 	Opt_resuid,
 	Opt_mode,
@@ -174,6 +176,7 @@ static match_table_t f2fs_tokens = {
 	{Opt_data_flush, "data_flush"},
 	{Opt_reserve_root, "reserve_root=%u"},
 	{Opt_reserve_core, "reserve_core=%u"},
+	{Opt_flush_group, "flush_group=%u"},
 	{Opt_resgid, "resgid=%u"},
 	{Opt_resuid, "resuid=%u"},
 	{Opt_mode, "mode=%s"},
@@ -272,6 +275,44 @@ out_unlock:
 	brelse(bh);
 
 	return;
+}
+
+void f2fs_get_fsck_stat(struct f2fs_sb_info *sbi)
+{
+	struct f2fs_super_block *fsb = sbi->raw_super;
+	unsigned long long extra_flag_blk_no = le32_to_cpu(fsb->cp_blkaddr) - 1;
+
+	struct buffer_head *bh;
+	struct f2fs_sb_extra_flag_blk *extra_blk;
+
+	if (extra_flag_blk_no < 2) {
+		f2fs_msg(sbi->sb, KERN_WARNING, 
+				"extra_flag: No free blks for extra flags");
+		return;
+	}
+
+	bh = sb_bread(sbi->sb, (sector_t)extra_flag_blk_no);
+	if (!bh) {
+		f2fs_msg(sbi->sb, KERN_WARNING, 
+				"extra_flag: Fail to allocate buffer_head");
+		return;
+	}
+
+	extra_blk = (struct f2fs_sb_extra_flag_blk*)bh->b_data;
+	sbi->sec_fsck_stat.fsck_elapsed_time =
+			le64_to_cpu(extra_blk->fsck_elapsed_time);
+	sbi->sec_fsck_stat.fsck_read_bytes =
+			le64_to_cpu(extra_blk->fsck_read_bytes);
+	sbi->sec_fsck_stat.fsck_written_bytes =
+			le64_to_cpu(extra_blk->fsck_written_bytes);
+	sbi->sec_fsck_stat.fsck_exit_code =
+			le32_to_cpu(extra_blk->fsck_exit_code);
+	sbi->sec_fsck_stat.valid_node_count =
+			le32_to_cpu(extra_blk->valid_node_count);
+	sbi->sec_fsck_stat.valid_inode_count =
+			le32_to_cpu(extra_blk->valid_inode_count);
+
+	brelse(bh);
 }
 
 static inline void limit_reserve_root(struct f2fs_sb_info *sbi)
@@ -436,6 +477,11 @@ static int f2fs_check_quota_options(struct f2fs_sb_info *sbi)
 	return 0;
 }
 #endif
+
+static int f2fs_keypress_callback_fn(struct super_block *sb)
+{
+	return blkdev_issue_flush(sb->s_bdev, GFP_KERNEL, NULL);
+}
 
 static int parse_options(struct super_block *sb, char *options)
 {
@@ -643,6 +689,17 @@ static int parse_options(struct super_block *sb, char *options)
 				return -EINVAL;
 			}
 			F2FS_OPTION(sbi).s_resgid = gid;
+			break;
+		case Opt_flush_group:
+			if (args->from && match_int(args, &arg))
+				return -EINVAL;
+			gid = make_kgid(current_user_ns(), arg);
+			if (!gid_valid(gid)) {
+				f2fs_msg(sb, KERN_ERR,
+					"Invalid gid value %d", arg);
+				return -EINVAL;
+			}
+			F2FS_OPTION(sbi).flush_group = gid;
 			break;
 		case Opt_mode:
 			name = match_strdup(&args[0]);
@@ -947,6 +1004,18 @@ static int parse_options(struct super_block *sb, char *options)
 	 */
 	if (F2FS_OPTION(sbi).active_logs != NR_CURSEG_TYPE)
 		F2FS_OPTION(sbi).whint_mode = WHINT_MODE_OFF;
+
+	if (F2FS_OPTION(sbi).fsync_mode == FSYNC_MODE_NOBARRIER) {
+		char volume_name[MAX_VOLUME_NAME];
+
+		utf16s_to_utf8s(sbi->raw_super->volume_name, MAX_VOLUME_NAME,
+					UTF16_LITTLE_ENDIAN, volume_name, MAX_VOLUME_NAME);
+		if (!strcmp(volume_name, "data")) {
+			keypress_callback_sb = sb;
+			keypress_callback_fn = f2fs_keypress_callback_fn;
+		}
+	}
+
 	return 0;
 }
 
@@ -1506,6 +1575,12 @@ static int f2fs_show_options(struct seq_file *seq, struct dentry *root)
 		seq_printf(seq, ",fsync_mode=%s", "strict");
 	else if (F2FS_OPTION(sbi).fsync_mode == FSYNC_MODE_NOBARRIER)
 		seq_printf(seq, ",fsync_mode=%s", "nobarrier");
+
+	if (!gid_eq(F2FS_OPTION(sbi).flush_group,
+			make_kgid(&init_user_ns, F2FS_DEF_FLUSHGROUP)))
+		seq_printf(seq, ",flush_group=%u",
+				from_kgid_munged(&init_user_ns,
+					F2FS_OPTION(sbi).flush_group));
 	return 0;
 }
 
@@ -1520,6 +1595,7 @@ static void default_options(struct f2fs_sb_info *sbi)
 	F2FS_OPTION(sbi).test_dummy_encryption = false;
 	F2FS_OPTION(sbi).s_resuid = make_kuid(&init_user_ns, F2FS_DEF_RESUID);
 	F2FS_OPTION(sbi).s_resgid = make_kgid(&init_user_ns, F2FS_DEF_RESGID);
+	F2FS_OPTION(sbi).flush_group = make_kgid(&init_user_ns, F2FS_DEF_FLUSHGROUP);
 
 	set_opt(sbi, BG_GC);
 	set_opt(sbi, INLINE_XATTR);
@@ -1545,6 +1621,21 @@ static void default_options(struct f2fs_sb_info *sbi)
 #endif
 
 	f2fs_build_fault_attr(sbi, 0, 0);
+
+	if (sbi->raw_super->mount_opts[0]) {
+		struct super_block *sb = sbi->sb;
+		int err;
+		char *mount_opts = kstrndup(sbi->raw_super->mount_opts,
+				sizeof(sbi->raw_super->mount_opts),
+				GFP_KERNEL);
+		if (!mount_opts)
+			return;
+		err = parse_options(sb, mount_opts);
+		if (err)
+			f2fs_msg(sb, KERN_WARNING,
+				"failed to parse options in superblock\n");
+		kfree(mount_opts);
+	}
 }
 
 #ifdef CONFIG_QUOTA
@@ -1598,7 +1689,8 @@ static void f2fs_enable_checkpoint(struct f2fs_sb_info *sbi)
 	f2fs_sync_fs(sbi->sb, 1);
 }
 
-static int f2fs_remount(struct super_block *sb, int *flags, char *data)
+static int f2fs_remount(struct vfsmount *mnt, struct super_block *sb,
+		int *flags, char *data)
 {
 	struct f2fs_sb_info *sbi = F2FS_SB(sb);
 	struct f2fs_mount_info org_mount_opt;
@@ -1665,15 +1757,18 @@ static int f2fs_remount(struct super_block *sb, int *flags, char *data)
 
 #ifdef CONFIG_QUOTA
 	if (!f2fs_readonly(sb) && (*flags & MS_RDONLY)) {
-		err = dquot_suspend(sb, -1);
-		if (err < 0)
-			goto restore_opts;
+		if (!IS_ERR(mnt)) {
+			err = dquot_suspend(sb, -1);
+			if (err < 0)
+				goto restore_opts;
+		}
 	} else if (f2fs_readonly(sb) && !(*flags & MS_RDONLY)) {
 		/* dquot_resume needs RW */
 		sb->s_flags &= ~MS_RDONLY;
 		if (sb_any_quota_suspended(sb)) {
 			dquot_resume(sb, -1);
-		} else if (f2fs_sb_has_quota_ino(sb)) {
+		} else if (!sb_any_quota_loaded(sb) &&
+				f2fs_sb_has_quota_ino(sb)) {
 			err = f2fs_enable_quotas(sb);
 			if (err)
 				goto restore_opts;
@@ -2286,7 +2381,7 @@ static const struct super_operations f2fs_sops = {
 	.freeze_fs	= f2fs_freeze,
 	.unfreeze_fs	= f2fs_unfreeze,
 	.statfs		= f2fs_statfs,
-	.remount_fs	= f2fs_remount,
+	.remount_fs2	= f2fs_remount,
 };
 
 #ifdef CONFIG_F2FS_FS_ENCRYPTION
@@ -2856,6 +2951,9 @@ static void init_sb_info(struct f2fs_sb_info *sbi)
 	sbi->dirty_device = 0;
 	spin_lock_init(&sbi->dev_lock);
 
+	/* FUA Mode : ROOT & Quota */
+	sbi->s_sec_cond_fua_mode = F2FS_SEC_FUA_ROOT;
+
 	init_rwsem(&sbi->sb_lock);
 }
 
@@ -3399,7 +3497,8 @@ try_onemore:
 	/* For write statistics */
 	if (sb->s_bdev->bd_part)
 		sbi->sectors_written_start =
-			(u64)part_stat_read(sb->s_bdev->bd_part, sectors[1]);
+			(u64)part_stat_read(sb->s_bdev->bd_part, sectors[1])
+			- (u64)part_stat_read(sb->s_bdev->bd_part, discard_sectors);
 
 	/* Read accumulated write IO statistics if exists */
 	seg_i = CURSEG_I(sbi, CURSEG_HOT_NODE);

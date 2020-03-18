@@ -243,6 +243,16 @@ static void fw_update(void *dev_data)
 
 	tsp_info("%s(), %d\n", __func__, sec->cmd_param[0]);
 
+#if defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+	if (sec->cmd_param[0] == 1) {
+		sec->cmd_state = CMD_STATE_OK;
+		snprintf(buf, sizeof(buf), "%s", "OK");
+		set_cmd_result(sec, buf, strnlen(buf, sizeof(buf)));
+		tsp_info("%s: user_ship binary, success\n", __func__);
+		return;
+	}
+#endif
+
 	switch (sec->cmd_param[0]) {
 	case BUILT_IN:
 		sec->cmd_state = CMD_STATE_OK;

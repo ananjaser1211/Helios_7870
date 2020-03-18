@@ -17,11 +17,6 @@ struct formular_t {
 	int denominator;
 };
 
-struct m_gray_limit_t {
-	int min;
-	int max;
-};
-
 struct dynamic_aid_param_t {
 	int				vreg;
 	int				vref_h;

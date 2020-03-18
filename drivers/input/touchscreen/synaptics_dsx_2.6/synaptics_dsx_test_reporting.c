@@ -4588,6 +4588,15 @@ static void fw_update(void *dev_data)
 	int retval = 0;
 
 	set_default_result(data);
+#if defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+	if (data->cmd_param[0] == 1) {
+		snprintf(data->cmd_buff, CMD_RESULT_STR_LEN, "%s", "OK");
+		data->cmd_state = CMD_STATUS_OK;
+		set_cmd_result(data, strlen(data->cmd_buff));
+		dev_info(rmi4_data->pdev->dev.parent, "%s: user_ship, success\n", __func__);
+		return;
+	}
+#endif
 
 	retval = synaptics_rmi4_fw_update_on_hidden_menu(rmi4_data,
 			data->cmd_param[0]);

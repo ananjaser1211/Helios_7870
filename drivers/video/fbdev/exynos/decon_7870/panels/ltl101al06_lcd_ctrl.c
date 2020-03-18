@@ -25,15 +25,9 @@
 #define PANEL_STATE_RESUMED	1
 #define PANEL_STATE_SUSPENDING	2
 
-#define POWER_IS_ON(pwr)			(pwr <= FB_BLANK_NORMAL)
-#define LEVEL_IS_HBM(brightness)		(brightness == EXTEND_BRIGHTNESS)
-
 struct lcd_info {
 	unsigned int			connected;
-	unsigned int			bl;
 	unsigned int			brightness;
-	unsigned int			current_bl;
-	unsigned int			current_hbm;
 	unsigned int			state;
 
 	struct lcd_device		*ld;
@@ -106,26 +100,16 @@ static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 
 	lcd->brightness = lcd->bd->props.brightness;
 
-	lcd->bl = lcd->brightness;
-
 	if (!force && lcd->state != PANEL_STATE_RESUMED) {
 		dev_info(&lcd->ld->dev, "%s: panel is not active state\n", __func__);
 		goto exit;
 	}
 
-	lcd->bl = (lcd->bl > UI_MAX_BRIGHTNESS) ? UI_MAX_BRIGHTNESS : lcd->bl;
-
-	if (LEVEL_IS_HBM(lcd->brightness))
-		duty = lcd->pwm_outdoor;
-	else
-		duty = lcd->bl * (lcd->pwm_max - lcd->pwm_min) / 255 + lcd->pwm_min;
-
-	if (duty <= lcd->pwm_min)
-		duty = 0;	// duty must set over 0.7 percent.
+	duty = brightness_table[lcd->brightness];
 
 	pwm_config(lcd->pwm, duty, lcd->pwm_period);
 
-	dev_info(&lcd->ld->dev, "%s: brightness: %d, bl: %d, duty: %d/%d\n", __func__, lcd->brightness, lcd->bl, duty, lcd->pwm_period);
+	dev_info(&lcd->ld->dev, "%s: brightness: %3d, duty: %d\n", __func__, lcd->brightness, duty);
 
 	lcd->current_bl = lcd->bl;
 exit:
@@ -136,7 +120,9 @@ exit:
 
 static int panel_get_brightness(struct backlight_device *bd)
 {
-	return bd->props.brightness;
+	struct lcd_info *lcd = bl_get_data(bd);
+
+	return brightness_table[lcd->brightness];
 }
 
 static int panel_set_brightness(struct backlight_device *bd)

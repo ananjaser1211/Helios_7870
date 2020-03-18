@@ -217,6 +217,15 @@ static void fw_update(void *device_data)
 	int rc = 0;
 
 	set_default_result(sfd);
+#if defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+	if (sfd->factory_cmd_param[0] == 1) {
+		snprintf(strbuff, sizeof(strbuff), "%s", "OK");
+		sfd->factory_cmd_state = FACTORYCMD_OK;
+		set_cmd_result(sfd, strbuff, strnlen(strbuff, sizeof(strbuff)));
+		dev_info(sfd->dev, "%s: user_ship, success \n", __func__);
+		return;
+	}
+#endif
 
 	if (sfd->factory_cmd_param[0] == 0) {
 		upgrade_firmware_from_platform =

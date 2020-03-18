@@ -28,6 +28,9 @@ void five_audit_info(struct task_struct *task, struct file *file,
 void five_audit_err(struct task_struct *task, struct file *file,
 		const char *op, enum task_integrity_value prev,
 		enum task_integrity_value tint, const char *cause, int result);
+void five_audit_sign_err(struct task_struct *task, struct file *file,
+		const char *op, enum task_integrity_value prev,
+		enum task_integrity_value tint, const char *cause, int result);
 void five_audit_tee_msg(const char *func, const char *cause, int rc,
 							uint32_t origin);
 

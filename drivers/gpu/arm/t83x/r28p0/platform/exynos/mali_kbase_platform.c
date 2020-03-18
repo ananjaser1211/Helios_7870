@@ -598,6 +598,8 @@ static int exynos_secure_mem_enable(struct kbase_device *kbdev, int ion_fd, u64 
 
 		flush_all_cpu_caches();
 
+		dev_warn(kbdev->dev, "[G3D] SECURE_CRC_FLAGS %llx, input_flags %llx, CRC_CHECK_MASK %X\n",
+			SECURE_CRC_FLAGS, input_flags, CRC_CHECK_MASK);
 		if (input_flags == SECURE_CRC_FLAGS) {
 			reg->flags |= KBASE_REG_SECURE_CRC | KBASE_REG_SECURE;
 		} else {

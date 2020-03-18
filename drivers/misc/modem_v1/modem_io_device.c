@@ -335,6 +335,10 @@ static int rx_multi_pdp(struct sk_buff *skb)
 	log_ipc_pkt(iod->id, IODEV, RX, skb, NULL);
 #endif
 
+	skb_reset_transport_header(skb);
+	skb_reset_network_header(skb);
+	skb_reset_mac_header(skb);
+
 	if (in_interrupt())
 		ret = netif_rx(skb);
 	else

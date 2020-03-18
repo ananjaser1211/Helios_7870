@@ -13,11 +13,9 @@
 
 extern unsigned int lcdtype;
 
-void run_list(struct device *dev, const char *name);
-int of_gpio_get_active(const char *gpioname);
-int of_gpio_get_value(const char *gpioname);
-int of_gpio_set_value(const char *gpioname, int value);
-int of_get_gpio_with_name(const char *gpioname);
+extern void run_list(struct device *dev, const char *name);
 
+extern struct platform_device *of_find_dsim_platform_device(void);
+extern struct platform_device *of_find_decon_platform_device(void);
 #endif
 

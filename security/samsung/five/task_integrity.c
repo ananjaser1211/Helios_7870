@@ -74,7 +74,7 @@ void task_integrity_free(struct task_integrity *intg)
 		intg->value = INTEGRITY_NONE;
 		atomic_set(&intg->usage_count, 0);
 
-		intg->reset_cause = CAUSE_UNKNOWN;
+		intg->reset_cause = CAUSE_UNSET;
 		if (intg->reset_file) {
 			fput(intg->reset_file);
 			intg->reset_file = NULL;
@@ -92,7 +92,7 @@ void task_integrity_clear(struct task_integrity *tint)
 	tint->label = NULL;
 	spin_unlock(&tint->value_lock);
 
-	tint->reset_cause = CAUSE_UNKNOWN;
+	tint->reset_cause = CAUSE_UNSET;
 	if (tint->reset_file) {
 		fput(tint->reset_file);
 		tint->reset_file = NULL;
@@ -150,6 +150,7 @@ char const * const tint_reset_cause_to_string(
 	enum task_integrity_reset_cause cause)
 {
 	static const char * const tint_cause2str[] = {
+		[CAUSE_UNSET] = "unset",
 		[CAUSE_UNKNOWN] = "unknown",
 		[CAUSE_MISMATCH_LABEL] = "mismatch-label",
 		[CAUSE_BAD_FS] = "bad-fs",
@@ -164,6 +165,10 @@ char const * const tint_reset_cause_to_string(
 		[CAUSE_INVALID_UPDATE_LABEL] = "invalid-update-label",
 		[CAUSE_INVALID_SIGNATURE] = "invalid-signature",
 		[CAUSE_UKNOWN_FIVE_DATA] = "unknown-five-data",
+		[CAUSE_PTRACE] = "ptrace",
+		[CAUSE_VMRW] = "vmrw",
+		[CAUSE_EXEC] = "exec",
+		[CAUSE_TAMPERED] = "tampered",
 		[CAUSE_MAX] = "incorrect-cause",
 	};
 
@@ -182,7 +187,7 @@ char const * const tint_reset_cause_to_string(
 void task_integrity_set_reset_reason(struct task_integrity *intg,
 	enum task_integrity_reset_cause cause, struct file *file)
 {
-	if (intg->reset_cause != CAUSE_UNKNOWN)
+	if (intg->reset_cause != CAUSE_UNSET)
 		return;
 
 	intg->reset_cause = cause;

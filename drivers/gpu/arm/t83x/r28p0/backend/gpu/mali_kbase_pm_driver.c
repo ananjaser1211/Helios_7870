@@ -292,6 +292,12 @@ static void kbase_pm_invoke(struct kbase_device *kbdev,
 			}
 	}
 
+/* MALI_SEC_INTEGRATION */
+#if PLATFORM_POWER_DOWN_ONLY
+	if (action == ACTION_PWROFF)
+		return;
+#endif
+
 	if (lo != 0)
 		kbase_reg_write(kbdev, GPU_CONTROL_REG(reg), lo);
 
@@ -1275,8 +1281,6 @@ void kbase_pm_clock_on(struct kbase_device *kbdev, bool is_resume)
 	lockdep_assert_held(&kbdev->js_data.runpool_mutex);
 	lockdep_assert_held(&kbdev->pm.lock);
 
-	/* MALI_SEC_INTEGRATION */
-	KBASE_TRACE_ADD(kbdev, PM_GPU_ON, NULL, NULL, 0u, kbdev->pm.backend.gpu_powered);
 	if (kbdev->pm.backend.gpu_powered) {
 		/* Already turned on */
 		if (kbdev->poweroff_pending)
@@ -1287,6 +1291,8 @@ void kbase_pm_clock_on(struct kbase_device *kbdev, bool is_resume)
 	}
 
 	kbdev->poweroff_pending = false;
+
+	KBASE_TRACE_ADD(kbdev, PM_GPU_ON, NULL, NULL, 0u, 0u);
 
 	if (is_resume && kbdev->pm.backend.callback_power_resume) {
 		kbdev->pm.backend.callback_power_resume(kbdev);

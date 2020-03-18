@@ -476,7 +476,11 @@ retry:
 	hlist_add_head(&s->s_instances, &type->fs_supers);
 	spin_unlock(&sb_lock);
 	get_filesystem(type);
-	register_shrinker(&s->s_shrink);
+	err = register_shrinker(&s->s_shrink);
+	if (err) {
+		deactivate_locked_super(s);
+		s = ERR_PTR(err);
+	}
 	return s;
 }
 
@@ -726,6 +730,9 @@ int do_remount_sb2(struct vfsmount *mnt, struct super_block *sb, int flags, void
 		if (force) {
 			sb->s_readonly_remount = 1;
 			smp_wmb();
+
+			if (sb->s_magic == F2FS_SUPER_MAGIC)
+				mnt = ERR_PTR(-EROFS);
 		} else {
 			retval = sb_prepare_remount_readonly(sb);
 			if (retval)

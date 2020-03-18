@@ -6,7 +6,6 @@
  * as published by the Free Software Foundation.
 */
 
-#include <linux/crc32.h>
 #include <linux/kernel.h>
 #include <linux/kobject.h>
 #include <linux/slab.h>

@@ -20,6 +20,7 @@
 
 #include "../../../../../kernel/irq/internals.h"
 #include "decon.h"
+#include "decon_board.h"
 #include "decon_notify.h"
 #include "dsim.h"
 
@@ -156,16 +157,16 @@ static void decon_abd_pin_enable_interrupt(struct decon_device *decon, struct ab
 
 	pin->level = gpio_get_value(pin->gpio);
 
-	if (pin->level == pin->active_level) {
+	if (pin->level == pin->active_level)
 		decon_abd_save_pin(decon, pin, trace, on);
-		if (pin->name && !strcmp(pin->name, "pcd")) {
-			decon->ignore_vsync = 1;
-			decon_info("%s: ignore_vsync: %d\n", __func__, decon->ignore_vsync);
-		}
-	}
 
 	decon_info("%s: on: %d, %s(%d,%d) level: %d, count: %d, state: %d, %s\n", __func__,
 		on, pin->name, pin->irq, pin->desc->depth, pin->level, trace->count, decon->state, (pin->level == pin->active_level) ? "abnormal" : "normal");
+
+	if (pin->name && !strcmp(pin->name, "pcd")) {
+		decon->ignore_vsync = (pin->level == pin->active_level) ? 1 : 0;
+		decon_info("%s: ignore_vsync: %d\n", __func__, decon->ignore_vsync);
+	}
 
 	if (on) {
 		decon_abd_pin_clear_pending_bit(pin->irq);
@@ -740,40 +741,21 @@ static void decon_abd_register(struct decon_device *decon)
 	decon_info("%s: -- entity was registered\n", __func__);
 }
 
-static int compare_with_name(struct device *dev, void *data)
-{
-	const char *keyword = data;
-
-	return dev_name(dev) ? !!strstr(dev_name(dev), keyword) : 0;
-}
-
-static struct device *find_platform_device_by_keyword(const char *keyword)
-{
-	return bus_find_device(&platform_bus_type, NULL, (void *)keyword, compare_with_name);
-}
-
 static struct decon_device *find_decon_device(void)
 {
-	struct device *dev = NULL;
 	struct platform_device *pdev = NULL;
 	struct decon_device *decon = NULL;
 
-	dev = find_platform_device_by_keyword("decon");
-	if (!dev) {
-		decon_info("bus_find_device fail for decon\n");
-		return ERR_CAST(dev);
-	}
-
-	pdev = to_platform_device(dev);
+	pdev = of_find_decon_platform_device();
 	if (!pdev) {
-		decon_info("to_platform_device fail for decon\n");
-		return ERR_CAST(pdev);
+		decon_info("%s: of_find_device_by_node fail\n", __func__);
+		return NULL;
 	}
 
 	decon = platform_get_drvdata(pdev);
-	if (!dev) {
-		decon_info("platform_get_drvdata fail for decon\n");
-		return ERR_CAST(decon);
+	if (!decon) {
+		decon_info("%s: platform_get_drvdata fail\n", __func__);
+		return NULL;
 	}
 
 	return decon;

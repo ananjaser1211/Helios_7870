@@ -709,7 +709,8 @@ struct decon_device {
 	struct decon_regs_data win_regs;
 
 	bool				ignore_vsync;
-	struct abd_protect	abd;
+	struct abd_protect		abd;
+	atomic_t			ffu_flag;	/* first frame update */
 
 	unsigned int			force_fullupdate;
 #ifdef CONFIG_LCD_DOZE_MODE

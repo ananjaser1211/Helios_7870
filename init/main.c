@@ -97,6 +97,11 @@
 #include <linux/sec_ext.h>
 #endif
 
+#ifdef CONFIG_SECURITY_DEFEX
+#include <linux/defex.h>
+void __init __weak defex_load_rules(void) { }
+#endif
+
 static int kernel_init(void *);
 
 extern void init_IRQ(void);
@@ -610,7 +615,11 @@ asmlinkage __visible void __init start_kernel(void)
 	build_all_zonelists(NULL, NULL);
 	page_alloc_init();
 
+#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
 	pr_notice("Kernel command line: %s\n", boot_command_line);
+#endif
+	/* parameters may set static keys */
+	jump_label_init();
 	parse_early_param();
 
 	after_dashes = parse_args("Booting kernel",
@@ -631,8 +640,6 @@ asmlinkage __visible void __init start_kernel(void)
 	vmm_init();
 #endif //CONFIG_KNOX_KAP
 #endif //CONFIG_TIMA_RKP
-
-	jump_label_init();
 
 	/*
 	 * These use large bootmem allocations and must precede
@@ -1174,4 +1181,7 @@ static noinline void __init kernel_init_freeable(void)
 
 	/* rootfs is available now, try loading default modules */
 	load_default_modules();
+#ifdef CONFIG_SECURITY_DEFEX
+	defex_load_rules();
+#endif
 }

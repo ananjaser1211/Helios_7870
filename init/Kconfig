@@ -807,7 +807,7 @@ config BUILD_BIN2C
 
 config IKCONFIG
 	tristate "Kernel .config support"
-	default y if ANDROID_MAJOR_VERSION = "o" || ANDROID_MAJOR_VERSION = "p"
+	default y if ANDROID_MAJOR_VERSION = "o" || ANDROID_MAJOR_VERSION = "p" || ANDROID_MAJOR_VERSION = "q"
 	select BUILD_BIN2C
 	---help---
 	  This option enables the complete Linux kernel ".config" file

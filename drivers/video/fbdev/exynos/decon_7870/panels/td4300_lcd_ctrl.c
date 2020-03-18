@@ -53,9 +53,7 @@
 
 struct lcd_info {
 	unsigned int			connected;
-	unsigned int			bl;
 	unsigned int			brightness;
-	unsigned int			current_bl;
 	unsigned int			state;
 
 	struct lcd_device		*ld;
@@ -288,28 +286,16 @@ static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 
 	lcd->brightness = lcd->bd->props.brightness;
 
-	lcd->bl = lcd->brightness;
-	lcd->bl = (lcd->bl > UI_MAX_BRIGHTNESS) ? UI_MAX_BRIGHTNESS : lcd->bl;
-
 	if (!force && lcd->state != PANEL_STATE_RESUMED) {
 		dev_info(&lcd->ld->dev, "%s: panel is not active state\n", __func__);
 		goto exit;
 	}
+
 	bl_reg[0] = BRIGHTNESS_REG;
-
-	if (lcd->bl >= UI_DEFAULT_BRIGHTNESS) {
-		bl_reg[1] = (lcd->bl - UI_DEFAULT_BRIGHTNESS) *
-			(DDI_MAX_BRIGHTNESS - DDI_DEFAULT_BRIGHTNESS) / (UI_MAX_BRIGHTNESS - UI_DEFAULT_BRIGHTNESS) + DDI_DEFAULT_BRIGHTNESS;
-	} else if (lcd->bl >= UI_MIN_BRIGHTNESS) {
-		bl_reg[1] = (lcd->bl - UI_MIN_BRIGHTNESS) *
-			(DDI_DEFAULT_BRIGHTNESS - DDI_MIN_BRIGHTNESS) / (UI_DEFAULT_BRIGHTNESS - UI_MIN_BRIGHTNESS) + DDI_MIN_BRIGHTNESS;
-	} else
-		bl_reg[1] = 0x00;
-
-	if (LEVEL_IS_HBM(lcd->brightness))
-		bl_reg[1] = DDI_OUTDOOR_BRIGHTNESS;
+	bl_reg[1] = brightness_table[lcd->brightness];
 
 	DSI_WRITE(bl_reg, ARRAY_SIZE(bl_reg));
+
 	dev_info(&lcd->ld->dev, "%s: brightness: %3d, %3d(%2x), lx: %d\n", __func__,
 		lcd->brightness, bl_reg[1], bl_reg[1], lcd->lux);
 exit:
@@ -320,7 +306,9 @@ exit:
 
 static int panel_get_brightness(struct backlight_device *bd)
 {
-	return bd->props.brightness;
+	struct lcd_info *lcd = bl_get_data(bd);
+
+	return brightness_table[lcd->brightness];
 }
 
 static int panel_set_brightness(struct backlight_device *bd)
@@ -362,6 +350,10 @@ static int td4300_read_id(struct lcd_info *lcd)
 {
 	struct panel_private *priv = &lcd->dsim->priv;
 	int i, ret = 0;
+	struct decon_device *decon = get_decon_drvdata(0);
+	static char *LDI_BIT_DESC_ID[BITS_PER_BYTE * TD4300_ID_LEN] = {
+		[0 ... 23] = "ID Read Fail",
+	};
 
 	lcd->id_info.value = 0;
 	priv->lcdconnected = lcd->connected = lcdtype ? 1 : 0;
@@ -384,6 +376,9 @@ static int td4300_read_id(struct lcd_info *lcd)
 	if (ret < 0 || !lcd->id_info.value) {
 		priv->lcdconnected = lcd->connected = 0;
 		dev_info(&lcd->ld->dev, "%s: connected lcd is invalid\n", __func__);
+
+		if (!lcdtype && decon)
+			decon_abd_save_bit(&decon->abd, BITS_PER_BYTE * TD4300_ID_LEN, cpu_to_be32(lcd->id_info.value), LDI_BIT_DESC_ID);
 	}
 
 	dev_info(&lcd->ld->dev, "%s: %x\n", __func__, cpu_to_be32(lcd->id_info.value));
@@ -407,8 +402,6 @@ static int td4300_displayon_late(struct lcd_info *lcd)
 
 	DSI_WRITE(SEQ_DISPLAY_ON, ARRAY_SIZE(SEQ_DISPLAY_ON));
 	DSI_WRITE(SEQ_TD4300_BLON, ARRAY_SIZE(SEQ_TD4300_BLON));
-
-	dsim_panel_set_brightness(lcd, 1);
 
 	return ret;
 }
@@ -505,8 +498,13 @@ static int fb_notifier_callback(struct notifier_block *self,
 	if (evdata->info->node)
 		return NOTIFY_DONE;
 
-	if (fb_blank == FB_BLANK_UNBLANK)
+	if (fb_blank == FB_BLANK_UNBLANK) {
+		mutex_lock(&lcd->lock);
 		td4300_displayon_late(lcd);
+		mutex_unlock(&lcd->lock);
+
+		dsim_panel_set_brightness(lcd, 1);
+	}
 
 	return NOTIFY_DONE;
 }

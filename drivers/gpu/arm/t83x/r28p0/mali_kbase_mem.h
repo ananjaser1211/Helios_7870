@@ -311,7 +311,7 @@ struct kbase_va_region {
 
 #ifdef CONFIG_MALI_SEC_ASP_SECURE_BUF_CTRL
 /* MALI_SEC_SECURE_RENDERING */
-#define KBASE_REG_SECURE_CRC        (1ul << 25)
+#define KBASE_REG_SECURE_CRC        (1ul << 27)
 	phys_addr_t phys_by_ion;
 		size_t      len_by_ion;
 #endif

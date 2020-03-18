@@ -11,6 +11,7 @@
 #include <linux/of_device.h>
 #include <video/mipi_display.h>
 
+#include "../decon.h"
 #include "../dsim.h"
 #include "dsim_panel.h"
 
@@ -25,7 +26,6 @@
 #define PANEL_STATE_RESUMED	1
 #define PANEL_STATE_SUSPENDING	2
 
-#define POWER_IS_ON(pwr)			(pwr <= FB_BLANK_NORMAL)
 #define LEVEL_IS_HBM(brightness)		(brightness == EXTEND_BRIGHTNESS)
 #define LEVEL_IS_ACL_OFF(brightness)		(brightness >= UI_MAX_BRIGHTNESS && brightness <= 281)
 
@@ -604,6 +604,10 @@ static int s6e3fa3_read_id(struct lcd_info *lcd)
 {
 	struct panel_private *priv = &lcd->dsim->priv;
 	int ret = 0;
+	struct decon_device *decon = get_decon_drvdata(0);
+	static char *LDI_BIT_DESC_ID[BITS_PER_BYTE * LDI_LEN_ID] = {
+		[0 ... 23] = "ID Read Fail",
+	};
 
 	lcd->id_info.value = 0;
 	priv->lcdconnected = lcd->connected = lcdtype ? 1 : 0;
@@ -612,6 +616,9 @@ static int s6e3fa3_read_id(struct lcd_info *lcd)
 	if (ret < 0 || !lcd->id_info.value) {
 		priv->lcdconnected = lcd->connected = 0;
 		dev_info(&lcd->ld->dev, "%s: connected lcd is invalid\n", __func__);
+
+		if (!lcdtype && decon)
+			decon_abd_save_bit(&decon->abd, BITS_PER_BYTE * LDI_LEN_ID, cpu_to_be32(lcd->id_info.value), LDI_BIT_DESC_ID);
 	}
 
 	dev_info(&lcd->ld->dev, "%s: %x\n", __func__, cpu_to_be32(lcd->id_info.value));

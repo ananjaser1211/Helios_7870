@@ -14,8 +14,8 @@
 #include <linux/module.h>
 #include <video/mipi_display.h>
 #include <linux/i2c.h>
-#include <linux/pwm.h>
 
+#include "../decon.h"
 #include "../dsim.h"
 #include "dsim_panel.h"
 
@@ -31,22 +31,18 @@
 #define BRIGHTNESS_REG			0x51
 #define LEVEL_IS_HBM(brightness)	(brightness == EXTEND_BRIGHTNESS)
 
-#define FIRST_BOOT 3
-
 #define DSI_WRITE(cmd, size)		do {				\
 	ret = dsim_write_hl_data(lcd, cmd, size);			\
 	if (ret < 0)							\
 		dev_info(&lcd->ld->dev, "%s: failed to write %s\n", __func__, #cmd);	\
 } while (0)
 
-
 struct lcd_info {
 	unsigned int			connected;
-	unsigned int			bl;
 	unsigned int			brightness;
-	unsigned int			current_bl;
 	unsigned int			current_hbm;
 	unsigned int			state;
+	int				lux;
 
 	struct lcd_device		*ld;
 	struct backlight_device		*bd;
@@ -156,15 +152,12 @@ static int lm3632_array_write(struct i2c_client *client, u8 *ptr, u8 len)
 
 static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 {
-	int ret = 0, temp = 0;
+	int ret = 0;
 	unsigned char bl_reg[2] = {0, };
 
 	mutex_lock(&lcd->lock);
 
 	lcd->brightness = lcd->bd->props.brightness;
-
-	lcd->bl = lcd->brightness;
-	lcd->bl = (lcd->bl > UI_MAX_BRIGHTNESS) ? UI_MAX_BRIGHTNESS : lcd->bl;
 
 	if (!force && lcd->state != PANEL_STATE_RESUMED) {
 		dev_info(&lcd->ld->dev, "%s: panel is not active state\n", __func__);
@@ -172,23 +165,23 @@ static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 	}
 
 	bl_reg[0] = BRIGHTNESS_REG;
+	bl_reg[1] = brightness_table[lcd->brightness];
 
-	if (LEVEL_IS_HBM(lcd->brightness)) {
-		lm3632_array_write(lcd->blic_client, backlight_ic_tuning_outdoor, ARRAY_SIZE(backlight_ic_tuning_outdoor));
-		lcd->current_hbm = 1;
-		dsim_write_hl_data(lcd, SEQ_PASSWD1, sizeof(SEQ_PASSWD1));
-		dsim_write_hl_data(lcd, OUTDOOR_MDNIE_1, sizeof(OUTDOOR_MDNIE_1));
-		dsim_write_hl_data(lcd, OUTDOOR_MDNIE_2, sizeof(OUTDOOR_MDNIE_2));
-		dsim_write_hl_data(lcd, OUTDOOR_MDNIE_3, sizeof(OUTDOOR_MDNIE_3));
-		dsim_write_hl_data(lcd, OUTDOOR_MDNIE_4, sizeof(OUTDOOR_MDNIE_4));
-		dsim_write_hl_data(lcd, OUTDOOR_MDNIE_5, sizeof(OUTDOOR_MDNIE_5));
-		dsim_write_hl_data(lcd, OUTDOOR_MDNIE_6, sizeof(OUTDOOR_MDNIE_6));
-		dsim_write_hl_data(lcd, SEQ_PASSWD1_LOCK, sizeof(SEQ_PASSWD1_LOCK));
+	if (force || LEVEL_IS_HBM(lcd->brightness) != lcd->current_hbm) {
+		lcd->current_hbm = LEVEL_IS_HBM(lcd->brightness);
+		if (LEVEL_IS_HBM(lcd->brightness)) {
+			lm3632_array_write(lcd->blic_client, backlight_ic_tuning_outdoor, ARRAY_SIZE(backlight_ic_tuning_outdoor));
+			dsim_write_hl_data(lcd, SEQ_PASSWD1, sizeof(SEQ_PASSWD1));
+			dsim_write_hl_data(lcd, OUTDOOR_MDNIE_1, sizeof(OUTDOOR_MDNIE_1));
+			dsim_write_hl_data(lcd, OUTDOOR_MDNIE_2, sizeof(OUTDOOR_MDNIE_2));
+			dsim_write_hl_data(lcd, OUTDOOR_MDNIE_3, sizeof(OUTDOOR_MDNIE_3));
+			dsim_write_hl_data(lcd, OUTDOOR_MDNIE_4, sizeof(OUTDOOR_MDNIE_4));
+			dsim_write_hl_data(lcd, OUTDOOR_MDNIE_5, sizeof(OUTDOOR_MDNIE_5));
+			dsim_write_hl_data(lcd, OUTDOOR_MDNIE_6, sizeof(OUTDOOR_MDNIE_6));
+			dsim_write_hl_data(lcd, SEQ_PASSWD1_LOCK, sizeof(SEQ_PASSWD1_LOCK));
 
-		bl_reg[1] = 0xff;
-		dev_info(&lcd->ld->dev, "%s: Back light IC outdoor mode : %d\n", __func__, lcd->current_hbm);
-	} else {
-		if (lcd->current_hbm == 1 || lcd->current_hbm == FIRST_BOOT) {
+			dev_info(&lcd->ld->dev, "%s: Back light IC outdoor mode : %d\n", __func__, lcd->current_hbm);
+		} else {
 			dsim_write_hl_data(lcd, SEQ_PASSWD1, sizeof(SEQ_PASSWD1));
 			dsim_write_hl_data(lcd, UI_MDNIE_1, sizeof(UI_MDNIE_1));
 			dsim_write_hl_data(lcd, UI_MDNIE_2, sizeof(UI_MDNIE_2));
@@ -198,37 +191,16 @@ static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 			dsim_write_hl_data(lcd, UI_MDNIE_6, sizeof(UI_MDNIE_6));
 			dsim_write_hl_data(lcd, SEQ_PASSWD1_LOCK, sizeof(SEQ_PASSWD1_LOCK));
 			lm3632_array_write(lcd->blic_client, backlight_ic_tuning_normal, ARRAY_SIZE(backlight_ic_tuning_normal));
-			lcd->current_hbm = 0;
+
 			dev_info(&lcd->ld->dev, "%s: Back light IC outdoor mode : %d\n", __func__, lcd->current_hbm);
 		}
-
-		if (lcd->bl >= 3) {
-			if (lcd->bl <= DIM_BRIGHTNESS) {
-				bl_reg[1] = lcd->bl;
-			} else if (lcd->bl <= UI_DEFAULT_BRIGHTNESS) { /* 92lv == 191cd */
-				temp = (lcd->bl - DIM_BRIGHTNESS) * (DEFAULT_CANDELA - DIM_BRIGHTNESS);
-				temp /= (UI_DEFAULT_BRIGHTNESS - DIM_BRIGHTNESS);
-				temp += DIM_BRIGHTNESS;
-				bl_reg[1] = temp;
-			} else {
-				temp = (lcd->bl - UI_DEFAULT_BRIGHTNESS) * (0xCD - DEFAULT_CANDELA);
-				temp /= (0xFF - UI_DEFAULT_BRIGHTNESS);
-				temp += DEFAULT_CANDELA;
-				if (temp > 0xCD)
-					bl_reg[1] = 0xCD;
-				else
-					bl_reg[1] = temp;
-			}
-		} else if (lcd->bl >= 1)
-			bl_reg[1] = 0x02;
-		else
-			bl_reg[1] = 0x00;
-
-		dev_info(&lcd->ld->dev, "%s: platform BL : %d panel BL reg : %d\n", __func__, lcd->bd->props.brightness, bl_reg[1]);
 	}
 
 	if (dsim_write_hl_data(lcd, bl_reg, ARRAY_SIZE(bl_reg)) < 0)
 		dev_info(&lcd->ld->dev, "%s: failed to write brightness cmd.\n", __func__);
+
+	dev_info(&lcd->ld->dev, "%s: brightness: %3d, %3d(%2x), lx: %d\n", __func__,
+		lcd->brightness, bl_reg[1], bl_reg[1], lcd->lux);
 exit:
 	mutex_unlock(&lcd->lock);
 
@@ -237,7 +209,9 @@ exit:
 
 static int panel_get_brightness(struct backlight_device *bd)
 {
-	return bd->props.brightness;
+	struct lcd_info *lcd = bl_get_data(bd);
+
+	return brightness_table[lcd->brightness];
 }
 
 static int panel_set_brightness(struct backlight_device *bd)
@@ -279,6 +253,10 @@ static int s6d7aa0_read_id(struct lcd_info *lcd)
 {
 	struct panel_private *priv = &lcd->dsim->priv;
 	int i, ret = 0;
+	struct decon_device *decon = get_decon_drvdata(0);
+	static char *LDI_BIT_DESC_ID[BITS_PER_BYTE * S6D7AA0_ID_LEN] = {
+		[0 ... 23] = "ID Read Fail",
+	};
 
 	dev_info(&lcd->ld->dev, "%s\n", __func__);
 
@@ -294,6 +272,9 @@ static int s6d7aa0_read_id(struct lcd_info *lcd)
 	if (ret < 0 || !lcd->id_info.value) {
 		priv->lcdconnected = lcd->connected = 0;
 		dev_info(&lcd->ld->dev, "%s: connected lcd is invalid\n", __func__);
+
+		if (!lcdtype && decon)
+			decon_abd_save_bit(&decon->abd, BITS_PER_BYTE * S6D7AA0_ID_LEN, cpu_to_be32(lcd->id_info.value), LDI_BIT_DESC_ID);
 	}
 
 	dev_info(&lcd->ld->dev, "%s: %x\n", __func__, cpu_to_be32(lcd->id_info.value));
@@ -642,8 +623,7 @@ static int s6d7aa0_probe(struct lcd_info *lcd)
 	lcd->bd->props.brightness = UI_DEFAULT_BRIGHTNESS;
 
 	lcd->state = PANEL_STATE_RESUMED;
-
-	lcd->current_hbm = FIRST_BOOT;
+	lcd->lux = -1;
 
 	ret = s6d7aa0_read_init_info(lcd);
 	if (ret < 0)

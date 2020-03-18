@@ -34,6 +34,7 @@ __XX(EVENT_FB_MAX)	\
 __XX(EVENT_DOZE)	\
 __XX(EARLY_EVENT_DOZE)	\
 __XX(EVENT_FRAME)	\
+__XX(EVENT_FRAME_SEND)	\
 
 #define STATE_LIST	\
 __XX(UNBLANK)	\
@@ -56,6 +57,7 @@ extern struct notifier_block decon_nb_priority_min;
 extern int decon_register_notifier(struct notifier_block *nb);
 extern int decon_unregister_notifier(struct notifier_block *nb);
 extern int decon_notifier_call_chain(unsigned long val, void *v);
+extern int decon_simple_notifier_call_chain(unsigned long val, int blank);
 
 #endif
 

@@ -14,7 +14,192 @@
 
 #define DM_VERITY_MAX_CORRUPTED_ERRS	100
 
-extern int ignore_fs_panic;
+struct blks_info* b_info = 0;
+
+int empty_b_info(void){
+    return (b_info) ? 0 : 1;
+}
+
+struct blks_info * create_b_info(void){
+    b_info = kzalloc(sizeof(struct blks_info),GFP_KERNEL);
+    return b_info;
+}
+
+void free_b_info(void){
+    if(empty_b_info())
+        return;
+    kfree(b_info);
+}
+
+/* get */
+long long get_total_blks(void){
+    if(!empty_b_info())
+        return atomic64_read(&b_info->total_blks);
+    return 0;
+}
+
+long long get_skipped_blks(void){
+    if(!empty_b_info())
+        return atomic64_read(&b_info->skipped_blks);
+    return 0;
+}
+
+long long get_fec_correct_blks(void){
+    if(!empty_b_info())
+        return atomic64_read(&b_info->fec_correct_blks);
+    return 0;
+}
+
+long long get_corrupted_blks(void){
+    if(!empty_b_info())
+        return atomic64_read(&b_info->corrupted_blks);
+    return 0;
+}
+
+long long get_prev_total_blks(void){
+    if(!empty_b_info())
+        return atomic64_read(&b_info->prev_total_blks);
+    return 0;
+}
+int get_fec_off_cnt(void){
+    if(!empty_b_info())
+        return atomic_read(&b_info->fec_off_cnt);
+    return 0;
+}
+
+int get_dmv_ctr_cnt(void){
+    if(!empty_b_info())
+        return atomic_read(&b_info->dmv_ctr_cnt);
+    return 0;
+}
+
+void add_dmv_ctr_entry(char* dev_name){
+    int idx = get_dmv_ctr_cnt();
+
+    if(!empty_b_info() && idx < MAX_DEV_LIST){
+        snprintf(b_info->dmv_ctr_list[idx],MAX_DEV_NAME,"%s",dev_name);
+        atomic_inc(&b_info->dmv_ctr_cnt);
+    }
+}
+
+struct blks_info * get_b_info(char* dev_name){
+    pr_err("dm-verity-debug : dev_name = %s\n",dev_name);
+
+    if(empty_b_info()){
+        b_info = create_b_info();
+        add_dmv_ctr_entry(dev_name);
+    }
+    else{
+        pr_info("dm-verity-debug : b_info already exists\n");
+        add_dmv_ctr_entry(dev_name);
+        return b_info;
+    }
+
+    if(!b_info){
+        pr_err("dm-verity-debug : Can't get b_info !\n");
+        return 0;
+    }
+
+    pr_info("dm-verity-debug : get b_info successfully\n");
+    return b_info;
+}
+
+
+/* set */
+void set_prev_total_blks(long long val){
+    if(!empty_b_info())
+        atomic64_set(&b_info->prev_total_blks, val);
+}
+/* add */
+void add_total_blks(long long val){
+    if(!empty_b_info())
+        atomic64_add(val, &b_info->total_blks);
+}
+void add_skipped_blks(void){
+    if(!empty_b_info())
+        atomic64_inc(&b_info->skipped_blks);
+}
+void add_fec_correct_blks(void){
+    if(!empty_b_info())
+        atomic64_inc(&b_info->fec_correct_blks);
+}
+void add_corrupted_blks(void){
+    if(!empty_b_info())
+        atomic64_inc(&b_info->corrupted_blks);
+}
+void add_fc_blks_entry(sector_t cur_blk, char* dev_name){
+    if(empty_b_info()){
+        pr_err("dm-verity-debug : b_info is empty !\n");
+        return;
+    }
+
+    b_info->fc_blks_list[b_info->list_idx] = cur_blk;
+    snprintf(b_info->dev_name[b_info->list_idx],MAX_DEV_NAME,"%s",dev_name);
+
+    b_info->list_idx = (b_info->list_idx + 1) % MAX_FC_BLKS_LIST;
+}
+void add_fec_off_cnt(char* dev_name){
+    if(!empty_b_info()){
+        int idx = get_fec_off_cnt();
+
+        if(idx < MAX_DEV_LIST){
+            snprintf(b_info->fec_off_list[idx],MAX_DEV_NAME,"%s",dev_name);
+            atomic_inc(&b_info->fec_off_cnt);
+        }
+    }
+}
+
+void print_blks_cnt(char* dev_name){
+    int i,foc = get_fec_off_cnt();
+    if(empty_b_info()){
+        return;
+    }
+
+    pr_err("dev_name = %s,total_blks = %llu,skipped_blks = %llu,corrupted_blks = %llu,fec_correct_blks = %llu",dev_name,get_total_blks(),get_skipped_blks(),get_corrupted_blks(),get_fec_correct_blks());
+
+    if(foc > 0){
+        pr_err("fec_off_cnt = %d",foc);
+        for(i = 0 ; i < foc; i++)
+            pr_err("fec_off_dev = %s ",b_info->fec_off_list[i]);
+    }
+}
+
+void print_fc_blks_list(void){
+    int i = 0;
+
+    if(empty_b_info()){
+        return;
+    }
+    if(get_fec_correct_blks() == 0)
+        return;
+
+    pr_err("\n====== FC_BLKS_LIST START ======\n");
+
+    if ((long long) MAX_FC_BLKS_LIST <= get_fec_correct_blks()){
+        pr_err("%s %llu",b_info->dev_name[b_info->list_idx],(unsigned long long)b_info->fc_blks_list[b_info->list_idx]);
+        i = (b_info->list_idx + 1) % MAX_FC_BLKS_LIST;
+    }
+
+    for( ; i != b_info->list_idx; i = (i + 1) % MAX_FC_BLKS_LIST)
+        pr_err("%s %llu",b_info->dev_name[i],(unsigned long long)b_info->fc_blks_list[i]);
+
+    pr_err("====== FC_BLKS_LIST END ======\n");
+}
+
+void print_dmv_ctr_list(void){
+    int i = 0, ctr_cnt = get_dmv_ctr_cnt();
+
+    if(empty_b_info()){
+        return;
+    }
+
+    pr_err("\n====== DMV_CTR_LIST START ======\n");
+
+    for( ; i < ctr_cnt; i++)
+        pr_err("%s",b_info->dmv_ctr_list[i]);
+
+    pr_err("====== DMV_CTR_LIST END ======\n");
+}
 
 static void print_block_data(unsigned long long blocknr, unsigned char *data_to_dump
 			, int start, int len)
@@ -105,6 +290,15 @@ int verity_handle_err_hex_debug(struct dm_verity *v, enum verity_block_type type
 		BUG();
 	}
 
+	if(empty_b_info()){
+        pr_err("dm-verity-debug : b_info is empty !\n");
+    }
+    else{
+        print_dmv_ctr_list();
+        print_blks_cnt(v->data_dev->name);
+        print_fc_blks_list();
+    }
+
 	DMERR("%s: %s block %llu is corrupted", v->data_dev->name, type_str, block);
 	
 	for(i=0 ; i < v->salt_size; i++){
@@ -127,7 +321,7 @@ int verity_handle_err_hex_debug(struct dm_verity *v, enum verity_block_type type
 	} else {
 		DMERR("%s: %s block : Unknown block type", v->data_dev->name, type_str);
 	}
-	
+
 	panic("dmv corrupt");
 
 	if (v->corrupted_errs == DM_VERITY_MAX_CORRUPTED_ERRS)
@@ -143,7 +337,7 @@ out:
 		return 0;
 
 	if (v->mode == DM_VERITY_MODE_RESTART)
-		kernel_restart("dm-verity device corrupted");
+        kernel_restart("dm-verity device corrupted");
 
 	return 1;
 }

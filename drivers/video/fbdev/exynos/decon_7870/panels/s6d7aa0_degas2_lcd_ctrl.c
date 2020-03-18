@@ -11,6 +11,7 @@
 #include <linux/of_device.h>
 #include <video/mipi_display.h>
 
+#include "../decon.h"
 #include "../dsim.h"
 #include "dsim_panel.h"
 
@@ -25,15 +26,13 @@
 #define PANEL_STATE_RESUMED	1
 #define PANEL_STATE_SUSPENDING	2
 
-#define S6D7AA0_ID_REG			0xDA
-#define S6D7AA0_ID_LEN			3
-#define BRIGHTNESS_REG 0x51
+#define S6D7AA0_ID_REG		0xDA
+#define S6D7AA0_ID_LEN		3
+#define BRIGHTNESS_REG		0x51
 
 struct lcd_info {
 	unsigned int			connected;
-	unsigned int			bl;
 	unsigned int			brightness;
-	unsigned int			current_bl;
 	unsigned int			state;
 
 	struct lcd_device		*ld;
@@ -50,7 +49,6 @@ struct lcd_info {
 	struct dsim_device		*dsim;
 	struct mutex			lock;
 };
-
 
 static int dsim_write_hl_data(struct lcd_info *lcd, const u8 *cmd, u32 cmdsize)
 {
@@ -133,22 +131,17 @@ static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 
 	lcd->brightness = lcd->bd->props.brightness;
 
-	lcd->bl = lcd->brightness;
-
 	if (!force && lcd->state != PANEL_STATE_RESUMED) {
 		dev_info(&lcd->ld->dev, "%s: panel is not active state\n", __func__);
 		goto exit;
 	}
+
 	bl_reg[0] = BRIGHTNESS_REG;
-	if (lcd->bl >= 3)
-		bl_reg[1] = lcd->bl;
-	else if (lcd->bl >= 1)
-		bl_reg[1] = 0x03;
-	else
-		bl_reg[1] = 0x00;
+	bl_reg[1] = brightness_table[lcd->brightness];
 
 	if (dsim_write_hl_data(lcd, bl_reg, ARRAY_SIZE(bl_reg)) < 0)
 		dev_info(&lcd->ld->dev, "%s: failed to write brightness cmd.\n", __func__);
+
 	dev_info(&lcd->ld->dev, "%s: brightness: %3d, %3d(%2x)\n", __func__,
 		lcd->brightness, bl_reg[1], bl_reg[1]);
 exit:
@@ -159,7 +152,9 @@ exit:
 
 static int panel_get_brightness(struct backlight_device *bd)
 {
-	return bd->props.brightness;
+	struct lcd_info *lcd = bl_get_data(bd);
+
+	return brightness_table[lcd->brightness];
 }
 
 static int panel_set_brightness(struct backlight_device *bd)
@@ -181,7 +176,6 @@ static const struct backlight_ops panel_backlight_ops = {
 	.update_status = panel_set_brightness,
 };
 
-
 static int s6d7aa0_read_init_info(struct lcd_info *lcd)
 {
 	struct panel_private *priv = &lcd->dsim->priv;
@@ -202,6 +196,10 @@ static int s6d7aa0_read_id(struct lcd_info *lcd)
 {
 	struct panel_private *priv = &lcd->dsim->priv;
 	int i, ret = 0;
+	struct decon_device *decon = get_decon_drvdata(0);
+	static char *LDI_BIT_DESC_ID[BITS_PER_BYTE * S6D7AA0_ID_LEN] = {
+		[0 ... 23] = "ID Read Fail",
+	};
 
 	dev_info(&lcd->ld->dev, "%s\n", __func__);
 
@@ -217,6 +215,9 @@ static int s6d7aa0_read_id(struct lcd_info *lcd)
 	if (ret < 0 || !lcd->id_info.value) {
 		priv->lcdconnected = lcd->connected = 0;
 		dev_info(&lcd->ld->dev, "%s: connected lcd is invalid\n", __func__);
+
+		if (!lcdtype && decon)
+			decon_abd_save_bit(&decon->abd, BITS_PER_BYTE * S6D7AA0_ID_LEN, cpu_to_be32(lcd->id_info.value), LDI_BIT_DESC_ID);
 	}
 
 	dev_info(&lcd->ld->dev, "%s: %x\n", __func__, cpu_to_be32(lcd->id_info.value));
@@ -242,7 +243,6 @@ static int s6d7aa0_displayon(struct lcd_info *lcd)
 
 displayon_err:
 	return ret;
-
 }
 
 static int s6d7aa0_exit(struct lcd_info *lcd)
@@ -429,7 +429,6 @@ static void lcd_init_sysfs(struct lcd_info *lcd)
 		dev_info(&lcd->ld->dev, "failed to add lcd sysfs\n");
 }
 
-
 #if defined(CONFIG_EXYNOS_DECON_MDNIE)
 static int mdnie_send_seq(struct lcd_info *lcd, struct lcd_seq_info *seq, u32 num)
 {
@@ -471,7 +470,6 @@ exit:
 	return ret;
 }
 #endif
-
 
 static int dsim_panel_probe(struct dsim_device *dsim)
 {

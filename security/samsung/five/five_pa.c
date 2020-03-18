@@ -36,7 +36,7 @@ static void process_file(struct task_struct *task, struct file *file)
 	if (five_check_params(task, file))
 		return;
 
-	five_read_xattr(file->f_path.dentry, &xattr_value);
+	five_read_xattr(d_real_comp(file->f_path.dentry), &xattr_value);
 	file->f_signature = xattr_value;
 }
 

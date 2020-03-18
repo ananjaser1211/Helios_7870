@@ -1,5 +1,5 @@
 /*
- * ima-cert.S
+ * five_cert_builtin.S
  *
  * Copyright (C) 2016 Samsung Electronics, Inc.
  * Egor Uleyskiy, <e.uleyskiy@samsung.com>
@@ -16,15 +16,19 @@
 
 #include <linux/export.h>
 #include <linux/init.h>
+#include <linux/version.h>
 
 	__INITRODATA
 
 .align 8
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0)
+#define VMLINUX_SYMBOL(name) name
+#endif
+
 #define GLOBAL(name)	\
 	.globl VMLINUX_SYMBOL(name);	\
 	VMLINUX_SYMBOL(name):
-
-	.section ".init.data","aw"
 
 #ifdef CONFIG_FIVE_CERT_ENG
 GLOBAL(five_local_ca_start_eng)

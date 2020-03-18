@@ -25,7 +25,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_linux.c 813537 2019-04-05 07:50:12Z $
+ * $Id: dhd_linux.c 818247 2019-05-07 04:15:13Z $
  */
 
 #include <typedefs.h>
@@ -3096,6 +3096,13 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 					DHD_ERROR(("%s bcn_li_bcn failed %d\n", __FUNCTION__, ret));
 				}
 #endif /* ENABLE_BCN_LI_BCN_WAKEUP */
+#if defined(WL_CFG80211) && defined(WL_BCNRECV)
+				ret = wl_android_bcnrecv_suspend(dhd_linux_get_primary_netdev(dhd));
+				if (ret != BCME_OK) {
+					DHD_ERROR(("failed to stop beacon recv event on"
+						" suspend state (%d)\n", ret));
+				}
+#endif /* WL_CFG80211 && WL_BCNRECV */
 #ifdef NDO_CONFIG_SUPPORT
 				if (dhd->ndo_enable) {
 					if (!dhd->ndo_host_ip_overflow) {
@@ -3173,6 +3180,13 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 				dhd_wl_ioctl_cmd(dhd, WLC_SET_PM, (char *)&power_mode,
 				                 sizeof(power_mode), TRUE, 0);
 #endif /* SUPPORT_PM2_ONLY */
+#if defined(WL_CFG80211) && defined(WL_BCNRECV)
+				ret = wl_android_bcnrecv_resume(dhd_linux_get_primary_netdev(dhd));
+				if (ret != BCME_OK) {
+					DHD_ERROR(("failed to resume beacon recv state (%d)\n",
+							ret));
+				}
+#endif /* WL_CF80211 && WL_BCNRECV */
 #ifdef PKT_FILTER_SUPPORT
 				/* disable pkt filter */
 				dhd_enable_packet_filter(0, dhd);
@@ -11829,6 +11843,9 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 #ifdef SUPPORT_EVT_SDB_LOG
 		setbit(eventmask_msg->mask, WLC_E_SDB_TRANSITION);
 #endif /* SUPPORT_EVT_SDB_LOG */
+#ifdef WL_BCNRECV
+		setbit(eventmask_msg->mask, WLC_E_BCNRECV_ABORTED);
+#endif /* WL_BCNRECV */
 		/* Write updated Event mask */
 		eventmask_msg->ver = EVENTMSGS_VER;
 		eventmask_msg->command = EVENTMSGS_SET_MASK;

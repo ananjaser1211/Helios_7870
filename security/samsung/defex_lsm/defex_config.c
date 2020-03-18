@@ -40,5 +40,16 @@ int defex_get_features(void)
 		features |= FEATURE_SAFEPLACE_SOFT;
 #endif /* DEFEX_PERMISSIVE_SP */
 #endif /* DEFEX_SAFEPLACE_ENABLE */
+
+#ifdef DEFEX_IMMUTABLE_ENABLE
+#if !defined(DEFEX_PERMISSIVE_IM)
+	features |= GLOBAL_IMMUTABLE_STATUS;
+#else
+	if (global_immutable_obj->status != 0)
+		features |= FEATURE_IMMUTABLE;
+	if (global_immutable_obj->status == 2)
+		features |= FEATURE_IMMUTABLE_SOFT;
+#endif /* DEFEX_PERMISSIVE_IM */
+#endif /* DEFEX_IMMUTABLE_ENABLE */
 	return features;
 }

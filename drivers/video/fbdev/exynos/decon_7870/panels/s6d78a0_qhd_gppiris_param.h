@@ -1,26 +1,14 @@
-
 #ifndef __S6D78A0_PARAM_H__
 #define __S6D78A0_PARAM_H__
 #include <linux/types.h>
 #include <linux/kernel.h>
 
-#define UI_DIM_BRIGHTNESS		5
-#define DIM_TUNE_LEVEL			2
-
-#define MIN_TUNE_LEVEL			2
-
 #define UI_DEFAULT_BRIGHTNESS	144
-#define DEFAULT_TUNE_LEVEL		16
-
-#define UI_MAX_BRIGHTNESS		255
-#define MAX_TUNE_LEVEL			27
-
-#define EXTEND_BRIGHTNESS		306
-#define EXTEND_TUNE_LEVEL		32
+#define UI_MAX_BRIGHTNESS	255
+#define EXTEND_BRIGHTNESS	306
 
 #define S6D78A0_ID_REG		0xDA	/* LCD ID1,ID2,ID3 */
 #define S6D78A0_ID_LEN		3
-
 
 struct lcd_seq_info {
 	unsigned char	*cmd;
@@ -155,7 +143,7 @@ static const unsigned char SEQ_SLEEP_IN[] = {
 /* platform brightness <-> bl reg */
 static unsigned int brightness_table[EXTEND_BRIGHTNESS + 1] = {
 	 0,
-	 0, 0, 0, 0, 2, 2, 2, 2, 2, 2,
+	 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, /* 5: 2 */
 	 2, 2, 2, 2, 3, 3, 3, 3, 3, 3,
 	 3, 3, 3, 3, 4, 4, 4, 4, 4, 4,
 	 4, 4, 4, 4, 5, 5, 5, 5, 5, 5,
@@ -169,7 +157,7 @@ static unsigned int brightness_table[EXTEND_BRIGHTNESS + 1] = {
 	 12, 12, 12, 12, 13, 13, 13, 13, 13, 13,
 	 13, 13, 13, 13, 14, 14, 14, 14, 14, 14,
 	 14, 14, 14, 14, 15, 15, 15, 15, 15, 15,
-	 15, 15, 15, 16, 16, 16, 16, 16, 16, 16,
+	 15, 15, 15, 16, 16, 16, 16, 16, 16, 16, /* 144: 16 */
 	 16, 16, 16, 16, 17, 17, 17, 17, 17, 17,
 	 17, 17, 17, 17, 18, 18, 18, 18, 18, 18,
 	 18, 18, 18, 18, 19, 19, 19, 19, 19, 19,
@@ -180,7 +168,7 @@ static unsigned int brightness_table[EXTEND_BRIGHTNESS + 1] = {
 	 23, 23, 23, 23, 24, 24, 24, 24, 24, 24,
 	 24, 24, 24, 24, 25, 25, 25, 25, 25, 25,
 	 25, 25, 25, 25, 26, 26, 26, 26, 26, 26,
-	 26, 26, 26, 26, 27, 27, 27, 27, 27, 27,
+	 26, 26, 26, 26, 27, 27, 27, 27, 27, 27, /* 255: 27 */
 	 27, 27, 27, 27, 27, 27, 27, 27, 27, 27,
 	 27, 27, 27, 27, 27, 27, 27, 27, 27, 27,
 	 27, 27, 27, 27, 27, 27, 27, 27, 27, 27,

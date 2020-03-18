@@ -232,6 +232,15 @@ static void fw_update(void *dev_data)
     struct sec_factory *sec = (struct sec_factory *)&data->sec;
 
     set_default_result(sec);
+#if defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+    if (sec->cmd_param[0] == 1) {
+        sec->cmd_state = CMD_STATE_OK;
+        snprintf(buf, sizeof(buf), "%s", "OK");
+        set_cmd_result(sec, buf, strnlen(buf, sizeof(buf)));
+        tsp_info("%s: user_ship binary, success\n", __func__);
+        return;
+    }
+#endif
 #ifdef PAT_CONTROL
     data->status.update_keystring = 1;
 #endif

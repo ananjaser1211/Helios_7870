@@ -1,24 +1,22 @@
 ################################################################################
-
 1. How to Build
-	- get Toolchain
-		From android git server , codesourcery and etc ..
-		- arm64-eabi-4.9
-		
-	- edit Makefile
+        - get Toolchain
+                From android git server, codesourcery and etc ..
+                - gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-
+        - edit Makefile
                 edit "CROSS_COMPILE" to right toolchain path(You downloaded).
-		    EX)  CROSS_COMPILE= $(android platform directory you download)/android/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-
-		    Ex)  CROSS_COMPILE=/usr/local/toolchain/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-		// check the location of toolchain
-				
-	- make
-		$ make exynos7870-j5y17lte_defconfig
-		$ make -j64
+                        EX)  CROSS_COMPILE=<android platform directory you download>/android/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-
+                        EX)  CROSS_COMPILE=/usr/local/toolchain/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android- // check the location of toolchain
+        - to Build
+                $ export ANDROID_MAJOR_VERSION=q
+                $ export ARCH=arm64
+                $ make exynos7870-a6lte_defconfig
+                $ make
 
 2. Output files
-	- Kernel : arch/arm64/boot/Image
-	- module : drivers/*/built-in.o
+        - Kernel : arch/arm64/boot/Image
+        - module : drivers/*/*.ko
 
-3. How to Clean	
-		$ make clean
-		$ make ARCH=arm64 distclean
+3. How to Clean
+        $ make clean
 ################################################################################

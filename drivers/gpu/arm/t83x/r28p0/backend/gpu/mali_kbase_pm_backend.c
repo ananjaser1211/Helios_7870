@@ -240,8 +240,8 @@ static void kbase_pm_gpu_poweroff_wait_wq(struct work_struct *data)
 
 	mutex_lock(&js_devdata->runpool_mutex);
 	mutex_lock(&kbdev->pm.lock);
-	
-		/* MALI_SEC_INTEGRATION */
+
+	/* MALI_SEC_INTEGRATION */
 	KBASE_TRACE_ADD(kbdev, KBASE_DEVICE_PM_WAIT_WQ_RUN, NULL, NULL, \
 		backend->poweron_required, backend->poweroff_is_suspend);
 
@@ -557,7 +557,7 @@ void kbase_hwaccess_pm_suspend(struct kbase_device *kbdev)
 	mutex_unlock(&js_devdata->runpool_mutex);
 
 	kbase_pm_wait_for_poweroff_complete(kbdev);
-	
+
 	/* MALI_SEC_INTEGRATION */
 	KBASE_TRACE_ADD(kbdev, KBASE_DEVICE_PM_SUSPEND, NULL, NULL, 0u, 0u);
 }

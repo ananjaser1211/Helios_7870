@@ -47,6 +47,8 @@ static int set_debug_reset_reason_proc_show(struct seq_file *m, void *v)
 		seq_puts(m, "BPON\n");
 	else if (reset_reason == RR_T)
 		seq_puts(m, "TPON\n");
+	else if (reset_reason == RR_C)
+		seq_puts(m, "CPON\n");
 	else
 		seq_puts(m, "NPON\n");
 

@@ -1788,7 +1788,7 @@ static void s2mu004_usbpd_rp_check(struct s2mu004_usbpd_data *pdic_data)
 #ifdef CONFIG_USB_TYPEC_MANAGER_NOTIFIER
 	pd_noti.sink_status.rp_currentlvl = rp_currentlvl;
 	pd_noti.event = PDIC_NOTIFY_EVENT_CCIC_ATTACH;
-	ccic_event_work(pdic_data, CCIC_NOTIFY_DEV_BATTERY, CCIC_NOTIFY_ID_POWER_STATUS, 1, 0);
+	ccic_event_work(pdic_data, CCIC_NOTIFY_DEV_BATTERY, CCIC_NOTIFY_ID_POWER_STATUS, 0, 0);
 #endif
 #endif
 

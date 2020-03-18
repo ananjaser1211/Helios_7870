@@ -21,6 +21,13 @@
 #include "five.h"
 #include "five_audit.h"
 #include "five_cache.h"
+#include "five_porting.h"
+
+#ifdef CONFIG_SECURITY_DSMS
+#include <linux/dsms.h>
+
+#define MESSAGE_BUFFER_SIZE 600
+#endif
 
 static void five_audit_msg(struct task_struct *task, struct file *file,
 		const char *op, enum task_integrity_value prev,
@@ -54,6 +61,43 @@ void five_audit_err(struct task_struct *task, struct file *file,
 {
 	five_audit_msg(task, file, op, prev, tint, cause, result);
 }
+
+#ifdef CONFIG_SECURITY_DSMS
+noinline void five_audit_sign_err(struct task_struct *task, struct file *file,
+		const char *op, enum task_integrity_value prev,
+		enum task_integrity_value tint, const char *cause, int result)
+{
+	char dsms_msg[MESSAGE_BUFFER_SIZE];
+	struct inode *inode = NULL;
+	const char *fname = NULL;
+	char *pathbuf = NULL;
+	char comm[TASK_COMM_LEN];
+	struct task_struct *tsk = task ? task : current;
+
+	if (file) {
+		inode = file_inode(file);
+		fname = five_d_path(&file->f_path, &pathbuf);
+	}
+
+	snprintf(dsms_msg, MESSAGE_BUFFER_SIZE,
+			"pid=%d tgid=%d op=%s cint=0x%x pint=0x%x cause=%s comm=%s name=%s res=%d",
+			task_pid_nr(tsk), task_tgid_nr(tsk), op, tint, prev,
+			cause, get_task_comm(comm, tsk), fname ? fname : "unknown",
+			result);
+
+	dsms_send_message("FIV1", dsms_msg, 0);
+
+	if (pathbuf)
+		__putname(pathbuf);
+}
+#else
+noinline void five_audit_sign_err(struct task_struct *task, struct file *file,
+		const char *op, enum task_integrity_value prev,
+		enum task_integrity_value tint, const char *cause, int result)
+{
+	pr_debug("FIVE: DSMS is not supported\n");
+}
+#endif
 
 static void five_audit_msg(struct task_struct *task, struct file *file,
 		const char *op, enum task_integrity_value prev,
@@ -101,7 +145,7 @@ static void five_audit_msg(struct task_struct *task, struct file *file,
 		audit_log_untrustedstring(ab, inode->i_sb->s_id);
 		audit_log_format(ab, " ino=%lu", inode->i_ino);
 		audit_log_format(ab, " i_version=%llu ",
-				(unsigned long long)inode->i_version);
+				inode_query_iversion(inode));
 		iint = integrity_inode_get(inode);
 		if (iint) {
 			audit_log_format(ab, " five_status=%d ",
@@ -166,7 +210,7 @@ void five_audit_hexinfo(struct file *file, const char *msg, char *data,
 	}
 	if (inode) {
 		audit_log_format(ab, " i_version=%llu ",
-				(unsigned long long)inode->i_version);
+				inode_query_iversion(inode));
 
 		iint = integrity_inode_get(inode);
 		if (iint) {

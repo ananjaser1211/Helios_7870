@@ -94,8 +94,9 @@ static const char *extensions[] = {
 	"dotx",	"htm", "html", "hwdt", "hwp",
 	"hwpx",	"hwt", "memo", "pdf", "pot",
 	"potx",	"pps", "ppsx", "ppt", "pptm",
-	"pptx",	"rtf", "snb", "spd", "xls",
-	"xlsm", "xlsx", "xlt", "xltx", "xml",
+	"pptx",	"rtf", "sdoc", "snb", "spd",
+	"xls", "xlsm", "xlsx", "xlt", "xltx",
+	"xml",
 	NULL,
 };
 
@@ -245,6 +246,9 @@ static void store_log(struct dentry *dentry, struct inode *inode,
 	}
 
 	full_path = dentry_path_raw(dentry, buf, PATH_MAX);
+	if (IS_ERR(full_path))
+		goto out;
+
 	make_prefix(part_id, &prefix);
 	if (isize >> 10) {
 		isize >>= 10;

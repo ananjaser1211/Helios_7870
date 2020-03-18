@@ -137,6 +137,22 @@ config SEC_DEBUG_PMIC
 	  This option enables additional debug option for pmic.
 	  Enable this option for eng build only.
 
+config SEC_DEBUG_INIT_EXIT_PANIC
+	bool "Trigger panic when exiting init task group"
+	depends on SEC_DEBUG
+	default y
+	help
+	  This option enables early panic when it attempt to kill init tasks.
+	  It may happen before init task stack is destroyed for debugging.
+
+config SEC_DEBUG_SOFTDOG_PWDT
+	bool "Enable Soft Watchdog for Platform"
+	default y
+	depends on WATCHDOG
+	select SOFT_WATCHDOG
+	help
+	  This option enables soft watchdog device and soft_panic.
+
 comment "Samsung TN Power Management Options"
 menuconfig SEC_PM
 	bool "Samsung TN Power Management"
@@ -184,26 +200,3 @@ config SEC_VTS_TEST
 	default n
 	help
 	  This option notices this binary for VTS test.
-
-choice
-	prompt "Version of GAF structure"
-	depends on SEC_DEBUG
-	default SEC_DEBUG_GAF_V5 if PROCA
-	default SEC_DEBUG_GAF_V4 if FIVE
-	default SEC_DEBUG_GAF_V3
-
-	config SEC_DEBUG_GAF_V3
-		bool "Use GAF structure version 3"
-		help
-		  Default option for FIVE-disabled kernel
-
-	config SEC_DEBUG_GAF_V4
-		bool "Use GAF structure version 4"
-		help
-		  Default option for kernel without PROCA LSM module.
-
-	config SEC_DEBUG_GAF_V5
-		bool "Use GAF structure version 5"
-		help
-		  Default option for kernel with PROCA LSM module.
-endchoice

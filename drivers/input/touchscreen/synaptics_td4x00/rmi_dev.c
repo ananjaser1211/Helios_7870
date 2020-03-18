@@ -65,8 +65,8 @@ static struct bin_attribute attr_data = {
 	.write = rmidev_sysfs_data_store,
 };
 
-RMI_KOBJ_ATTR(open, S_IWUSR | S_IWGRP, synaptics_rmi4_show_error, rmidev_sysfs_open_store);
-RMI_KOBJ_ATTR(release, S_IWUSR | S_IWGRP, synaptics_rmi4_show_error, rmidev_sysfs_release_store);
+RMI_KOBJ_ATTR(open, S_IWUSR, synaptics_rmi4_show_error, rmidev_sysfs_open_store);
+RMI_KOBJ_ATTR(release, S_IWUSR, synaptics_rmi4_show_error, rmidev_sysfs_release_store);
 RMI_KOBJ_ATTR(attn_state, S_IRUGO, rmidev_sysfs_attn_state_show, synaptics_rmi4_store_error);
 
 static struct attribute *attrs[] = {
@@ -544,7 +544,7 @@ static void rmidev_device_cleanup(struct rmidev_data *dev_data)
 	*mode = (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 
 	return kasprintf(GFP_KERNEL, "rmi/%s", dev_name(dev));
-}å*/
+}*/
 
 static int rmidev_create_device_class(struct synaptics_rmi4_data *rmi4_data)
 {

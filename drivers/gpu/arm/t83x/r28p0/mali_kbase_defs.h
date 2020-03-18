@@ -2170,6 +2170,9 @@ struct kbase_context {
 	struct list_head gwt_snapshot_list;
 #endif
 
+	int priority;
+	s16 atoms_count[KBASE_JS_ATOM_SCHED_PRIO_COUNT];
+
 	/* MALI_SEC_INTEGRATION */
 	int ctx_status;
 	bool ctx_need_qos;
@@ -2179,9 +2182,6 @@ struct kbase_context {
 #ifdef CONFIG_MALI_EXYNOS_SECURE_RENDERING
 	bool enabled_TZASC;
 #endif
-
-	int priority;
-	s16 atoms_count[KBASE_JS_ATOM_SCHED_PRIO_COUNT];
 
 	/* MALI_SEC_INTEGRATION */
 	bool destroying_context;

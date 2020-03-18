@@ -108,7 +108,11 @@ static void flip_cover_work(struct work_struct *work)
 
 	if(first == second) {
 		flip_cover = first;
+#ifdef CONFIG_HALL_EVENT_REVERSE
+		input_report_switch(ddata->input, SW_FLIP, !flip_cover);
+#else
 		input_report_switch(ddata->input, SW_FLIP, flip_cover);
+#endif
 		input_sync(ddata->input);
 #if defined(CONFIG_HALL_NOTIFIER)
 		if(flip_cover == HALL_OPEN)
@@ -131,7 +135,11 @@ static void flip_cover_work(struct work_struct *work)
 	printk("[keys] %s flip_status : %d (%s)\n", __func__, first, first?"open":"close");
 
 	flip_cover = first;
+#ifdef CONFIG_HALL_EVENT_REVERSE
+	input_report_switch(ddata->input, SW_FLIP, !flip_cover);
+#else
 	input_report_switch(ddata->input, SW_FLIP, flip_cover);
+#endif
 	input_sync(ddata->input);
 #if defined(CONFIG_HALL_NOTIFIER)
 	if(flip_cover == HALL_OPEN)

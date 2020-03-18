@@ -216,6 +216,6 @@ source "drivers/sensorhub/Kconfig"
 
 source "drivers/five/Kconfig"
 
-source "drivers/icdrv/Kconfig"
+source "drivers/security/samsung/icdrv/Kconfig"
 
 endmenu

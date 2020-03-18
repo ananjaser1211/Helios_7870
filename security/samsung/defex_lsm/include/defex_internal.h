@@ -9,7 +9,6 @@
 #ifndef __CONFIG_SECURITY_DEFEX_INTERNAL_H
 #define __CONFIG_SECURITY_DEFEX_INTERNAL_H
 
-#include <linux/crc32.h>
 #include <linux/fs.h>
 #include <linux/hashtable.h>
 #include <linux/kobject.h>
@@ -19,7 +18,7 @@
 #include "defex_config.h"
 
 #define DEFEX_MAJOR_VERSION			2
-#define DEFEX_MINOR_VERSION			0
+#define DEFEX_MINOR_VERSION			5
 #define DEFEX_REVISION				"rel"
 
 /* DEFEX Features */
@@ -30,11 +29,12 @@
 #define FEATURE_JAILHOUSE_SOFT			(1 << 3) /* reserved for future use */
 #define FEATURE_RESTRICT_SYSCALL		(1 << 4) /* reserved for future use */
 #define FEATURE_RESTRICT_SYSCALL_SOFT		(1 << 5) /* reserved for future use */
-#define FEATURE_IMMUTABLE			(1 << 6) /* reserved for future use */
-#define FEATURE_SAFEPLACE			(1 << 7)
-#define FEATURE_SAFEPLACE_SOFT			(1 << 8)
-#define FEATURE_FIVE				(1 << 9) /* reserved for future use */
-#define FEATURE_FIVE_SOFT			(1 << 10) /* reserved for future use */
+#define FEATURE_IMMUTABLE			(1 << 6)
+#define FEATURE_IMMUTABLE_SOFT			(1 << 7)
+#define FEATURE_SAFEPLACE			(1 << 8)
+#define FEATURE_SAFEPLACE_SOFT			(1 << 9)
+#define FEATURE_FIVE				(1 << 10) /* reserved for future use */
+#define FEATURE_FIVE_SOFT			(1 << 11) /* reserved for future use */
 
 #define FEATURE_CLEAR_ALL			(0xFF0000)
 
@@ -46,21 +46,6 @@
 
 #define DEFEX_STARTED				1
 
-/* DEFEX FLAG ATTRs */
-#define DEFEX_ATTR_PRIVESC_DIR			(1 << 0)
-#define DEFEX_ATTR_PRIVESC_EXP			(1 << 1)
-#define DEFEX_ATTR_JAILHOUSE_DIR		(1 << 2) /* reserved for future use */
-#define DEFEX_ATTR_JAILHOUSE_EXP		(1 << 3) /* reserved for future use */
-#define DEFEX_ATTR_RESTRICT_EXP			(1 << 4) /* reserved for future use */
-#define DEFEX_ATTR_RESTRICT_LV1_EXP		(1 << 5) /* reserved for future use */
-#define DEFEX_ATTR_SAFEPLACE_DIR		(1 << 6)
-#define DEFEX_INSIDE_PRIVESC_DIR		(1 << 8)
-#define DEFEX_OUTSIDE_PRIVESC_DIR		(1 << 9)
-#define DEFEX_INSIDE_JAILHOUSE_DIR		(1 << 10) /* reserved for future use */
-#define DEFEX_OUTSIDE_JAILHOUSE_DIR		(1 << 11) /* reserved for future use */
-#define DEFEX_ATTR_IMMUTABLE			(1 << 12) /* reserved for future use */
-#define DEFEX_ATTR_IMMUTABLE_WR			(1 << 13) /* reserved for future use */
-#define DEFEX_ATTR_FIVE_EXP			(1 << 14) /* reserved for future use */
 
 /* -------------------------------------------------------------------------- */
 /* Integrity feature */
@@ -121,8 +106,8 @@ extern struct defex_privesc *global_privesc_obj;
 ssize_t task_defex_privesc_store_status(struct defex_privesc *privesc_obj,
 		struct privesc_attribute *attr, const char *buf, size_t count);
 
-void get_task_creds(int pid, unsigned int *uid_ptr, unsigned int *fsuid_ptr, unsigned int *egid_ptr);
-int set_task_creds(int pid, unsigned int uid, unsigned int fsuid, unsigned int egid);
+void get_task_creds(int pid, unsigned int *uid_ptr, unsigned int *fsuid_ptr, unsigned int *egid_ptr, unsigned int *p_root_ptr);
+int set_task_creds(int pid, unsigned int uid, unsigned int fsuid, unsigned int egid, unsigned int p_root);
 void delete_task_creds(int pid);
 int is_task_creds_ready(void);
 
@@ -150,6 +135,29 @@ ssize_t safeplace_status_store(struct defex_safeplace *safeplace_obj,
 		struct safeplace_attribute *attr, const char *buf, size_t count);
 
 /* -------------------------------------------------------------------------- */
+/* Immutable feature */
+/* -------------------------------------------------------------------------- */
+
+struct defex_immutable {
+	struct kobject kobj;
+	unsigned int status;
+};
+#define to_immutable_obj(obj) container_of(obj, struct defex_immutable, kobj)
+
+struct immutable_attribute {
+	struct attribute attr;
+	ssize_t (*show)(struct defex_immutable *immutable, struct immutable_attribute *attr, char *buf);
+	ssize_t (*store)(struct defex_immutable *foo, struct immutable_attribute *attr, const char *buf, size_t count);
+};
+#define to_immutable_attr(obj) container_of(obj, struct immutable_attribute, attr)
+
+struct defex_immutable *task_defex_create_immutable_obj(struct kset *defex_kset);
+extern void task_defex_destroy_immutable_obj(struct defex_immutable *immutable);
+extern struct defex_immutable *global_immutable_obj;
+ssize_t immutable_status_store(struct defex_immutable *immutable_obj,
+		struct immutable_attribute *attr, const char *buf, size_t count);
+
+/* -------------------------------------------------------------------------- */
 /* Defex lookup API */
 /* -------------------------------------------------------------------------- */
 
@@ -160,6 +168,10 @@ int rules_lookup(const struct path *dpath, int attribute, struct file *f);
 /* Defex init API */
 /* -------------------------------------------------------------------------- */
 
-int defex_init_sysfs(void);
+int __init defex_init_sysfs(void);
+
+#ifdef DEFEX_DEPENDING_ON_OEMUNLOCK
+extern bool boot_state_unlocked __ro_after_init;
+#endif /* DEFEX_DEPENDING_ON_OEMUNLOCK */
 
 #endif /* CONFIG_SECURITY_DEFEX_INTERNAL_H */

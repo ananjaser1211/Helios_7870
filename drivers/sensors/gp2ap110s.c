@@ -1035,7 +1035,7 @@ static ssize_t dynamic_calib_enabled_store(struct device *dev,
 static DEVICE_ATTR(name, 0444, name_read, NULL);
 static DEVICE_ATTR(vendor, 0444, vendor_read, NULL);
 static DEVICE_ATTR(raw_data, 0444, proximity_state_show, NULL);
-static DEVICE_ATTR(prox_register, 0444, proximity_register_read_show, proximity_register_write_store);
+static DEVICE_ATTR(prox_register, 0644, proximity_register_read_show, proximity_register_write_store);
 static DEVICE_ATTR(prox_trim, 0444, proximity_trim_show, NULL);
 static DEVICE_ATTR(prox_cal, 0664, proximity_cal_show, NULL);
 static DEVICE_ATTR(thresh_high, S_IRUGO | S_IWUSR | S_IWGRP,

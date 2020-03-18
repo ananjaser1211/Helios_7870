@@ -1576,7 +1576,7 @@ static bool sec_bat_check_recharge(struct sec_battery_info *battery)
 			/* float voltage - 150mV */
 			recharging_voltage =\
 				(battery->pdata->chg_float_voltage /\
-				battery->pdata->chg_float_voltage_conv) - 150;
+				battery->pdata->chg_float_voltage_conv) - battery->pdata->swelling_low_rechg_voltage_offset;
 			dev_info(battery->dev, "%s: recharging voltage changed by low temp(%d)\n",
 					__func__, recharging_voltage);
 		}
@@ -9046,6 +9046,12 @@ static int sec_bat_parse_dt(struct device *dev,
 		(unsigned int *)&pdata->swelling_normal_float_voltage);
 	if (ret)
 		pr_info("%s: chg_float_voltage is Empty\n", __func__);
+
+	ret = of_property_read_u32(np, "battery,swelling_low_rechg_voltage_offset",
+		(unsigned int *)&pdata->swelling_low_rechg_voltage_offset);
+	if(ret) {
+		pdata->swelling_low_rechg_voltage_offset = 150;
+	}
 
 	ret = of_property_read_u32(np, "battery,swelling_high_temp_block",
 				   &temp);

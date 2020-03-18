@@ -19,6 +19,8 @@
 #include <mali_midg_regmap.h>
 #include <mali_kbase_sync.h>
 
+#include <mali_uk.h>
+
 #include <linux/pm_qos.h>
 #include <linux/sched.h>
 
@@ -150,10 +152,34 @@ void gpu_destroy_context(void *ctx)
 	kctx->ctx_status = CTX_DESTROYED;
 
 	if (kctx->ctx_need_qos) {
+#ifdef CONFIG_SCHED_HMP
+		int i, policy_count;
+		const struct kbase_pm_policy *const *policy_list;
+		struct exynos_context *platform;
+		platform = (struct exynos_context *) kbdev->platform_context;
+#endif
 #ifdef CONFIG_MALI_DVFS
 		gpu_dvfs_boost_lock(GPU_DVFS_BOOST_UNSET);
 #endif
 #ifdef CONFIG_SCHED_HMP
+		/* set policy back */
+		policy_count = kbase_pm_list_policies(&policy_list);
+		if (platform->cur_policy){
+			for (i = 0; i < policy_count; i++) {
+				if (sysfs_streq(policy_list[i]->name, platform->cur_policy->name)) {
+					kbase_pm_set_policy(kbdev, policy_list[i]);
+					break;
+				}
+			}
+		}
+		else{
+			for (i = 0; i < policy_count; i++) {
+				if (sysfs_streq(policy_list[i]->name, "coarse_demand")) {
+					kbase_pm_set_policy(kbdev, policy_list[i]);
+					break;
+				}
+			}
+		}
 		set_hmp_boost(0);
 		set_hmp_aggressive_up_migration(false);
 		set_hmp_aggressive_yield(false);
@@ -197,8 +223,7 @@ int gpu_vendor_dispatch(struct kbase_context *kctx, u32 flags)
 			break;
 		}
 #endif
-
-#if 0 /* MUST BE CHECK for each feature */
+#if 0  /* MUST BE CHECK for each feature */
 	case KBASE_FUNC_CREATE_SURFACE:
 		{
 			kbase_mem_set_max_size(kctx);
@@ -210,35 +235,67 @@ int gpu_vendor_dispatch(struct kbase_context *kctx, u32 flags)
 			kbase_mem_free_list_cleanup(kctx);
 			break;
 		}
-
-	case KBASE_FUNC_SET_MIN_LOCK:
+#endif  /* MUST BE CHECK for each feature */
+	case KBASE_FUNC_SET_MIN_LOCK :
 		{
-#ifdef CONFIG_MALI_DVFS
+#if defined(CONFIG_MALI_DVFS) || defined(CONFIG_SCHED_HMP)
 			struct exynos_context *platform;
-#endif /* CONFIG_MALI_DVFS */
+#endif
+#ifdef CONFIG_SCHED_HMP
+			int i, policy_count;
+			const struct kbase_pm_policy *const *policy_list;
+			platform = (struct exynos_context *) kbdev->platform_context;
+#endif /* CONFIG_SCHED_HMP */
 			if (!kctx->ctx_need_qos) {
 				kctx->ctx_need_qos = true;
 #ifdef CONFIG_SCHED_HMP
+				/* set policy to always_on */
+				policy_count = kbase_pm_list_policies(&policy_list);
+				platform->cur_policy = kbase_pm_get_policy(kbdev);
+				for (i = 0; i < policy_count; i++) {
+					if (sysfs_streq(policy_list[i]->name, "always_on")) {
+						kbase_pm_set_policy(kbdev, policy_list[i]);
+						break;
+					}
+				}
+				/* set hmp boost */
 				set_hmp_boost(1);
 				set_hmp_aggressive_up_migration(true);
 				set_hmp_aggressive_yield(true);
-#endif
+#endif /* CONFIG_SCHED_HMP */
 			}
 #ifdef CONFIG_MALI_DVFS
-			platform = (struct exynos_context *)kbdev->platform_context;
+			platform = (struct exynos_context *) kbdev->platform_context;
 			gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_EGL_SET);
 #endif /* CONFIG_MALI_DVFS */
 			break;
 		}
 
-	case KBASE_FUNC_UNSET_MIN_LOCK:
+	case KBASE_FUNC_UNSET_MIN_LOCK :
 		{
-#ifdef CONFIG_MALI_DVFS
+#if defined(CONFIG_MALI_DVFS) || defined(CONFIG_SCHED_HMP)
 			struct exynos_context *platform;
-#endif /* CONFIG_MALI_DVFS */
+#endif
+#ifdef CONFIG_SCHED_HMP
+			int i, policy_count;
+			const struct kbase_pm_policy *const *policy_list;
+			platform = (struct exynos_context *) kbdev->platform_context;
+#endif /* CONFIG_SCHED_HMP */
 			if (kctx->ctx_need_qos) {
 				kctx->ctx_need_qos = false;
 #ifdef CONFIG_SCHED_HMP
+				/* set policy back */
+				if (platform->cur_policy) {
+					policy_count = kbase_pm_list_policies(&policy_list);
+					for (i = 0; i < policy_count; i++) {
+						if (sysfs_streq(policy_list[i]->name, platform->cur_policy->name)) {
+							kbase_pm_set_policy(kbdev, policy_list[i]);
+							break;
+						}
+					}
+					platform->cur_policy = NULL;
+				}
+				/* unset hmp boost */
 				set_hmp_boost(0);
 				set_hmp_aggressive_up_migration(false);
 				set_hmp_aggressive_yield(false);
@@ -250,67 +307,6 @@ int gpu_vendor_dispatch(struct kbase_context *kctx, u32 flags)
 			}
 			break;
 		}
-#endif /* MUST BE CHECK for each feature */
-
-	/* MALI_SEC_SECURE_RENDERING */
-#ifdef CONFIG_MALI_EXYNOS_SECURE_RENDERING
-	case KBASE_FUNC_SECURE_WORLD_RENDERING:
-	{
-		if (kbdev->protected_mode_support == true &&
-		    kctx->enabled_TZASC == false &&
-		    kbdev->protected_ops != NULL) {
-
-#ifdef CONFIG_MALI_SEC_ASP_SECURE_BUF_CTRL
-			struct kbase_uk_custom_command *kgp = (struct kbase_uk_custom_command *)args;
-			kbdev->sec_sr_info.secure_flags_crc_asp = kgp->flags;
-
-			if (!kgp->flags) {
-				GPU_LOG(DVFS_ERROR, LSI_GPU_SECURE, 0u, 0u, "%s: wrong operation! ASP enabled. But, flags is ZERO\n", __func__);
-				BUG();
-			}
-			GPU_LOG(DVFS_WARNING, LSI_GPU_SECURE, 0u, 0u, "%s: enable the protection mode, kctx : %p, flags : %llX\n", __func__, kctx, kgp->flags);
-#else
-			GPU_LOG(DVFS_WARNING, LSI_GPU_SECURE, 0u, 0u, "%s: enable the protection mode, kctx : %p, NO use ASP feature.\n", __func__, kctx);
-#endif
-			kctx->enabled_TZASC = true;
-
-#ifdef CONFIG_MALI_SEC_HWCNT
-			mutex_lock(&kbdev->hwcnt.mlock);
-			if (kbdev->vendor_callbacks->hwcnt_force_stop)
-				kbdev->vendor_callbacks->hwcnt_force_stop(kbdev);
-			mutex_unlock(&kbdev->hwcnt.mlock);
-#endif
-		} else {
-			GPU_LOG(DVFS_ERROR, LSI_GPU_SECURE, 0u, 0u, "%s: wrong operation! DDK cannot support Secure Rendering\n", __func__);
-		}
-		break;
-	}
-
-	/* MALI_SEC_SECURE_RENDERING */
-	case KBASE_FUNC_NON_SECURE_WORLD_RENDERING:
-	{
-		if (kbdev->protected_mode_support == true &&
-		    kctx->enabled_TZASC == true &&
-		    kbdev->protected_ops != NULL) {
-
-#ifdef CONFIG_MALI_SEC_ASP_SECURE_BUF_CTRL
-			kbdev->sec_sr_info.secure_flags_crc_asp = 0;
-#endif
-			kctx->enabled_TZASC = false;
-			GPU_LOG(DVFS_WARNING, LSI_GPU_SECURE, 0u, 0u, "%s: disable the protection mode, kctx : %p\n", __func__, kctx);
-
-#ifdef CONFIG_MALI_SEC_HWCNT
-			mutex_lock(&kbdev->hwcnt.mlock);
-			if (kbdev->vendor_callbacks->hwcnt_force_start)
-				kbdev->vendor_callbacks->hwcnt_force_start(kbdev);
-			mutex_unlock(&kbdev->hwcnt.mlock);
-#endif
-		} else {
-			GPU_LOG(DVFS_ERROR, LSI_GPU_SECURE, 0u, 0u, "%s: wrong operation! DDK cannot support Secure Rendering\n", __func__);
-		}
-		break;
-	}
-#endif
 
 	/* MALI_SEC_INTEGRATION */
 #ifdef CONFIG_MALI_SEC_HWCNT
@@ -331,7 +327,7 @@ int gpu_vendor_dispatch(struct kbase_context *kctx, u32 flags)
 
 		mutex_lock(&kbdev->hwcnt.mlock);
 #ifdef CONFIG_MALI_EXYNOS_SECURE_RENDERING
-		if (kbdev->secure_mode == true) {
+		if (kbdev->protected_mode == true) {
 			mutex_unlock(&kbdev->hwcnt.mlock);
 			dev_err(kbdev->dev, "cannot support ioctl %u in secure mode", id);
 			break;
@@ -375,6 +371,76 @@ int gpu_vendor_dispatch(struct kbase_context *kctx, u32 flags)
 	return 0;
 
 }
+
+/* MALI_SEC_SECURE_RENDERING */
+#ifdef CONFIG_MALI_EXYNOS_SECURE_RENDERING
+int gpu_vendor_secure_rendering_dispatch(struct kbase_context *kctx, struct kbase_ioctl_slsi_secure_flag *flags)
+{
+	int ret = -EINVAL;
+	struct kbase_device *kbdev = kctx->kbdev;
+
+	switch (flags->id) {
+	case SLSI_SECURE_FLAG_SET:
+		if (kbdev->protected_mode_support == true &&
+		    kctx->enabled_TZASC == false &&
+		    kbdev->protected_ops != NULL) {
+
+#ifdef CONFIG_MALI_SEC_ASP_SECURE_BUF_CTRL
+			kbdev->sec_sr_info.secure_flags_crc_asp = flags->crc_flags;
+
+			if (!flags->crc_flags) {
+				GPU_LOG(DVFS_ERROR, LSI_GPU_SECURE, 0u, 0u, "%s: wrong operation! ASP enabled. But, CRC flags is ZERO\n", __func__);
+				BUG();
+			}
+			GPU_LOG(DVFS_WARNING, LSI_GPU_SECURE, 0u, 0u, "%s: enable the protection mode, kctx : %p, flags : %X\n", __func__, kctx, flags->crc_flags);
+#else
+			GPU_LOG(DVFS_WARNING, LSI_GPU_SECURE, 0u, 0u, "%s: enable the protection mode, kctx : %p, NO use ASP feature.\n", __func__, kctx);
+#endif
+			kctx->enabled_TZASC = true;
+
+#ifdef CONFIG_MALI_SEC_HWCNT
+			mutex_lock(&kbdev->hwcnt.mlock);
+			if (kbdev->vendor_callbacks->hwcnt_force_stop)
+				kbdev->vendor_callbacks->hwcnt_force_stop(kbdev);
+			mutex_unlock(&kbdev->hwcnt.mlock);
+#endif
+		} else {
+			GPU_LOG(DVFS_ERROR, LSI_GPU_SECURE, 0u, 0u, "%s: wrong operation! DDK cannot support Secure Rendering\n", __func__);
+		}
+
+		ret = 0;
+		break;
+
+	/* MALI_SEC_SECURE_RENDERING */
+	case SLSI_SECURE_FLAG_UNSET:
+		if (kbdev->protected_mode_support == true &&
+		    kctx->enabled_TZASC == true &&
+		    kbdev->protected_ops != NULL) {
+
+#ifdef CONFIG_MALI_SEC_ASP_SECURE_BUF_CTRL
+			kbdev->sec_sr_info.secure_flags_crc_asp = 0;
+#endif
+			GPU_LOG(DVFS_WARNING, LSI_GPU_SECURE, 0u, 0u, "%s: disable the protection mode, kctx : %p\n", __func__, kctx);
+
+			kctx->enabled_TZASC = false;
+
+#ifdef CONFIG_MALI_SEC_HWCNT
+			mutex_lock(&kbdev->hwcnt.mlock);
+			if (kbdev->vendor_callbacks->hwcnt_force_start)
+				kbdev->vendor_callbacks->hwcnt_force_start(kbdev);
+			mutex_unlock(&kbdev->hwcnt.mlock);
+#endif
+		} else {
+			GPU_LOG(DVFS_ERROR, LSI_GPU_SECURE, 0u, 0u, "%s: wrong operation! DDK cannot support Secure Rendering\n", __func__);
+		}
+
+		ret = 0;
+		break;
+	}
+
+	return ret;
+}
+#endif
 
 #include <mali_kbase_gpu_memory_debugfs.h>
 int gpu_memory_seq_show(struct seq_file *sfile, void *data)

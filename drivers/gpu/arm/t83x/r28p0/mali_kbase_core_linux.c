@@ -4183,6 +4183,7 @@ static int kbase_device_suspend_dummy(struct device *dev)
 		KBASE_TRACE_ADD(kbdev, KBASE_DEVICE_SUSPEND_DUMMY, NULL, NULL, 0u, ret);
 	}
 
+
 	return ret;
 }
 
@@ -4258,7 +4259,7 @@ int kbase_device_resume(struct kbase_device *kbdev)
 		ret = platform->power_runtime_resume_ret;
 
 	KBASE_TRACE_ADD(kbdev, KBASE_DEVICE_RESUME, NULL, NULL, 0u, ret);
-	
+
 	return ret;
 }
 

@@ -20,11 +20,13 @@
 #include <linux/slab.h>
 
 #include <soc/samsung/exynos-pmu.h>
+#include <soc/samsung/exynos-debug.h>
 
 typedef void (*force_error_func)(char *arg);
 
 static void simulate_KP(char *arg);
 static void simulate_DP(char *arg);
+static void simulate_QDP(char *arg);
 static void simulate_WP(char *arg);
 static void simulate_TP(char *arg);
 static void simulate_PANIC(char *arg);
@@ -51,6 +53,7 @@ static void simulate_OVERFLOW(char *arg);
 enum {
 	FORCE_KERNEL_PANIC = 0,		/* KP */
 	FORCE_WATCHDOG,			/* DP */
+	FORCE_QUICKWATCHDOG,		/* QDP */
 	FORCE_WARM_RESET,		/* WP */
 	FORCE_HW_TRIPPING,		/* TP */
 	FORCE_PANIC,			/* PANIC */
@@ -89,6 +92,7 @@ struct force_error force_error_vector = {
 	.item = {
 		{"KP",		&simulate_KP},
 		{"DP",		&simulate_DP},
+		{"QDP",		&simulate_QDP},
 		{"WP",		&simulate_WP},
 		{"TP",		&simulate_TP},
 		{"panic",	&simulate_PANIC},
@@ -170,6 +174,17 @@ static void simulate_DP(char *arg)
 
 	/* should not reach here */
 	pr_crit("%s() failed\n", __func__);
+}
+
+static void simulate_QDP(char *arg)
+{
+	pr_crit("%s()\n", __func__);
+
+	s3c2410wdt_set_emergency_reset(10);
+
+	mdelay(DELAY_TIME);
+
+	/* should not reach here */
 }
 
 static void simulate_WP(char *arg)

@@ -470,6 +470,13 @@ config USB_ANDROID_SAMSUNG_MTP
 	  If you enable this option,
 	  google mtp will be changed to samsung mtp.
 
+config USB_F_CONN_GADGET_NDOP
+    bool "Conn gadget that do not support DexLive"
+	depends on USB_G_ANDROID
+	depends on ANDROID_MAJOR_VERSION >= "q"
+	help
+	  Next SideSync
+
 config USB_LOCK_SUPPORT_FOR_MDM
 	boolean "Samsung USB_LOCK function for MDM"
 	depends on USB_G_ANDROID

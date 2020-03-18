@@ -53,9 +53,7 @@
 
 struct lcd_info {
 	unsigned int			connected;
-	unsigned int			bl;
 	unsigned int			brightness;
-	unsigned int			current_bl;
 	unsigned int			state;
 
 	struct lcd_device		*ld;
@@ -78,7 +76,6 @@ struct lcd_info {
 	struct notifier_block		fb_notif_panel;
 	struct i2c_client		*blic_client;
 };
-
 
 static int dsim_write_hl_data(struct lcd_info *lcd, const u8 *cmd, u32 cmdsize)
 {
@@ -220,42 +217,23 @@ static int isl98611_array_write(struct i2c_client *client, u8 *ptr, u8 len)
 
 static int dsim_panel_set_brightness(struct lcd_info *lcd, int force)
 {
-	int ret = 0, temp = 0;
+	int ret = 0;
 	unsigned char bl_reg[2] = {0, };
 
 	mutex_lock(&lcd->lock);
 
 	lcd->brightness = lcd->bd->props.brightness;
 
-	lcd->bl = lcd->brightness;
-
 	if (!force && lcd->state != PANEL_STATE_RESUMED) {
 		dev_info(&lcd->ld->dev, "%s: panel is not active state\n", __func__);
 		goto exit;
 	}
-	bl_reg[0] = BRIGHTNESS_REG;
 
-	if (lcd->bl > UI_MAX_BRIGHTNESS)
-		bl_reg[1] = TDDI_OUTDOOR_BRIGHTNESS;
-	else if (lcd->bl >= UI_DEFAULT_BRIGHTNESS) {	/* 128~255 */
-		temp = (TDDI_MAX_BRIGHTNESS - TDDI_DEFAULT_BRIGHTNESS) * (lcd->bl - UI_DEFAULT_BRIGHTNESS);
-		temp /= (UI_MAX_BRIGHTNESS - UI_DEFAULT_BRIGHTNESS);
-		temp += TDDI_DEFAULT_BRIGHTNESS;
-		bl_reg[1] = temp;
-	} else if (lcd->bl >= UI_DIM_BRIGHTNESS) {	/* 10~127 */
-		temp = (TDDI_DEFAULT_BRIGHTNESS - TDDI_DIM_BRIGHTNESS) * (lcd->bl - UI_DIM_BRIGHTNESS);
-		temp /= (UI_DEFAULT_BRIGHTNESS-UI_DIM_BRIGHTNESS);
-		temp += TDDI_DIM_BRIGHTNESS;
-		bl_reg[1] = temp;
-	} else if (lcd->bl >= UI_MIN_BRIGHTNESS) {	/* 4~9 */
-		temp = (TDDI_DIM_BRIGHTNESS - TDDI_MIN_BRIGHTNESS) * (lcd->bl - UI_MIN_BRIGHTNESS);
-		temp /= (UI_DIM_BRIGHTNESS-UI_MIN_BRIGHTNESS);
-		temp += TDDI_MIN_BRIGHTNESS;
-		bl_reg[1] = temp;
-	} else	/* 0~3 */
-		bl_reg[1] = lcd->bl;
+	bl_reg[0] = BRIGHTNESS_REG;
+	bl_reg[1] = brightness_table[lcd->brightness];
 
 	DSI_WRITE(bl_reg, ARRAY_SIZE(bl_reg));
+
 	dev_info(&lcd->ld->dev, "%s: brightness: %3d, %3d(%2x), lx: %d\n", __func__,
 		lcd->brightness, bl_reg[1], bl_reg[1], lcd->lux);
 exit:
@@ -266,7 +244,9 @@ exit:
 
 static int panel_get_brightness(struct backlight_device *bd)
 {
-	return bd->props.brightness;
+	struct lcd_info *lcd = bl_get_data(bd);
+
+	return brightness_table[lcd->brightness];
 }
 
 static int panel_set_brightness(struct backlight_device *bd)
@@ -288,7 +268,6 @@ static const struct backlight_ops panel_backlight_ops = {
 	.update_status = panel_set_brightness,
 };
 
-
 static int td4100_read_init_info(struct lcd_info *lcd)
 {
 	struct panel_private *priv = &lcd->dsim->priv;
@@ -309,6 +288,10 @@ static int td4100_read_id(struct lcd_info *lcd)
 {
 	struct panel_private *priv = &lcd->dsim->priv;
 	int i, ret = 0;
+	struct decon_device *decon = get_decon_drvdata(0);
+	static char *LDI_BIT_DESC_ID[BITS_PER_BYTE * TD4100_ID_LEN] = {
+		[0 ... 23] = "ID Read Fail",
+	};
 
 	lcd->id_info.value = 0;
 	priv->lcdconnected = lcd->connected = lcdtype ? 1 : 0;
@@ -322,6 +305,9 @@ static int td4100_read_id(struct lcd_info *lcd)
 	if (ret < 0 || !lcd->id_info.value) {
 		priv->lcdconnected = lcd->connected = 0;
 		dev_info(&lcd->ld->dev, "%s: connected lcd is invalid\n", __func__);
+
+		if (!lcdtype && decon)
+			decon_abd_save_bit(&decon->abd, BITS_PER_BYTE * TD4100_ID_LEN, cpu_to_be32(lcd->id_info.value), LDI_BIT_DESC_ID);
 	}
 
 	dev_info(&lcd->ld->dev, "%s: %x\n", __func__, cpu_to_be32(lcd->id_info.value));
@@ -340,8 +326,6 @@ static int td4100_displayon_late(struct lcd_info *lcd)
 
 	DSI_WRITE(SEQ_DISPLAY_ON, ARRAY_SIZE(SEQ_DISPLAY_ON));
 	DSI_WRITE(SEQ_TD4100_53, ARRAY_SIZE(SEQ_TD4100_53));
-
-	dsim_panel_set_brightness(lcd, 1);
 
 	return ret;
 }
@@ -434,8 +418,13 @@ static int fb_notifier_callback(struct notifier_block *self,
 	if (evdata->info->node)
 		return NOTIFY_DONE;
 
-	if (fb_blank == FB_BLANK_UNBLANK)
+	if (fb_blank == FB_BLANK_UNBLANK) {
+		mutex_lock(&lcd->lock);
 		td4100_displayon_late(lcd);
+		mutex_unlock(&lcd->lock);
+
+		dsim_panel_set_brightness(lcd, 1);
+	}
 
 	return NOTIFY_DONE;
 }
@@ -513,7 +502,6 @@ static struct i2c_driver isl98611_i2c_driver = {
 	.id_table = isl98611_i2c_id,
 	.probe = isl98611_probe,
 };
-
 
 static int td4100_probe(struct lcd_info *lcd)
 {

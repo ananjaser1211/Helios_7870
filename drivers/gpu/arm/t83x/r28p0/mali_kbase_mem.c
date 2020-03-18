@@ -1111,9 +1111,6 @@ void kbase_free_alloced_region(struct kbase_va_region *reg)
 		kbase_mem_phy_alloc_put(reg->cpu_alloc);
 		kbase_mem_phy_alloc_put(reg->gpu_alloc);
 
-		reg->flags |= KBASE_REG_VA_FREED;
-		kbase_va_region_alloc_put(kctx, reg);
-
 		/* MALI_SEC_SECURE_RENDERING */
 #ifdef CONFIG_MALI_SEC_ASP_SECURE_BUF_CTRL
 		if ((reg->flags & KBASE_REG_SECURE) && !(reg->flags & KBASE_REG_SECURE_CRC)) {
@@ -1127,6 +1124,9 @@ void kbase_free_alloced_region(struct kbase_va_region *reg)
 			}
 		}
 #endif
+
+		reg->flags |= KBASE_REG_VA_FREED;
+		kbase_va_region_alloc_put(kctx, reg);
 	} else {
 		kfree(reg);
 	}

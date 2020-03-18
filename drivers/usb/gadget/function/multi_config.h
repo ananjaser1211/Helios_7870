@@ -60,6 +60,7 @@
 #define MAIN_FUNCTION "mtp"
 #define MULTI_FUNCTION_1 "mtp"
 #define MULTI_FUNCTION_2 "acm0"
+#define MULTI_FUNCTION_3 "conn_gadget"
 #define MULTI_EXCEPTION_FUNCTION "adb"
 #define MULTI_EXCEPTION_FUNCTION_F_FS "Function FS Gadget"
 

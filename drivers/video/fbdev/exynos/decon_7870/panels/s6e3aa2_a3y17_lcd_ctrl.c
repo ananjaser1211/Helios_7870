@@ -611,6 +611,10 @@ static int s6e3aa2_read_id(struct lcd_info *lcd)
 {
 	struct panel_private *priv = &lcd->dsim->priv;
 	int ret = 0;
+	struct decon_device *decon = get_decon_drvdata(0);
+	static char *LDI_BIT_DESC_ID[BITS_PER_BYTE * LDI_LEN_ID] = {
+		[0 ... 23] = "ID Read Fail",
+	};
 
 	lcd->id_info.value = 0;
 	priv->lcdconnected = lcd->connected = lcdtype ? 1 : 0;
@@ -619,6 +623,9 @@ static int s6e3aa2_read_id(struct lcd_info *lcd)
 	if (ret < 0 || !lcd->id_info.value) {
 		priv->lcdconnected = lcd->connected = 0;
 		dev_info(&lcd->ld->dev, "%s: connected lcd is invalid\n", __func__);
+
+		if (!lcdtype && decon)
+			decon_abd_save_bit(&decon->abd, BITS_PER_BYTE * LDI_LEN_ID, cpu_to_be32(lcd->id_info.value), LDI_BIT_DESC_ID);
 	}
 
 	dev_info(&lcd->ld->dev, "%s: %x\n", __func__, cpu_to_be32(lcd->id_info.value));
@@ -1104,7 +1111,7 @@ static int panel_dpui_notifier_callback(struct notifier_block *self,
 	set_dpui_field(DPUI_KEY_DISP_MODEL, tbuf, size);
 
 	size = snprintf(tbuf, MAX_DPUI_VAL_LEN, "0x%02X%02X%02X%02X%02X",
-			lcd->code[0], lcd->code[1], lcd->code[2], lcd->code[3], lcd->code[4]);
+		lcd->code[0], lcd->code[1], lcd->code[2], lcd->code[3], lcd->code[4]);
 	set_dpui_field(DPUI_KEY_CHIPID, tbuf, size);
 
 	size = snprintf(tbuf, MAX_DPUI_VAL_LEN, "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
@@ -1164,10 +1171,14 @@ static int fb_notifier_callback(struct notifier_block *self,
 		pinctrl_enable(lcd, 0);
 	else if (IS_AFTER(event) && fb_blank == FB_BLANK_UNBLANK) {
 		pinctrl_enable(lcd, 1);
+		mutex_lock(&lcd->lock);
 		s6e3aa2_displayon(lcd);
+		mutex_unlock(&lcd->lock);
 	} else if (event == DECON_EVENT_DOZE && fb_blank == FB_BLANK_UNBLANK) {
 		pinctrl_enable(lcd, 1);
+		mutex_lock(&lcd->lock);
 		s6e3aa2_displayon(lcd);
+		mutex_unlock(&lcd->lock);
 	}
 
 	return NOTIFY_DONE;
@@ -1739,7 +1750,9 @@ static ssize_t alpm_doze_store(struct device *dev,
 			mutex_unlock(&lcd->lock);
 		}
 		call_panel_ops(dsim, displayon, dsim);
+		mutex_lock(&lcd->lock);
 		s6e3aa2_displayon(lcd);
+		mutex_unlock(&lcd->lock);
 		break;
 	case ALPM_ON_LOW:
 	case HLPM_ON_LOW:
@@ -1755,7 +1768,9 @@ static ssize_t alpm_doze_store(struct device *dev,
 		call_panel_ops(dsim, enteralpm, dsim);
 		mutex_unlock(&decon->output_lock);
 		usleep_range(17000, 18000);
+		mutex_lock(&lcd->lock);
 		s6e3aa2_displayon(lcd);
+		mutex_unlock(&lcd->lock);
 		break;
 	}
 
@@ -1826,6 +1841,7 @@ static DEVICE_ATTR(lux, 0644, lux_show, lux_store);
 static DEVICE_ATTR(octa_id, 0444, octa_id_show, NULL);
 static DEVICE_ATTR(SVC_OCTA, 0444, cell_id_show, NULL);
 static DEVICE_ATTR(SVC_OCTA_CHIPID, 0444, octa_id_show, NULL);
+static DEVICE_ATTR(SVC_OCTA_DDI_CHIPID, 0444, manufacture_code_show, NULL);
 
 static struct attribute *lcd_sysfs_attributes[] = {
 	&dev_attr_lcd_type.attr,
@@ -1885,6 +1901,7 @@ static void lcd_init_svc(struct lcd_info *lcd)
 
 	device_create_file(dev, &dev_attr_SVC_OCTA);
 	device_create_file(dev, &dev_attr_SVC_OCTA_CHIPID);
+	device_create_file(dev, &dev_attr_SVC_OCTA_DDI_CHIPID);
 
 	if (kn)
 		kernfs_put(kn);

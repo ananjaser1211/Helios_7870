@@ -265,8 +265,9 @@ int gpu_control_enable_customization(struct kbase_device *kbdev)
 	if (ctr_ops->set_clock_to_osc)
 		ctr_ops->set_clock_to_osc(platform);
 
-	ret = gpu_enable_dvs(platform);
+
 	platform->dvs_is_enabled = true;
+	ret = gpu_enable_dvs(platform);
 
 	mutex_unlock(&platform->gpu_clock_lock);
 #endif /* CONFIG_REGULATOR */

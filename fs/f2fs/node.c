@@ -1372,8 +1372,10 @@ page_hit:
 			next_blkaddr_of_node(page));
 		err = -EINVAL;
 out_err:
-		if (PageUptodate(page))
+		if (PageUptodate(page)) {
 			print_block_data(sbi->sb, nid, page_address(page), 0, F2FS_BLKSIZE);
+			f2fs_bug_on(sbi, 1);
+		}
 		ClearPageUptodate(page);
 		f2fs_put_page(page, 1);
 		return ERR_PTR(err);
@@ -1507,6 +1509,8 @@ static int __write_node_page(struct page *page, bool atomic, bool *submitted,
 		.io_wbc = wbc,
 	};
 	unsigned int seq;
+
+	f2fs_cond_set_fua(&fio);
 
 	trace_f2fs_writepage(page, NODE);
 

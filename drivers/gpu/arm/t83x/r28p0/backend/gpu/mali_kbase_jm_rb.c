@@ -533,28 +533,7 @@ static int kbase_gpu_protected_mode_reset(struct kbase_device *kbdev)
 #endif
 
 /* MALI_SEC_SECURE_RENDERING */
-#ifdef CONFIG_MALI_EXYNOS_SECURE_RENDERING
-void kbasep_js_cacheclean(struct kbase_device *kbdev)
-{
-	/* Limit the number of loops to avoid a hang if the interrupt is missed */
-	u32 max_loops = KBASE_CLEAN_CACHE_MAX_LOOPS;
-
-	GPU_LOG(DVFS_INFO, LSI_SECURE_CACHE, 0u, 0u, "GPU CACHE WORKING for Secure Rendering\n");
-	/* use GPU_COMMAND completion solution */
-	/* clean the caches */
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND), GPU_COMMAND_CLEAN_CACHES);
-
-	/* wait for cache flush to complete before continuing */
-	while (--max_loops && (kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_IRQ_RAWSTAT)) & CLEAN_CACHES_COMPLETED) == 0)
-		;
-
-	/* clear the CLEAN_CACHES_COMPLETED irq */
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_IRQ_CLEAR), CLEAN_CACHES_COMPLETED);
-	KBASE_DEBUG_ASSERT_MSG(kbdev->hwcnt.state != KBASE_INSTR_STATE_CLEANING,
-			"Instrumentation code was cleaning caches, but Job Management code cleared their IRQ - Instrumentation code will now hang.");
-	GPU_LOG(DVFS_INFO, LSI_SECURE_CACHE_END, 0u, 0u, "GPU CACHE WORKING for Secure Rendering\n");
-}
-#else
+#ifndef CONFIG_MALI_EXYNOS_SECURE_RENDERING
 static int kbase_jm_protected_entry(struct kbase_device *kbdev,
 				struct kbase_jd_atom **katom, int idx, int js)
 {
@@ -625,12 +604,17 @@ static int kbase_jm_enter_protected_mode(struct kbase_device *kbdev,
 	int err = 0;
 
 #ifdef CONFIG_MALI_EXYNOS_SECURE_RENDERING
+	lockdep_assert_held(&kbdev->hwaccess_lock);
+
 	if (kbase_gpu_atoms_submitted_any(kbdev))
+		return -EAGAIN;
+
+	if (platform_power_down_only &&
+			kbdev->cache_clean_in_progress)
 		return -EAGAIN;
 
 	if (kbdev->protected_ops) {
 		/* Switch GPU to protected mode */
-		kbasep_js_cacheclean(kbdev);
 		err = kbdev->protected_ops->protected_mode_enable(
 				kbdev->protected_dev);
 
@@ -798,12 +782,17 @@ static int kbase_jm_exit_protected_mode(struct kbase_device *kbdev,
 	int err = 0;
 
 #ifdef CONFIG_MALI_EXYNOS_SECURE_RENDERING
+	lockdep_assert_held(&kbdev->hwaccess_lock);
+
 	if (kbase_gpu_atoms_submitted_any(kbdev))
+		return -EAGAIN;
+
+	if (platform_power_down_only &&
+			kbdev->cache_clean_in_progress)
 		return -EAGAIN;
 
 	if (kbdev->protected_ops) {
 		/* Switch GPU to protected mode */
-		kbasep_js_cacheclean(kbdev);
 		err = kbdev->protected_ops->protected_mode_disable(
 				kbdev->protected_dev);
 
